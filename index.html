@@ -17,7 +17,7 @@
             --text-muted: #9ca3af;
             --success: #10b981;
             --danger: #ef4444;
-            --resizer-size: 8px; /* Área de clique do redimensionador */
+            --resizer-size: 8px;
         }
 
         * { box-sizing: border-box; }
@@ -59,7 +59,7 @@
 
         /* Coluna da Esquerda (Editor) */
         .editor-section {
-            width: 50%; /* Tamanho inicial */
+            width: 50%;
             display: flex;
             flex-direction: column;
             background: var(--bg-panel);
@@ -123,7 +123,7 @@
 
         /* Áreas de Texto */
         .editor-container {
-            height: 60%; /* Tamanho inicial vertical */
+            height: 60%;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -138,7 +138,7 @@
 
         /* Lista de Arquivos */
         .file-manager {
-            flex: 1; /* Ocupa o resto do espaço vertical */
+            flex: 1;
             background: #0d0d11;
             display: flex;
             flex-direction: column;
@@ -166,7 +166,7 @@
 
         /* Preview */
         .preview-section {
-            flex: 1; /* Ocupa o resto do espaço horizontal */
+            flex: 1;
             background: #fff;
             display: flex;
             flex-direction: column;
@@ -175,38 +175,20 @@
         }
         iframe { width: 100%; height: 100%; border: none; background: white; }
 
-        /* --- DIVISÓRIAS ARRASTÁVEIS (RESIZERS) --- */
+        /* Resizers */
         .resizer-horizontal {
-            height: 5px;
-            background: #000;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            cursor: row-resize;
-            flex-shrink: 0;
-            transition: background 0.2s;
-            z-index: 10;
+            height: 5px; background: #000; border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border); cursor: row-resize; flex-shrink: 0;
+            transition: background 0.2s; z-index: 10;
         }
-        .resizer-horizontal:hover, .resizer-horizontal.resizing {
-            background: var(--accent);
-            height: 7px;
-        }
+        .resizer-horizontal:hover, .resizer-horizontal.resizing { background: var(--accent); height: 7px; }
 
         .resizer-vertical {
-            width: 5px;
-            background: #000;
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-            cursor: col-resize;
-            flex-shrink: 0;
-            transition: background 0.2s;
-            z-index: 10;
+            width: 5px; background: #000; border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border); cursor: col-resize; flex-shrink: 0;
+            transition: background 0.2s; z-index: 10;
         }
-        .resizer-vertical:hover, .resizer-vertical.resizing {
-            background: var(--accent);
-            width: 7px;
-        }
-
-        /* Classe para evitar que o iframe roube o mouse enquanto arrasta */
+        .resizer-vertical:hover, .resizer-vertical.resizing { background: var(--accent); width: 7px; }
         .pointer-events-none { pointer-events: none; }
 
         /* Status Bar */
@@ -237,7 +219,6 @@
     </div>
 
     <div class="main-container" id="mainContainer">
-        <!-- COLUNA ESQUERDA -->
         <div class="editor-section" id="editorSection">
             
             <div class="controls-panel">
@@ -246,6 +227,9 @@
                     <input type="text" id="filename" value="index.html" placeholder="ex: pagina.html">
                 </div>
                 
+                <!-- BOTÃO NOVO: VER SITE AO VIVO -->
+                <button id="openLiveBtn" class="btn btn-secondary" title="Abrir página atual no navegador">🌐 Ver</button>
+
                 <div class="toggle-wrapper" title="Auto-Template">
                     <input type="checkbox" id="useTemplate" checked>
                     <label for="useTemplate">Auto-Template</label>
@@ -261,17 +245,14 @@
                 <div class="tab" data-target="js-code">JS</div>
             </div>
 
-            <!-- Container Superior (Texto) -->
             <div class="editor-container" id="topPanel">
                 <textarea id="html-code" class="code-area active" placeholder="Digite seu código..."></textarea>
                 <textarea id="css-code" class="code-area" placeholder="CSS"></textarea>
                 <textarea id="js-code" class="code-area" placeholder="JS"></textarea>
             </div>
 
-            <!-- RESIZER HORIZONTAL -->
             <div class="resizer-horizontal" id="resizerH"></div>
 
-            <!-- Container Inferior (Arquivos) -->
             <div class="file-manager" id="bottomPanel">
                 <div class="fm-header">
                     <span>Arquivos em /htmls/</span>
@@ -283,10 +264,8 @@
             </div>
         </div>
 
-        <!-- RESIZER VERTICAL -->
         <div class="resizer-vertical" id="resizerV"></div>
 
-        <!-- COLUNA DIREITA -->
         <div class="preview-section" id="previewSection">
             <iframe id="preview"></iframe>
         </div>
@@ -311,7 +290,7 @@
         };
 
         // ==========================================
-        // LÓGICA DE REDIMENSIONAMENTO (NOVO)
+        // RESIZING LOGIC
         // ==========================================
         const resizerV = document.getElementById('resizerV');
         const resizerH = document.getElementById('resizerH');
@@ -319,16 +298,14 @@
         const topPanel = document.getElementById('topPanel');
         const previewFrame = document.getElementById('preview');
 
-        // -- Redimensionar Vertical (Largura) --
         let isResizingV = false;
         resizerV.addEventListener('mousedown', (e) => {
             isResizingV = true;
             resizerV.classList.add('resizing');
             document.body.style.cursor = 'col-resize';
-            previewFrame.classList.add('pointer-events-none'); // Evita travar no iframe
+            previewFrame.classList.add('pointer-events-none');
         });
 
-        // -- Redimensionar Horizontal (Altura) --
         let isResizingH = false;
         resizerH.addEventListener('mousedown', (e) => {
             isResizingH = true;
@@ -337,36 +314,30 @@
             previewFrame.classList.add('pointer-events-none');
         });
 
-        // -- Movimento Global do Mouse --
         document.addEventListener('mousemove', (e) => {
             if (isResizingV) {
                 const newWidth = e.clientX;
-                // Limites mínimo e máximo
                 if (newWidth > 200 && newWidth < window.innerWidth - 200) {
                     editorSection.style.width = `${newWidth}px`;
                 }
             }
-
             if (isResizingH) {
-                // Pega a posição relativa ao topo da coluna da esquerda
                 const rect = editorSection.getBoundingClientRect();
-                const newHeight = e.clientY - rect.top - 120; // 120px é apox o tamanho do header
+                const newHeight = e.clientY - rect.top - 120;
                 if (newHeight > 100 && newHeight < rect.height - 100) {
                     topPanel.style.height = `${newHeight}px`;
                 }
             }
         });
 
-        // -- Soltar Mouse --
         document.addEventListener('mouseup', () => {
             isResizingV = false;
             isResizingH = false;
             resizerV.classList.remove('resizing');
             resizerH.classList.remove('resizing');
             document.body.style.cursor = 'default';
-            previewFrame.classList.remove('pointer-events-none'); // Reativa iframe
+            previewFrame.classList.remove('pointer-events-none');
         });
-
 
         // ==========================================
         // APP LOGIC
@@ -376,6 +347,16 @@
         const jsArea = document.getElementById('js-code');
         const filenameInput = document.getElementById('filename');
         const useTemplateCheckbox = document.getElementById('useTemplate');
+        const openLiveBtn = document.getElementById('openLiveBtn');
+
+        // FUNÇÃO PARA O BOTÃO "VER SITE"
+        openLiveBtn.addEventListener('click', () => {
+            const filename = filenameInput.value.trim();
+            if(!filename) return;
+            // Constrói a URL: https://htmls.site/htmls/nomedoarquivo.html
+            const url = `${CONFIG.preview.baseUrl}/${CONFIG.repo.folder}/${filename}`;
+            window.open(url, '_blank');
+        });
 
         function updatePreview() {
             let content;
@@ -566,116 +547,4 @@ ${jsArea.value}
                 let jsFound = false;
                 scripts.forEach(script => {
                     if (script.innerHTML.trim()) {
-                        jsArea.value = script.innerHTML.trim();
-                        script.remove();
-                        jsFound = true;
-                    }
-                });
-                if (!jsFound) jsArea.value = '';
-
-                htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
-            }
-            updatePreview();
-        }
-
-        async function loadFileList() {
-            const listEl = document.getElementById('fileList');
-            listEl.innerHTML = '<li style="padding:16px; color:#666">Carregando...</li>';
-            try {
-                const files = await ghService.listFiles();
-                listEl.innerHTML = '';
-                if (files.length === 0) {
-                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo.</li>';
-                    return;
-                }
-                files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'file-item';
-                    li.innerHTML = `
-                        <div>
-                            <div class="file-name" onclick="loadFile('${file.name}')">${file.name}</div>
-                            <small style="color:#555">${CONFIG.preview.baseUrl}/${CONFIG.repo.folder}/${file.name}</small>
-                        </div>
-                        <div class="actions">
-                            <button onclick="loadFile('${file.name}')" class="btn-mini btn-edit">✏️</button>
-                            <button onclick="deleteFile('${file.name}')" class="btn-mini btn-del">🗑️</button>
-                        </div>`;
-                    listEl.appendChild(li);
-                });
-            } catch (e) {
-                listEl.innerHTML = '<li style="padding:16px; color:red">Erro ao listar arquivos.</li>';
-            }
-        }
-
-        window.loadFile = async (filename) => {
-            notify.show(`Carregando ${filename}...`, 'info');
-            try {
-                const data = await ghService.getFile(filename);
-                filenameInput.value = filename;
-                parseLoadedContent(data.content);
-                notify.show('Arquivo carregado!', 'success');
-            } catch (e) {
-                notify.show(e.message, 'error');
-            }
-        };
-
-        window.deleteFile = async (filename) => {
-            if(!confirm(`Apagar ${filename} permanentemente?`)) return;
-            notify.show(`Apagando ${filename}...`, 'info');
-            try {
-                await ghService.deleteFile(filename);
-                await loadFileList();
-                notify.show('Arquivo removido.', 'success');
-            } catch (e) {
-                notify.show(e.message, 'error');
-            }
-        };
-
-        const publishBtn = document.getElementById('publishBtn');
-        publishBtn.addEventListener('click', async () => {
-            const filename = filenameInput.value.trim();
-            if (!filename.endsWith('.html')) {
-                notify.show('O arquivo deve terminar em .html', 'error');
-                return;
-            }
-            publishBtn.disabled = true;
-            publishBtn.textContent = '⏳ Salvando...';
-            try {
-                const fullContent = buildFinalContent();
-                await ghService.saveFile(filename, fullContent);
-                notify.show('Publicado com sucesso!', 'success');
-                await loadFileList();
-            } catch (e) {
-                notify.show(`Erro: ${e.message}`, 'error');
-            } finally {
-                publishBtn.disabled = false;
-                publishBtn.textContent = '🚀 Publicar';
-            }
-        });
-
-        document.getElementById('refreshBtn').addEventListener('click', loadFileList);
-        
-        document.getElementById('newBtn').addEventListener('click', () => {
-            filenameInput.value = 'novo-arquivo.html';
-            useTemplateCheckbox.checked = true;
-            htmlArea.value = '<h1>Nova Página</h1>';
-            cssArea.value = 'body { font-family: sans-serif; }';
-            jsArea.value = '';
-            updatePreview();
-            notify.show('Novo projeto iniciado', 'info');
-        });
-
-        (async () => {
-            await ghService.init();
-            if (ghService.token) {
-                publishBtn.disabled = false;
-                loadFileList();
-                notify.show('Conectado ao htmls.site', 'success');
-                htmlArea.value = '<h1>Bem vindo</h1>';
-                updatePreview();
-            }
-        })();
-
-    </script>
-</body>
-</html>
+                        jsArea.value =
