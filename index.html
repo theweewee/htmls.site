@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Publisher & Editor HTML ao Vivo</title>
+    <title>Editor HTML - htmls.site</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
     <style>
         :root {
@@ -267,7 +267,7 @@
 <body>
 
     <div class="header">
-        <h1>🚀 Editor HTML Publisher</h1>
+        <h1>🚀 Editor - htmls.site</h1>
         <div id="status-display" class="status-bar">Pronto</div>
     </div>
 
@@ -294,8 +294,8 @@
 
             <!-- Editores -->
             <div class="editor-container">
-                <textarea id="html-code" class="code-area active" placeholder="Digite seu HTML aqui (conteúdo do body)..."><h1>Olá, Mundo!</h1>
-<p>Edite o código e clique em publicar.</p>
+                <textarea id="html-code" class="code-area active" placeholder="Digite seu HTML aqui (conteúdo do body)..."><h1>Olá, htmls.site!</h1>
+<p>Esta página está na pasta /htmls/.</p>
 <div class="card">
     Exemplo de Card
 </div></textarea>
@@ -317,7 +317,7 @@
             <!-- Gerenciador de Arquivos -->
             <div class="file-manager">
                 <div class="fm-header">
-                    <span>Arquivos no GitHub</span>
+                    <span>Arquivos em /htmls/</span>
                     <button id="refreshBtn" class="btn-mini btn-secondary">↻</button>
                 </div>
                 <ul id="fileList" class="file-list">
@@ -336,17 +336,25 @@
         'use strict';
 
         // ==========================================
-        // CONFIGURAÇÃO
+        // CONFIGURAÇÃO CORRIGIDA
         // ==========================================
         const CONFIG = {
-            repo: { owner: 'tehewdev', name: 'tehew.space', folder: 'testeHTML', branch: 'main' },
-            preview: { baseUrl: 'https://tehew.space' },
-            // ATUALIZADO AQUI COM SEU NOVO BIN ID
+            repo: { 
+                owner: 'theweewee',         // Dono da conta
+                name: 'htmls.site',         // Nome do repositório
+                folder: 'htmls',            // Pasta correta
+                branch: 'main' 
+            },
+            preview: { 
+                baseUrl: 'https://htmls.site' // URL do site novo
+            },
             jsonbin: { 
+                // ID NOVO fornecido por você
                 binId: '691e49b043b1c97be9b81a9d', 
+                // Chave de acesso mantida
                 accessKey: '$2a$10$f9KK7vSowGnJI5elo/dAPurqjZAJ3bJaWnsinl/caDfgIcNt28kNi' 
             },
-            cache: { tokenKey: 'gh_token_v2', filesKey: 'gh_files_v2', duration: 1000 * 60 * 15 }
+            cache: { tokenKey: 'gh_token_v3', filesKey: 'gh_files_v3', duration: 1000 * 60 * 15 }
         };
 
         // ==========================================
@@ -361,7 +369,6 @@
         function updatePreview() {
             const htmlContent = htmlArea.value;
             const cssContent = `<style>${cssArea.value}</style>`;
-            // FIX: Quebrando a tag script para não fechar o editor
             const jsContent = `<script>${jsArea.value}<` + `/script>`;
             
             const combined = `
@@ -381,7 +388,6 @@
             previewFrame.srcdoc = combined;
         }
 
-        // Event Listeners para o Editor
         [htmlArea, cssArea, jsArea].forEach(el => el.addEventListener('input', updatePreview));
         
         document.querySelectorAll('.tab').forEach(tab => {
@@ -393,7 +399,6 @@
             });
         });
 
-        // Inicializa Preview
         updatePreview();
 
         // ==========================================
@@ -428,18 +433,17 @@
                     }
                 }
                 
-                // Fetch Token
                 try {
                     const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`, {
                         headers: { 'X-Access-Key': CONFIG.jsonbin.accessKey, 'X-Bin-Meta': 'false' }
                     });
-                    if (!res.ok) throw new Error('Falha ao obter token');
+                    if (!res.ok) throw new Error('Falha ao obter token (Verifique JSONBin)');
                     const data = await res.json();
-                    this.token = data.github_token;
+                    this.token = data.github_token; // Certifique-se que o JSON tem essa chave
                     localStorage.setItem(CONFIG.cache.tokenKey, JSON.stringify({ token: this.token, time: Date.now() }));
                 } catch (e) {
                     console.error(e);
-                    notify.show('Erro ao autenticar sistema', 'error');
+                    notify.show('Erro de Autenticação', 'error');
                 }
             }
 
@@ -473,7 +477,6 @@
                 const path = `${CONFIG.repo.folder}/${filename}`;
                 const url = `https://api.github.com/repos/${CONFIG.repo.owner}/${CONFIG.repo.name}/contents/${path}`;
                 
-                // Verifica se existe para pegar o SHA
                 let sha = null;
                 try {
                     const existing = await this.getFile(filename);
@@ -493,7 +496,7 @@
                     body: JSON.stringify(body)
                 });
 
-                if (!res.ok) throw new Error('Erro ao salvar');
+                if (!res.ok) throw new Error('Erro ao salvar no GitHub');
                 return await res.json();
             }
 
@@ -516,25 +519,20 @@
         const ghService = new GitHubService();
 
         // ==========================================
-        // LÓGICA DE INTEGRAÇÃO (APP)
+        // APP LOGIC
         // ==========================================
-        
-        // Parse HTML para separar nas abas
         function parseLoadedContent(fullHtml) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(fullHtml, 'text/html');
             
-            // Extrair CSS
             const styleTag = doc.querySelector('head style');
             if (styleTag) {
                 cssArea.value = styleTag.innerHTML.trim();
-                styleTag.remove(); // Remove para não duplicar no HTML tab
+                styleTag.remove(); 
             } else {
                 cssArea.value = '';
             }
 
-            // Extrair JS
-            // Procura o último script que deve ser o nosso
             const scripts = doc.querySelectorAll('body script');
             let jsFound = false;
             scripts.forEach(script => {
@@ -546,15 +544,11 @@
             });
             if (!jsFound) jsArea.value = '';
 
-            // O que sobrar no body é o HTML
             htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
-            
             updatePreview();
         }
 
-        // Construir HTML Final para Salvar
         function buildFinalHtml() {
-            // FIX: Usando concatenação na tag script para evitar que o editor quebre
             return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -581,7 +575,7 @@ ${jsArea.value}
                 const files = await ghService.listFiles();
                 listEl.innerHTML = '';
                 if (files.length === 0) {
-                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo.</li>';
+                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo na pasta /htmls/.</li>';
                     return;
                 }
                 
@@ -605,7 +599,6 @@ ${jsArea.value}
             }
         }
 
-        // Funções Globais para acesso no HTML
         window.loadFile = async (filename) => {
             notify.show(`Carregando ${filename}...`, 'info');
             try {
@@ -630,7 +623,6 @@ ${jsArea.value}
             }
         };
 
-        // Botões Principais
         const publishBtn = document.getElementById('publishBtn');
         
         publishBtn.addEventListener('click', async () => {
@@ -646,7 +638,7 @@ ${jsArea.value}
             try {
                 const fullContent = buildFinalHtml();
                 await ghService.saveFile(filename, fullContent);
-                notify.show('Publicado com sucesso!', 'success');
+                notify.show('Publicado no GitHub!', 'success');
                 await loadFileList();
             } catch (e) {
                 notify.show(`Erro: ${e.message}`, 'error');
@@ -667,13 +659,12 @@ ${jsArea.value}
             notify.show('Novo projeto iniciado', 'info');
         });
 
-        // Inicialização
         (async () => {
             await ghService.init();
             if (ghService.token) {
                 publishBtn.disabled = false;
                 loadFileList();
-                notify.show('Sistema conectado ao GitHub', 'success');
+                notify.show('Conectado ao theweewee/htmls.site', 'success');
             }
         })();
 
