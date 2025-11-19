@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🚀 Editor HTML ao Vivo - HTMLS.SITE</title>
-    <!-- Ícone (favicon) usando SVG emoji -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
     <style>
-    /* ... (CSS igual ao seu último snippet) ... */
     html, body {
         width: 100vw;
         height: 100vh;
@@ -27,13 +25,39 @@
 
     .header {
         background: #111117;
-        padding: 20px 0 14px 0;
-        text-align: center;
-        font-size: 2.2rem;
-        font-weight: 700;
-        letter-spacing: 1px;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         border-bottom: 2.5px solid #32323c;
         box-shadow: 0 2px 8px #000c 0.06;
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    /* Botão de Importar Arquivos */
+    .import-btn {
+        background: #2a2a35;
+        color: #09f38c;
+        border: 1px solid #09f38c;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .import-btn:hover {
+        background: #09f38c;
+        color: #111117;
     }
 
     .container {
@@ -41,117 +65,152 @@
         display: flex;
         flex-direction: row;
         min-height: 0;
-        min-width: 0;
-        height: 100%;
         width: 100%;
         overflow: hidden;
         background: #17171c;
     }
 
-    .editor-section, .preview-section {
-        height: 100%;
-        min-width: 0;
-        min-height: 0;
-        width: 50%;
-        display: flex;
-        flex-direction: column;
-    }
-
     .editor-section {
+        width: 50%;
         border-right: 2px solid #23232e;
         background: #17171c;
+        display: flex;
+        flex-direction: column;
     }
 
     .tabs {
         display: flex;
         background: #13131a;
         border-bottom: 2px solid #23232e;
-        font-size: 1rem;
     }
 
     .tab {
         flex: 1;
-        padding: 14px 0;
+        padding: 12px 0;
         text-align: center;
         cursor: pointer;
-        background: none;
-        border: none;
-        outline: none;
         color: #b8b8d4;
-        transition: background .18s, color .18s;
         font-weight: 600;
         border-right: 1.5px solid #23232e;
-        letter-spacing: .5px;
-        border-radius: 9px 9px 0 0;
-        margin-right: 2px;
+        transition: 0.2s;
     }
-    .tab:last-child { border-right: none; }
     .tab:hover, .tab.active {
         background: #24243d;
         color: #09f38c;
     }
+
     textarea {
         flex: 1;
         background: #17171c;
         color: #e9e9ed;
         border: none;
-        padding: 18px 16px 16px 16px;
-        font-family: 'Fira Mono', 'Consolas', 'Courier New', monospace;
-        font-size: 1.07rem;
-        line-height: 1.6;
+        padding: 16px;
+        font-family: 'Fira Mono', 'Consolas', monospace;
+        font-size: 14px;
+        line-height: 1.5;
         outline: none;
         resize: none;
-        border-radius: 0 0 12px 12px;
-        box-shadow: 0 2px 12px #000c 0.06;
     }
 
     .editor-panel { display: none; flex: 1; }
     .editor-panel.active { display: flex; flex-direction: column; }
 
     .preview-section {
-        border-left: 2px solid #23232e;
-        box-shadow: -6px 0 22px -10px #0007;
-        background: #fafafb;
-        align-items: stretch;
+        width: 50%;
+        background: #fff;
         position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
     iframe {
         width: 100%;
         height: 100%;
         border: none;
-        background: #fff;
-        border-radius: 0 0 15px 15px;
         display: block;
     }
 
+    /* Lista de arquivos importados */
+    #assets-list {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: #1e1e26;
+        border: 1px solid #32323c;
+        border-radius: 8px;
+        width: 300px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px #0009;
+        display: none;
+        z-index: 100;
+    }
+    #assets-list.show { display: block; }
+    
+    .asset-item {
+        padding: 10px;
+        border-bottom: 1px solid #32323c;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+    }
+    .asset-item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 180px;
+    }
+    .insert-btn {
+        background: #3b3b4f;
+        border: none;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+    .insert-btn:hover { background: #09f38c; color: black; }
+    .assets-header {
+        padding: 10px;
+        background: #111;
+        border-bottom: 1px solid #32323c;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+    }
+    .close-assets { cursor: pointer; color: #ff5555; }
+
     @media (max-width: 900px) {
-        .container {
-            flex-direction: column;
-        }
-        .editor-section, .preview-section {
-            width: 100%;
-            height: 50%;
-            min-width: unset;
-            max-width: unset;
-            border: none;
-        }
-        .editor-section { border-bottom: 2px solid #23232e; }
-        .preview-section { border-left: none; }
+        .container { flex-direction: column; }
+        .editor-section, .preview-section { width: 100%; height: 50%; }
     }
 
-    ::-webkit-scrollbar {
-        width: 7px; background: #111117;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #32323c; border-radius: 4px;
-    }
+    ::-webkit-scrollbar { width: 6px; background: #111; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🚀 Editor HTML ao Vivo - HTMLS.SITE</h1>
+        <h1>🚀 Editor HTMLS.SITE</h1>
+        <!-- Input file escondido -->
+        <input type="file" id="file-input" multiple style="display: none;">
+        <button class="import-btn" onclick="document.getElementById('file-input').click()">
+            📂 Importar Arquivos (Img/Audio)
+        </button>
     </div>
+
+    <!-- Painel Flutuante de Arquivos -->
+    <div id="assets-list">
+        <div class="assets-header">
+            Arquivos Carregados
+            <span class="close-assets" onclick="toggleAssets()">✖</span>
+        </div>
+        <div id="assets-container">
+            <!-- Lista será preenchida via JS -->
+        </div>
+    </div>
+
     <div class="container">
         <div class="editor-section">
             <div class="tabs">
@@ -160,42 +219,36 @@
                 <div class="tab" data-tab="js">JavaScript</div>
             </div>
             <div class="editor-panel active" id="html-panel">
-                <textarea id="html-code" placeholder="Digite seu HTML aqui...">
-<h1>Olá, Mundo!</h1>
-<p>Edite este código e veja o resultado ao vivo!</p>
-<button onclick="alert('Funcionou!')">Clique aqui</button>
+                <textarea id="html-code" placeholder="HTML...">
+<h1>Teste de Mídia</h1>
+<p>Use o botão "Importar Arquivos" acima para adicionar GIFs ou Áudios do seu PC.</p>
+
+<!-- Exemplo após importar: -->
+<!-- <img src="blob:..." /> -->
                 </textarea>
             </div>
             <div class="editor-panel" id="css-panel">
-                <textarea id="css-code" placeholder="Digite seu CSS aqui...">
+                <textarea id="css-code" placeholder="CSS...">
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
+    background: #f0f0f5;
+    text-align: center;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
 }
-h1 {
-    color: #fff;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+img {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-button {
-    padding: 10px 20px;
-    background: #fff;
-    color: #667eea;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
-button:hover {
-    transform: scale(1.05);
+audio {
+    margin-top: 20px;
+    width: 80%;
 }
                 </textarea>
             </div>
             <div class="editor-panel" id="js-panel">
-                <textarea id="js-code" placeholder="Digite seu JavaScript aqui...">
-console.log('Editor ao vivo carregado!');
-// Adicione seu código JavaScript aqui
+                <textarea id="js-code" placeholder="JS...">
+console.log('Editor pronto!');
                 </textarea>
             </div>
         </div>
@@ -203,26 +256,27 @@ console.log('Editor ao vivo carregado!');
             <iframe id="preview"></iframe>
         </div>
     </div>
+
     <script>
         const htmlCode = document.getElementById('html-code');
         const cssCode = document.getElementById('css-code');
         const jsCode = document.getElementById('js-code');
         const preview = document.getElementById('preview');
-        const tabs = document.querySelectorAll('.tab');
-        const panels = document.querySelectorAll('.editor-panel');
+        const fileInput = document.getElementById('file-input');
+        const assetsList = document.getElementById('assets-list');
+        const assetsContainer = document.getElementById('assets-container');
 
-        // Sistema de abas
-        tabs.forEach(tab => {
+        // --- Lógica de Abas ---
+        document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                const targetTab = tab.dataset.tab;
-                tabs.forEach(t => t.classList.remove('active'));
-                panels.forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.editor-panel').forEach(p => p.classList.remove('active'));
                 tab.classList.add('active');
-                document.getElementById(`${targetTab}-panel`).classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-panel`).classList.add('active');
             });
         });
 
-        // Atualização em tempo real
+        // --- Atualização ao Vivo ---
         function updatePreview() {
             const html = htmlCode.value;
             const css = `<style>${cssCode.value}</style>`;
@@ -230,25 +284,75 @@ console.log('Editor ao vivo carregado!');
             const fullCode = `
                 <!DOCTYPE html>
                 <html>
-                <head>
-                    <meta charset="UTF-8">
-                    ${css}
-                </head>
-                <body>
-                    ${html}
-                    ${js}
-                </body>
-                </html>
-            `;
+                <head><meta charset="UTF-8">${css}</head>
+                <body>${html}${js}</body>
+                </html>`;
             preview.srcdoc = fullCode;
         }
 
-        // Event listeners para atualização em tempo real
-        htmlCode.addEventListener('input', updatePreview);
-        cssCode.addEventListener('input', updatePreview);
-        jsCode.addEventListener('input', updatePreview);
+        [htmlCode, cssCode, jsCode].forEach(el => el.addEventListener('input', updatePreview));
 
-        // Carrega preview inicial
+        // --- Lógica de Importação de Arquivos (CORREÇÃO 404) ---
+        
+        function toggleAssets() {
+            assetsList.classList.toggle('show');
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                assetsList.classList.add('show'); // Mostra a lista
+                Array.from(this.files).forEach(file => {
+                    const url = URL.createObjectURL(file);
+                    const item = document.createElement('div');
+                    item.className = 'asset-item';
+                    
+                    // Detecta o tipo para criar a tag correta
+                    let tagCode = '';
+                    if (file.type.startsWith('image/')) {
+                        tagCode = `<img src="${url}" alt="${file.name}" width="200">`;
+                    } else if (file.type.startsWith('audio/')) {
+                        tagCode = `<audio controls src="${url}"></audio>`;
+                    } else if (file.type.startsWith('video/')) {
+                        tagCode = `<video controls src="${url}" width="300"></video>`;
+                    } else {
+                        tagCode = `<a href="${url}" download="${file.name}">Baixar ${file.name}</a>`;
+                    }
+
+                    item.innerHTML = `
+                        <span title="${file.name}">📄 ${file.name}</span>
+                        <button class="insert-btn">Inserir no HTML</button>
+                    `;
+
+                    // Clique para inserir no código
+                    item.querySelector('.insert-btn').onclick = () => {
+                        insertAtCursor(htmlCode, tagCode);
+                        updatePreview();
+                        // Muda para aba HTML se não estiver
+                        document.querySelector('[data-tab="html"]').click();
+                    };
+
+                    assetsContainer.appendChild(item);
+                });
+            }
+        });
+
+        // Função auxiliar para inserir texto onde o cursor está
+        function insertAtCursor(myField, myValue) {
+            if (document.selection) {
+                myField.focus();
+                sel = document.selection.createRange();
+                sel.text = myValue;
+            } else if (myField.selectionStart || myField.selectionStart == '0') {
+                var startPos = myField.selectionStart;
+                var endPos = myField.selectionEnd;
+                myField.value = myField.value.substring(0, startPos)
+                    + "\n" + myValue + "\n"
+                    + myField.value.substring(endPos, myField.value.length);
+            } else {
+                myField.value += myValue;
+            }
+        }
+
         updatePreview();
     </script>
 </body>
