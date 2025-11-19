@@ -1,0 +1,8 @@
+# Regra 1: Se acessar /htmls/nome-do-arquivo, carrega /htmls/nome-do-arquivo.html
+/htmls/*  /htmls/:splat.html  200
+
+# Regra 2: Se acessar a raiz do site, joga para o index dentro da pasta htmls
+/  /htmls/index.html  200
+
+# Regra 3: Qualquer outra coisa que der erro, joga para o index (SPA Fallback)
+/*  /htmls/index.html  200
