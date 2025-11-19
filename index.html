@@ -547,4 +547,116 @@ ${jsArea.value}
                 let jsFound = false;
                 scripts.forEach(script => {
                     if (script.innerHTML.trim()) {
-                        jsArea.value =
+                        jsArea.value = script.innerHTML.trim();
+                        script.remove();
+                        jsFound = true;
+                    }
+                });
+                if (!jsFound) jsArea.value = '';
+
+                htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
+            }
+            updatePreview();
+        }
+
+        async function loadFileList() {
+            const listEl = document.getElementById('fileList');
+            listEl.innerHTML = '<li style="padding:16px; color:#666">Carregando...</li>';
+            try {
+                const files = await ghService.listFiles();
+                listEl.innerHTML = '';
+                if (files.length === 0) {
+                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo.</li>';
+                    return;
+                }
+                files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    li.innerHTML = `
+                        <div>
+                            <div class="file-name" onclick="loadFile('${file.name}')">${file.name}</div>
+                            <small style="color:#555">${CONFIG.preview.baseUrl}/${CONFIG.repo.folder}/${file.name}</small>
+                        </div>
+                        <div class="actions">
+                            <button onclick="loadFile('${file.name}')" class="btn-mini btn-edit">✏️</button>
+                            <button onclick="deleteFile('${file.name}')" class="btn-mini btn-del">🗑️</button>
+                        </div>`;
+                    listEl.appendChild(li);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<li style="padding:16px; color:red">Erro ao listar arquivos.</li>';
+            }
+        }
+
+        window.loadFile = async (filename) => {
+            notify.show(`Carregando ${filename}...`, 'info');
+            try {
+                const data = await ghService.getFile(filename);
+                filenameInput.value = filename;
+                parseLoadedContent(data.content);
+                notify.show('Arquivo carregado!', 'success');
+            } catch (e) {
+                notify.show(e.message, 'error');
+            }
+        };
+
+        window.deleteFile = async (filename) => {
+            if(!confirm(`Apagar ${filename} permanentemente?`)) return;
+            notify.show(`Apagando ${filename}...`, 'info');
+            try {
+                await ghService.deleteFile(filename);
+                await loadFileList();
+                notify.show('Arquivo removido.', 'success');
+            } catch (e) {
+                notify.show(e.message, 'error');
+            }
+        };
+
+        const publishBtn = document.getElementById('publishBtn');
+        publishBtn.addEventListener('click', async () => {
+            const filename = filenameInput.value.trim();
+            if (!filename.endsWith('.html')) {
+                notify.show('O arquivo deve terminar em .html', 'error');
+                return;
+            }
+            publishBtn.disabled = true;
+            publishBtn.textContent = '⏳ Salvando...';
+            try {
+                const fullContent = buildFinalContent();
+                await ghService.saveFile(filename, fullContent);
+                notify.show('Publicado com sucesso!', 'success');
+                await loadFileList();
+            } catch (e) {
+                notify.show(`Erro: ${e.message}`, 'error');
+            } finally {
+                publishBtn.disabled = false;
+                publishBtn.textContent = '🚀 Publicar';
+            }
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', loadFileList);
+        
+        document.getElementById('newBtn').addEventListener('click', () => {
+            filenameInput.value = 'novo-arquivo.html';
+            useTemplateCheckbox.checked = true;
+            htmlArea.value = '<h1>Nova Página</h1>';
+            cssArea.value = 'body { font-family: sans-serif; }';
+            jsArea.value = '';
+            updatePreview();
+            notify.show('Novo projeto iniciado', 'info');
+        });
+
+        (async () => {
+            await ghService.init();
+            if (ghService.token) {
+                publishBtn.disabled = false;
+                loadFileList();
+                notify.show('Conectado ao htmls.site', 'success');
+                htmlArea.value = '<h1>Bem vindo</h1>';
+                updatePreview();
+            }
+        })();
+
+    </script>
+</body>
+</html>
