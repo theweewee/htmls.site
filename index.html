@@ -78,7 +78,7 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             gap: 10px;
-            align-items: flex-end;
+            align-items: center;
             flex-wrap: wrap;
         }
         
@@ -87,7 +87,7 @@
             flex-direction: column;
             gap: 4px;
             flex: 1;
-            min-width: 200px;
+            min-width: 150px;
         }
         
         .input-group label { font-size: 12px; color: var(--text-muted); }
@@ -102,6 +102,19 @@
             font-size: 14px;
         }
         input[type="text"]:focus { border-color: var(--accent); }
+
+        /* Botão Toggle (Template) */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #23232e;
+            padding: 8px 12px;
+            border-radius: 6px;
+            height: 52px; /* Alinha com os inputs */
+        }
+        .toggle-wrapper label { font-size: 12px; cursor: pointer; user-select: none; }
+        input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 
         .btn {
             padding: 8px 16px;
@@ -168,7 +181,7 @@
         }
         .code-area.active { display: block; }
 
-        /* Lista de Arquivos (Footer do Editor) */
+        /* Lista de Arquivos */
         .file-manager {
             height: 180px;
             border-top: 1px solid var(--border);
@@ -216,7 +229,7 @@
         .btn-del { background: #3a1d1d; color: #fca5a5; }
         .btn-del:hover { background: var(--danger); color: white; }
 
-        /* Coluna da Direita (Preview) */
+        /* Preview */
         .preview-section {
             width: 50%;
             background: #fff;
@@ -252,12 +265,6 @@
         .status-success { background: var(--success); color: white; }
         .status-error { background: var(--danger); color: white; }
 
-        /* Scrollbar Custom */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-main); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-
         @media (max-width: 800px) {
             .main-container { flex-direction: column; overflow-y: auto; }
             .editor-section, .preview-section { width: 100%; height: 500px; }
@@ -272,49 +279,36 @@
     </div>
 
     <div class="main-container">
-        <!-- SEÇÃO DE EDIÇÃO -->
         <div class="editor-section">
             
-            <!-- Controles de Publicação -->
             <div class="controls-panel">
                 <div class="input-group">
-                    <label for="filename">Nome do Arquivo</label>
+                    <label for="filename">Nome</label>
                     <input type="text" id="filename" value="index.html" placeholder="ex: pagina.html">
                 </div>
+                
+                <!-- BOTÃO QUE VOCÊ PEDIU -->
+                <div class="toggle-wrapper" title="Se marcado: adiciona HTML/HEAD/BODY automaticamente. Se desmarcado: Salva EXATAMENTE o que está escrito.">
+                    <input type="checkbox" id="useTemplate" checked>
+                    <label for="useTemplate">Auto-Template</label>
+                </div>
+
                 <button id="publishBtn" class="btn btn-primary" disabled>🚀 Publicar</button>
                 <button id="newBtn" class="btn btn-secondary">✨ Novo</button>
             </div>
 
-            <!-- Abas -->
             <div class="tabs">
-                <div class="tab active" data-target="html-code">HTML (Body)</div>
+                <div class="tab active" data-target="html-code">HTML / Conteúdo</div>
                 <div class="tab" data-target="css-code">CSS</div>
-                <div class="tab" data-target="js-code">JavaScript</div>
+                <div class="tab" data-target="js-code">JS</div>
             </div>
 
-            <!-- Editores -->
             <div class="editor-container">
-                <textarea id="html-code" class="code-area active" placeholder="Digite seu HTML aqui (conteúdo do body)..."><h1>Olá, htmls.site!</h1>
-<p>Esta página está na pasta /htmls/.</p>
-<div class="card">
-    Exemplo de Card
-</div></textarea>
-                <textarea id="css-code" class="code-area" placeholder="Digite seu CSS aqui...">body {
-    font-family: sans-serif;
-    padding: 20px;
-    color: #333;
-}
-.card {
-    background: #f4f4f9;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    margin-top: 10px;
-}</textarea>
-                <textarea id="js-code" class="code-area" placeholder="Digite seu JS aqui...">console.log('Carregado com sucesso!');</textarea>
+                <textarea id="html-code" class="code-area active" placeholder="Digite seu código..."></textarea>
+                <textarea id="css-code" class="code-area" placeholder="CSS (Só funciona com Auto-Template marcado)"></textarea>
+                <textarea id="js-code" class="code-area" placeholder="JS (Só funciona com Auto-Template marcado)"></textarea>
             </div>
 
-            <!-- Gerenciador de Arquivos -->
             <div class="file-manager">
                 <div class="fm-header">
                     <span>Arquivos em /htmls/</span>
@@ -326,7 +320,6 @@
             </div>
         </div>
 
-        <!-- SEÇÃO DE PREVIEW -->
         <div class="preview-section">
             <iframe id="preview"></iframe>
         </div>
@@ -342,9 +335,7 @@
                 folder: 'htmls',
                 branch: 'main' 
             },
-            preview: { 
-                baseUrl: 'https://htmls.site'
-            },
+            preview: { baseUrl: 'https://htmls.site' },
             jsonbin: { 
                 binId: '691e49b043b1c97be9b81a9d', 
                 accessKey: '$2a$10$f9KK7vSowGnJI5elo/dAPurqjZAJ3bJaWnsinl/caDfgIcNt28kNi' 
@@ -352,52 +343,74 @@
             cache: { tokenKey: 'gh_token_v3', filesKey: 'gh_files_v3', duration: 1000 * 60 * 15 }
         };
 
-        // ==========================================
-        // UI LOGIC
-        // ==========================================
         const htmlArea = document.getElementById('html-code');
         const cssArea = document.getElementById('css-code');
         const jsArea = document.getElementById('js-code');
         const previewFrame = document.getElementById('preview');
         const filenameInput = document.getElementById('filename');
+        const useTemplateCheckbox = document.getElementById('useTemplate');
 
-        // --- FUNÇÃO DE LIMPEZA (CORREÇÃO DO ERRO) ---
-        function getCleanBodyContent(rawContent) {
-            // Se o usuário colar um HTML inteiro, extrai apenas o que está dentro do body
-            if (rawContent.includes('<body') || rawContent.includes('<html')) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(rawContent, 'text/html');
-                return doc.body.innerHTML.trim();
-            }
-            return rawContent.trim();
-        }
-
+        // --- FUNÇÃO DE PREVIEW INTELIGENTE ---
         function updatePreview() {
-            // Limpa o HTML antes de gerar o preview
-            const cleanHtml = getCleanBodyContent(htmlArea.value);
+            let content;
             
-            const cssContent = `<style>${cssArea.value}</style>`;
-            const jsContent = `<script>${jsArea.value}<` + `/script>`;
-            
-            const combined = `
+            if (useTemplateCheckbox.checked) {
+                // MODO AUTOMÁTICO: Cria estrutura e junta CSS/JS
+                const css = `<style>${cssArea.value}</style>`;
+                const js = `<script>${jsArea.value}<` + `/script>`;
+                
+                content = `
                 <!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    ${cssContent}
+                    ${css}
                 </head>
                 <body>
-                    ${cleanHtml}
-                    ${jsContent}
+                    ${htmlArea.value}
+                    ${js}
                 </body>
-                </html>
-            `;
-            previewFrame.srcdoc = combined;
+                </html>`;
+            } else {
+                // MODO MANUAL (RAW): Usa exatamente o que está escrito
+                content = htmlArea.value;
+            }
+            
+            previewFrame.srcdoc = content;
         }
 
+        // --- FUNÇÃO PARA GERAR O CONTEÚDO DO ARQUIVO ---
+        function buildFinalContent() {
+            // Se o botão estiver desmarcado, retorna SÓ o texto do HTML Area
+            if (!useTemplateCheckbox.checked) {
+                return htmlArea.value;
+            }
+
+            // Se marcado, constrói o template
+            return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filenameInput.value}</title>
+    <style>
+${cssArea.value}
+    </style>
+</head>
+<body>
+${htmlArea.value}
+    <script>
+${jsArea.value}
+    <` + `/script>
+</body>
+</html>`;
+        }
+
+        // Event Listeners
         [htmlArea, cssArea, jsArea].forEach(el => el.addEventListener('input', updatePreview));
-        
+        useTemplateCheckbox.addEventListener('change', updatePreview);
+
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -407,9 +420,7 @@
             });
         });
 
-        // ==========================================
-        // BACKEND LOGIC (GitHub)
-        // ==========================================
+        // --- PARTE DO GITHUB ---
         class NotificationSystem {
             constructor() {
                 this.el = document.getElementById('status-display');
@@ -425,9 +436,7 @@
         const notify = new NotificationSystem();
 
         class GitHubService {
-            constructor() {
-                this.token = null;
-            }
+            constructor() { this.token = null; }
 
             async init() {
                 const cached = localStorage.getItem(CONFIG.cache.tokenKey);
@@ -521,58 +530,43 @@
 
         const ghService = new GitHubService();
 
-        // ==========================================
-        // LOGIC DO EDITOR
-        // ==========================================
+        // --- CARREGAMENTO DE ARQUIVOS ---
         function parseLoadedContent(fullHtml) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(fullHtml, 'text/html');
-            
-            const styleTag = doc.querySelector('head style');
-            if (styleTag) {
-                cssArea.value = styleTag.innerHTML.trim();
-                styleTag.remove(); 
-            } else {
+            // DETECTA SE É UM ARQUIVO COMPLETO
+            if (fullHtml.trim().toLowerCase().startsWith('<!doctype') || fullHtml.includes('<html')) {
+                // Se for completo, DESMARCA o automático e joga tudo no HTML
+                useTemplateCheckbox.checked = false;
+                htmlArea.value = fullHtml;
                 cssArea.value = '';
+                jsArea.value = '';
+            } else {
+                // Se for parcial, MARCA o automático e tenta separar
+                useTemplateCheckbox.checked = true;
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(fullHtml, 'text/html');
+                
+                const styleTag = doc.querySelector('head style');
+                if (styleTag) {
+                    cssArea.value = styleTag.innerHTML.trim();
+                    styleTag.remove();
+                } else cssArea.value = '';
+
+                const scripts = doc.querySelectorAll('body script');
+                let jsFound = false;
+                scripts.forEach(script => {
+                    if (script.innerHTML.trim()) {
+                        jsArea.value = script.innerHTML.trim();
+                        script.remove();
+                        jsFound = true;
+                    }
+                });
+                if (!jsFound) jsArea.value = '';
+
+                htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
             }
-
-            const scripts = doc.querySelectorAll('body script');
-            let jsFound = false;
-            scripts.forEach(script => {
-                if (script.innerHTML.trim()) {
-                    jsArea.value = script.innerHTML.trim();
-                    script.remove();
-                    jsFound = true;
-                }
-            });
-            if (!jsFound) jsArea.value = '';
-
-            htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
+            
             updatePreview();
-        }
-
-        // --- CONSTRUÇÃO FINAL COM PROTEÇÃO (CORREÇÃO) ---
-        function buildFinalHtml() {
-            // Aqui usamos a função de limpeza para garantir que não duplicamos tags
-            const cleanHtml = getCleanBodyContent(htmlArea.value);
-
-            return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${filenameInput.value}</title>
-    <style>
-${cssArea.value}
-    </style>
-</head>
-<body>
-${cleanHtml}
-    <script>
-${jsArea.value}
-    <` + `/script>
-</body>
-</html>`;
         }
 
         async function loadFileList() {
@@ -582,10 +576,9 @@ ${jsArea.value}
                 const files = await ghService.listFiles();
                 listEl.innerHTML = '';
                 if (files.length === 0) {
-                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo encontrado.</li>';
+                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo.</li>';
                     return;
                 }
-                
                 files.forEach(file => {
                     const li = document.createElement('li');
                     li.className = 'file-item';
@@ -597,8 +590,7 @@ ${jsArea.value}
                         <div class="actions">
                             <button onclick="loadFile('${file.name}')" class="btn-mini btn-edit">✏️</button>
                             <button onclick="deleteFile('${file.name}')" class="btn-mini btn-del">🗑️</button>
-                        </div>
-                    `;
+                        </div>`;
                     listEl.appendChild(li);
                 });
             } catch (e) {
@@ -631,19 +623,16 @@ ${jsArea.value}
         };
 
         const publishBtn = document.getElementById('publishBtn');
-        
         publishBtn.addEventListener('click', async () => {
             const filename = filenameInput.value.trim();
             if (!filename.endsWith('.html')) {
                 notify.show('O arquivo deve terminar em .html', 'error');
                 return;
             }
-            
             publishBtn.disabled = true;
             publishBtn.textContent = '⏳ Salvando...';
-            
             try {
-                const fullContent = buildFinalHtml();
+                const fullContent = buildFinalContent(); // USA A NOVA FUNÇÃO
                 await ghService.saveFile(filename, fullContent);
                 notify.show('Publicado com sucesso!', 'success');
                 await loadFileList();
@@ -659,6 +648,8 @@ ${jsArea.value}
         
         document.getElementById('newBtn').addEventListener('click', () => {
             filenameInput.value = 'novo-arquivo.html';
+            // Reseta para o padrão automático
+            useTemplateCheckbox.checked = true;
             htmlArea.value = '<h1>Nova Página</h1>';
             cssArea.value = 'body { font-family: sans-serif; }';
             jsArea.value = '';
@@ -672,6 +663,9 @@ ${jsArea.value}
                 publishBtn.disabled = false;
                 loadFileList();
                 notify.show('Conectado ao htmls.site', 'success');
+                // Inicializa o editor com um texto padrão
+                htmlArea.value = '<h1>Bem vindo</h1>';
+                updatePreview();
             }
         })();
 
