@@ -17,6 +17,7 @@
             --text-muted: #9ca3af;
             --success: #10b981;
             --danger: #ef4444;
+            --resizer-size: 8px; /* Área de clique do redimensionador */
         }
 
         * { box-sizing: border-box; }
@@ -43,15 +44,9 @@
             justify-content: space-between;
             align-items: center;
             height: 60px;
+            flex-shrink: 0;
         }
-        .header h1 {
-            font-size: 18px;
-            margin: 0;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .header h1 { font-size: 18px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
         /* Layout Principal */
         .main-container {
@@ -59,19 +54,20 @@
             display: flex;
             height: calc(100vh - 60px);
             overflow: hidden;
+            position: relative;
         }
 
         /* Coluna da Esquerda (Editor) */
         .editor-section {
-            width: 50%;
+            width: 50%; /* Tamanho inicial */
             display: flex;
             flex-direction: column;
-            border-right: 1px solid var(--border);
             background: var(--bg-panel);
-            min-width: 320px;
+            min-width: 200px;
+            max-width: 90%;
         }
 
-        /* Painel de Controle (Formulário) */
+        /* Painel de Controle */
         .controls-panel {
             padding: 16px;
             background: var(--bg-header);
@@ -80,16 +76,10 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
         
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-            min-width: 150px;
-        }
-        
+        .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
         .input-group label { font-size: 12px; color: var(--text-muted); }
         
         input[type="text"] {
@@ -103,161 +93,127 @@
         }
         input[type="text"]:focus { border-color: var(--accent); }
 
-        /* Botão Toggle (Template) */
         .toggle-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #23232e;
-            padding: 8px 12px;
-            border-radius: 6px;
-            height: 52px; /* Alinha com os inputs */
+            display: flex; align-items: center; gap: 8px; background: #23232e;
+            padding: 8px 12px; border-radius: 6px; height: 52px;
         }
         .toggle-wrapper label { font-size: 12px; cursor: pointer; user-select: none; }
         input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 
         .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600;
+            cursor: pointer; font-size: 13px; transition: all 0.2s; height: 35px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
         .btn-primary { background: var(--accent); color: white; }
         .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        
         .btn-secondary { background: #2d2d3a; color: var(--text-muted); border: 1px solid var(--border); }
         .btn-secondary:hover { color: var(--text-main); border-color: var(--text-muted); }
 
         /* Abas */
-        .tabs {
-            display: flex;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border);
-        }
+        .tabs { display: flex; background: var(--bg-header); border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            border-right: 1px solid var(--border);
-            background: transparent;
-            transition: all 0.2s;
+            flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 13px;
+            font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border);
+            background: transparent; transition: all 0.2s;
         }
         .tab.active { background: var(--bg-panel); color: var(--accent); border-bottom: 2px solid var(--accent); }
         .tab:hover:not(.active) { color: var(--text-main); background: #1c1c24; }
 
         /* Áreas de Texto */
         .editor-container {
-            flex: 1;
+            height: 60%; /* Tamanho inicial vertical */
             position: relative;
             display: flex;
             flex-direction: column;
+            min-height: 100px;
         }
         .code-area {
-            width: 100%;
-            height: 100%;
-            background: var(--bg-panel);
-            color: #e9e9ed;
-            border: none;
-            padding: 16px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: none;
-            outline: none;
-            display: none;
+            width: 100%; height: 100%; background: var(--bg-panel); color: #e9e9ed;
+            border: none; padding: 16px; font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px; line-height: 1.5; resize: none; outline: none; display: none;
         }
         .code-area.active { display: block; }
 
         /* Lista de Arquivos */
         .file-manager {
-            height: 180px;
-            border-top: 1px solid var(--border);
+            flex: 1; /* Ocupa o resto do espaço vertical */
             background: #0d0d11;
             display: flex;
             flex-direction: column;
+            min-height: 100px;
+            overflow: hidden;
         }
         .fm-header {
-            padding: 8px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #141419;
-            border-bottom: 1px solid var(--border);
+            padding: 8px 16px; display: flex; justify-content: space-between;
+            align-items: center; background: #141419; border-bottom: 1px solid var(--border); flex-shrink: 0;
         }
         .fm-header span { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
-        .file-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-            margin: 0;
-            list-style: none;
-        }
+        .file-list { flex: 1; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
         .file-item {
-            padding: 8px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #1f1f28;
-            transition: background 0.1s;
+            padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #1f1f28; transition: background 0.1s;
         }
         .file-item:hover { background: #1c1c24; }
         .file-name { font-size: 13px; color: var(--accent); cursor: pointer; text-decoration: none; }
         .file-name:hover { text-decoration: underline; }
-        
         .actions { display: flex; gap: 8px; }
-        .btn-mini {
-            padding: 4px 8px;
-            font-size: 11px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-        }
+        .btn-mini { padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; }
         .btn-edit { background: #2d2d3a; color: white; }
         .btn-del { background: #3a1d1d; color: #fca5a5; }
         .btn-del:hover { background: var(--danger); color: white; }
 
         /* Preview */
         .preview-section {
-            width: 50%;
+            flex: 1; /* Ocupa o resto do espaço horizontal */
             background: #fff;
             display: flex;
             flex-direction: column;
             position: relative;
+            min-width: 200px;
         }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+
+        /* --- DIVISÓRIAS ARRASTÁVEIS (RESIZERS) --- */
+        .resizer-horizontal {
+            height: 5px;
+            background: #000;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            cursor: row-resize;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            z-index: 10;
         }
+        .resizer-horizontal:hover, .resizer-horizontal.resizing {
+            background: var(--accent);
+            height: 7px;
+        }
+
+        .resizer-vertical {
+            width: 5px;
+            background: #000;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            cursor: col-resize;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+        .resizer-vertical:hover, .resizer-vertical.resizing {
+            background: var(--accent);
+            width: 7px;
+        }
+
+        /* Classe para evitar que o iframe roube o mouse enquanto arrasta */
+        .pointer-events-none { pointer-events: none; }
 
         /* Status Bar */
         .status-bar {
-            position: absolute;
-            bottom: 16px;
-            right: 16px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s;
-            z-index: 10;
+            position: absolute; bottom: 16px; right: 16px; padding: 8px 16px;
+            border-radius: 20px; font-size: 13px; font-weight: 500; pointer-events: none;
+            opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 100;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .status-bar.show { opacity: 1; transform: translateY(0); }
@@ -267,7 +223,9 @@
 
         @media (max-width: 800px) {
             .main-container { flex-direction: column; overflow-y: auto; }
-            .editor-section, .preview-section { width: 100%; height: 500px; }
+            .editor-section, .preview-section { width: 100% !important; height: auto; }
+            .resizer-vertical { display: none; }
+            .editor-container { height: 400px; }
         }
     </style>
 </head>
@@ -278,8 +236,9 @@
         <div id="status-display" class="status-bar">Pronto</div>
     </div>
 
-    <div class="main-container">
-        <div class="editor-section">
+    <div class="main-container" id="mainContainer">
+        <!-- COLUNA ESQUERDA -->
+        <div class="editor-section" id="editorSection">
             
             <div class="controls-panel">
                 <div class="input-group">
@@ -287,8 +246,7 @@
                     <input type="text" id="filename" value="index.html" placeholder="ex: pagina.html">
                 </div>
                 
-                <!-- BOTÃO QUE VOCÊ PEDIU -->
-                <div class="toggle-wrapper" title="Se marcado: adiciona HTML/HEAD/BODY automaticamente. Se desmarcado: Salva EXATAMENTE o que está escrito.">
+                <div class="toggle-wrapper" title="Auto-Template">
                     <input type="checkbox" id="useTemplate" checked>
                     <label for="useTemplate">Auto-Template</label>
                 </div>
@@ -298,18 +256,23 @@
             </div>
 
             <div class="tabs">
-                <div class="tab active" data-target="html-code">HTML / Conteúdo</div>
+                <div class="tab active" data-target="html-code">HTML</div>
                 <div class="tab" data-target="css-code">CSS</div>
                 <div class="tab" data-target="js-code">JS</div>
             </div>
 
-            <div class="editor-container">
+            <!-- Container Superior (Texto) -->
+            <div class="editor-container" id="topPanel">
                 <textarea id="html-code" class="code-area active" placeholder="Digite seu código..."></textarea>
-                <textarea id="css-code" class="code-area" placeholder="CSS (Só funciona com Auto-Template marcado)"></textarea>
-                <textarea id="js-code" class="code-area" placeholder="JS (Só funciona com Auto-Template marcado)"></textarea>
+                <textarea id="css-code" class="code-area" placeholder="CSS"></textarea>
+                <textarea id="js-code" class="code-area" placeholder="JS"></textarea>
             </div>
 
-            <div class="file-manager">
+            <!-- RESIZER HORIZONTAL -->
+            <div class="resizer-horizontal" id="resizerH"></div>
+
+            <!-- Container Inferior (Arquivos) -->
+            <div class="file-manager" id="bottomPanel">
                 <div class="fm-header">
                     <span>Arquivos em /htmls/</span>
                     <button id="refreshBtn" class="btn-mini btn-secondary">↻</button>
@@ -320,7 +283,11 @@
             </div>
         </div>
 
-        <div class="preview-section">
+        <!-- RESIZER VERTICAL -->
+        <div class="resizer-vertical" id="resizerV"></div>
+
+        <!-- COLUNA DIREITA -->
+        <div class="preview-section" id="previewSection">
             <iframe id="preview"></iframe>
         </div>
     </div>
@@ -343,24 +310,79 @@
             cache: { tokenKey: 'gh_token_v3', filesKey: 'gh_files_v3', duration: 1000 * 60 * 15 }
         };
 
+        // ==========================================
+        // LÓGICA DE REDIMENSIONAMENTO (NOVO)
+        // ==========================================
+        const resizerV = document.getElementById('resizerV');
+        const resizerH = document.getElementById('resizerH');
+        const editorSection = document.getElementById('editorSection');
+        const topPanel = document.getElementById('topPanel');
+        const previewFrame = document.getElementById('preview');
+
+        // -- Redimensionar Vertical (Largura) --
+        let isResizingV = false;
+        resizerV.addEventListener('mousedown', (e) => {
+            isResizingV = true;
+            resizerV.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            previewFrame.classList.add('pointer-events-none'); // Evita travar no iframe
+        });
+
+        // -- Redimensionar Horizontal (Altura) --
+        let isResizingH = false;
+        resizerH.addEventListener('mousedown', (e) => {
+            isResizingH = true;
+            resizerH.classList.add('resizing');
+            document.body.style.cursor = 'row-resize';
+            previewFrame.classList.add('pointer-events-none');
+        });
+
+        // -- Movimento Global do Mouse --
+        document.addEventListener('mousemove', (e) => {
+            if (isResizingV) {
+                const newWidth = e.clientX;
+                // Limites mínimo e máximo
+                if (newWidth > 200 && newWidth < window.innerWidth - 200) {
+                    editorSection.style.width = `${newWidth}px`;
+                }
+            }
+
+            if (isResizingH) {
+                // Pega a posição relativa ao topo da coluna da esquerda
+                const rect = editorSection.getBoundingClientRect();
+                const newHeight = e.clientY - rect.top - 120; // 120px é apox o tamanho do header
+                if (newHeight > 100 && newHeight < rect.height - 100) {
+                    topPanel.style.height = `${newHeight}px`;
+                }
+            }
+        });
+
+        // -- Soltar Mouse --
+        document.addEventListener('mouseup', () => {
+            isResizingV = false;
+            isResizingH = false;
+            resizerV.classList.remove('resizing');
+            resizerH.classList.remove('resizing');
+            document.body.style.cursor = 'default';
+            previewFrame.classList.remove('pointer-events-none'); // Reativa iframe
+        });
+
+
+        // ==========================================
+        // APP LOGIC
+        // ==========================================
         const htmlArea = document.getElementById('html-code');
         const cssArea = document.getElementById('css-code');
         const jsArea = document.getElementById('js-code');
-        const previewFrame = document.getElementById('preview');
         const filenameInput = document.getElementById('filename');
         const useTemplateCheckbox = document.getElementById('useTemplate');
 
-        // --- FUNÇÃO DE PREVIEW INTELIGENTE ---
         function updatePreview() {
             let content;
-            
             if (useTemplateCheckbox.checked) {
-                // MODO AUTOMÁTICO: Cria estrutura e junta CSS/JS
                 const css = `<style>${cssArea.value}</style>`;
                 const js = `<script>${jsArea.value}<` + `/script>`;
-                
-                content = `
-                <!DOCTYPE html>
+                content = `<!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
                     <meta charset="UTF-8">
@@ -373,21 +395,13 @@
                 </body>
                 </html>`;
             } else {
-                // MODO MANUAL (RAW): Usa exatamente o que está escrito
                 content = htmlArea.value;
             }
-            
             previewFrame.srcdoc = content;
         }
 
-        // --- FUNÇÃO PARA GERAR O CONTEÚDO DO ARQUIVO ---
         function buildFinalContent() {
-            // Se o botão estiver desmarcado, retorna SÓ o texto do HTML Area
-            if (!useTemplateCheckbox.checked) {
-                return htmlArea.value;
-            }
-
-            // Se marcado, constrói o template
+            if (!useTemplateCheckbox.checked) return htmlArea.value;
             return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -407,7 +421,6 @@ ${jsArea.value}
 </html>`;
         }
 
-        // Event Listeners
         [htmlArea, cssArea, jsArea].forEach(el => el.addEventListener('input', updatePreview));
         useTemplateCheckbox.addEventListener('change', updatePreview);
 
@@ -420,7 +433,9 @@ ${jsArea.value}
             });
         });
 
-        // --- PARTE DO GITHUB ---
+        // ==========================================
+        // BACKEND
+        // ==========================================
         class NotificationSystem {
             constructor() {
                 this.el = document.getElementById('status-display');
@@ -530,19 +545,14 @@ ${jsArea.value}
 
         const ghService = new GitHubService();
 
-        // --- CARREGAMENTO DE ARQUIVOS ---
         function parseLoadedContent(fullHtml) {
-            // DETECTA SE É UM ARQUIVO COMPLETO
             if (fullHtml.trim().toLowerCase().startsWith('<!doctype') || fullHtml.includes('<html')) {
-                // Se for completo, DESMARCA o automático e joga tudo no HTML
                 useTemplateCheckbox.checked = false;
                 htmlArea.value = fullHtml;
                 cssArea.value = '';
                 jsArea.value = '';
             } else {
-                // Se for parcial, MARCA o automático e tenta separar
                 useTemplateCheckbox.checked = true;
-                
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(fullHtml, 'text/html');
                 
@@ -565,7 +575,6 @@ ${jsArea.value}
 
                 htmlArea.value = doc.body.innerHTML.trim().replace(/^\s+|\s+$/g, '');
             }
-            
             updatePreview();
         }
 
@@ -632,7 +641,7 @@ ${jsArea.value}
             publishBtn.disabled = true;
             publishBtn.textContent = '⏳ Salvando...';
             try {
-                const fullContent = buildFinalContent(); // USA A NOVA FUNÇÃO
+                const fullContent = buildFinalContent();
                 await ghService.saveFile(filename, fullContent);
                 notify.show('Publicado com sucesso!', 'success');
                 await loadFileList();
@@ -648,7 +657,6 @@ ${jsArea.value}
         
         document.getElementById('newBtn').addEventListener('click', () => {
             filenameInput.value = 'novo-arquivo.html';
-            // Reseta para o padrão automático
             useTemplateCheckbox.checked = true;
             htmlArea.value = '<h1>Nova Página</h1>';
             cssArea.value = 'body { font-family: sans-serif; }';
@@ -663,7 +671,6 @@ ${jsArea.value}
                 publishBtn.disabled = false;
                 loadFileList();
                 notify.show('Conectado ao htmls.site', 'success');
-                // Inicializa o editor com um texto padrão
                 htmlArea.value = '<h1>Bem vindo</h1>';
                 updatePreview();
             }
