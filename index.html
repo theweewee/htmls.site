@@ -335,30 +335,25 @@
     <script>
         'use strict';
 
-        // ==========================================
-        // CONFIGURAÇÃO CORRIGIDA
-        // ==========================================
         const CONFIG = {
             repo: { 
-                owner: 'theweewee',         // Dono da conta
-                name: 'htmls.site',         // Nome do repositório
-                folder: 'htmls',            // Pasta correta
+                owner: 'theweewee',
+                name: 'htmls.site',
+                folder: 'htmls',
                 branch: 'main' 
             },
             preview: { 
-                baseUrl: 'https://htmls.site' // URL do site novo
+                baseUrl: 'https://htmls.site'
             },
             jsonbin: { 
-                // ID NOVO fornecido por você
                 binId: '691e49b043b1c97be9b81a9d', 
-                // Chave de acesso mantida
                 accessKey: '$2a$10$f9KK7vSowGnJI5elo/dAPurqjZAJ3bJaWnsinl/caDfgIcNt28kNi' 
             },
             cache: { tokenKey: 'gh_token_v3', filesKey: 'gh_files_v3', duration: 1000 * 60 * 15 }
         };
 
         // ==========================================
-        // UI LOGIC (Abas e Preview)
+        // UI LOGIC
         // ==========================================
         const htmlArea = document.getElementById('html-code');
         const cssArea = document.getElementById('css-code');
@@ -366,8 +361,21 @@
         const previewFrame = document.getElementById('preview');
         const filenameInput = document.getElementById('filename');
 
+        // --- FUNÇÃO DE LIMPEZA (CORREÇÃO DO ERRO) ---
+        function getCleanBodyContent(rawContent) {
+            // Se o usuário colar um HTML inteiro, extrai apenas o que está dentro do body
+            if (rawContent.includes('<body') || rawContent.includes('<html')) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawContent, 'text/html');
+                return doc.body.innerHTML.trim();
+            }
+            return rawContent.trim();
+        }
+
         function updatePreview() {
-            const htmlContent = htmlArea.value;
+            // Limpa o HTML antes de gerar o preview
+            const cleanHtml = getCleanBodyContent(htmlArea.value);
+            
             const cssContent = `<style>${cssArea.value}</style>`;
             const jsContent = `<script>${jsArea.value}<` + `/script>`;
             
@@ -380,7 +388,7 @@
                     ${cssContent}
                 </head>
                 <body>
-                    ${htmlContent}
+                    ${cleanHtml}
                     ${jsContent}
                 </body>
                 </html>
@@ -399,10 +407,8 @@
             });
         });
 
-        updatePreview();
-
         // ==========================================
-        // BACKEND LOGIC (GitHub & Data)
+        // BACKEND LOGIC (GitHub)
         // ==========================================
         class NotificationSystem {
             constructor() {
@@ -432,14 +438,13 @@
                         return;
                     }
                 }
-                
                 try {
                     const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`, {
                         headers: { 'X-Access-Key': CONFIG.jsonbin.accessKey, 'X-Bin-Meta': 'false' }
                     });
-                    if (!res.ok) throw new Error('Falha ao obter token (Verifique JSONBin)');
+                    if (!res.ok) throw new Error('Falha ao autenticar');
                     const data = await res.json();
-                    this.token = data.github_token; // Certifique-se que o JSON tem essa chave
+                    this.token = data.github_token;
                     localStorage.setItem(CONFIG.cache.tokenKey, JSON.stringify({ token: this.token, time: Date.now() }));
                 } catch (e) {
                     console.error(e);
@@ -476,7 +481,6 @@
             async saveFile(filename, content) {
                 const path = `${CONFIG.repo.folder}/${filename}`;
                 const url = `https://api.github.com/repos/${CONFIG.repo.owner}/${CONFIG.repo.name}/contents/${path}`;
-                
                 let sha = null;
                 try {
                     const existing = await this.getFile(filename);
@@ -495,8 +499,7 @@
                     headers: this.headers,
                     body: JSON.stringify(body)
                 });
-
-                if (!res.ok) throw new Error('Erro ao salvar no GitHub');
+                if (!res.ok) throw new Error('Erro ao salvar');
                 return await res.json();
             }
 
@@ -519,7 +522,7 @@
         const ghService = new GitHubService();
 
         // ==========================================
-        // APP LOGIC
+        // LOGIC DO EDITOR
         // ==========================================
         function parseLoadedContent(fullHtml) {
             const parser = new DOMParser();
@@ -548,7 +551,11 @@
             updatePreview();
         }
 
+        // --- CONSTRUÇÃO FINAL COM PROTEÇÃO (CORREÇÃO) ---
         function buildFinalHtml() {
+            // Aqui usamos a função de limpeza para garantir que não duplicamos tags
+            const cleanHtml = getCleanBodyContent(htmlArea.value);
+
             return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -560,7 +567,7 @@ ${cssArea.value}
     </style>
 </head>
 <body>
-${htmlArea.value}
+${cleanHtml}
     <script>
 ${jsArea.value}
     <` + `/script>
@@ -575,7 +582,7 @@ ${jsArea.value}
                 const files = await ghService.listFiles();
                 listEl.innerHTML = '';
                 if (files.length === 0) {
-                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo na pasta /htmls/.</li>';
+                    listEl.innerHTML = '<li style="padding:16px">Nenhum arquivo encontrado.</li>';
                     return;
                 }
                 
@@ -595,7 +602,7 @@ ${jsArea.value}
                     listEl.appendChild(li);
                 });
             } catch (e) {
-                listEl.innerHTML = '<li style="padding:16px; color:red">Erro ao carregar lista.</li>';
+                listEl.innerHTML = '<li style="padding:16px; color:red">Erro ao listar arquivos.</li>';
             }
         }
 
@@ -638,7 +645,7 @@ ${jsArea.value}
             try {
                 const fullContent = buildFinalHtml();
                 await ghService.saveFile(filename, fullContent);
-                notify.show('Publicado no GitHub!', 'success');
+                notify.show('Publicado com sucesso!', 'success');
                 await loadFileList();
             } catch (e) {
                 notify.show(`Erro: ${e.message}`, 'error');
@@ -664,7 +671,7 @@ ${jsArea.value}
             if (ghService.token) {
                 publishBtn.disabled = false;
                 loadFileList();
-                notify.show('Conectado ao theweewee/htmls.site', 'success');
+                notify.show('Conectado ao htmls.site', 'success');
             }
         })();
 
