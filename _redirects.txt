@@ -6,3 +6,13 @@
 
 # Regra 3: Qualquer outra coisa que der erro, joga para o index (SPA Fallback)
 /*  /htmls/index.html  200
+
+
+# Sempre servir o arquivo estático HTML se existir
+/*    /$1    200
+
+# Para acessar subpastas como "/HTML/", servir o index.html da subpasta
+/htmls/*    /htmls/index.html    200
+
+# Toda URI inválida cai no index principal (opcional)
+/*    /index.html    404
