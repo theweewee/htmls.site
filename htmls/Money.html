@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money.html</title>
+    <style>
+
+    </style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Controle Financeiro Simples</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; }
+    h1, h2 { margin-bottom: 10px; }
+    form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    form input, form select, form button { padding: 6px 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f3f3f3; }
+    .saida { color: #b30000; }
+    .entrada { color: #007700; }
+    .negativo { color: #b30000; font-weight: bold; }
+    .positivo { color: #007700; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Controle Financeiro</h1>
+
+  <form id="form-transacao">
+    <input name="data" placeholder="Data (2025-12-05)" required />
+    <input name="descricao" placeholder="Descrição" required />
+    <input name="valor" type="number" step="0.01" placeholder="Valor" required />
+    <select name="tipo">
+      <option value="entrada">Entrada</option>
+      <option value="saida">Saída</option>
+    </select>
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <h2>Resumo</h2>
+  <p>Total de entradas: <span id="total-entradas">0,00</span></p>
+  <p>Total de saídas: <span id="total-saidas">0,00</span></p>
+  <p>Saldo: <span id="saldo">0,00</span></p>
+
+  <h2>Transações</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrição</th>
+        <th>Tipo</th>
+        <th>Valor</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="lista-transacoes"></tbody>
+  </table>
+
+  <script>
+    const form = document.getElementById('form-transacao');
+    const lista = document.getElementById('lista-transacoes');
+    const spanEntradas = document.getElementById('total-entradas');
+    const spanSaidas = document.getElementById('total-saidas');
+    const spanSaldo = document.getElementById('saldo');
+
+    function carregaDados() {
+      return JSON.parse(localStorage.getItem('transacoes') || '[]');
+    }
+
+    function salvaDados(transacoes) {
+      localStorage.setItem('transacoes', JSON.stringify(transacoes));
+    }
+
+    function formatar(valor) {
+      return Number(valor).toFixed(2).replace('.', ',');
+    }
+
+    function atualizaTela() {
+      const transacoes = carregaDados();
+      lista.innerHTML = '';
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+
+      transacoes.forEach((t, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.data}</td>
+          <td>${t.descricao}</td>
+          <td class="${t.tipo}">${t.tipo}</td>
+          <td class="${t.tipo}">R$ ${formatar(t.valor)}</td>
+          <td><button data-index="${index}">Excluir</button></td>
+        `;
+        lista.appendChild(tr);
+
+        if (t.tipo === 'entrada') totalEntradas += Number(t.valor);
+        if (t.tipo === 'saida') totalSaidas += Number(t.valor);
+      });
+
+      const saldo = totalEntradas - totalSaidas;
+
+      spanEntradas.textContent = 'R$ ' + formatar(totalEntradas);
+      spanSaidas.textContent = 'R$ ' + formatar(totalSaidas);
+      spanSaldo.textContent = 'R$ ' + formatar(saldo);
+      spanSaldo.className = saldo < 0 ? 'negativo' : 'positivo';
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = form.data.value;
+      const descricao = form.descricao.value;
+      const valor = form.valor.value;
+      const tipo = form.tipo.value;
+
+      const transacoes = carregaDados();
+      transacoes.push({ data, descricao, valor, tipo });
+      salvaDados(transacoes);
+      form.reset();
+      atualizaTela();
+    });
+
+    lista.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') {
+        const index = e.target.getAttribute('data-index');
+        const transacoes = carregaDados();
+        transacoes.splice(index, 1);
+        salvaDados(transacoes);
+        atualizaTela();
+      }
+    });
+
+    atualizaTela();
+  </script>
+</body>
+</html>
+    <script>
+
+    </script>
+</body>
+</html>
