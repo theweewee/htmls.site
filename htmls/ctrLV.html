@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ctrLV.html</title>
+    <style>
+
+    </style>
+</head>
+<body>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Colar imagem e baixar</title>
+
+  <style>
+    :root{
+      --bg0:#0b0d10;
+      --bg1:#0f1318;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.14);
+
+      --text:#e7e9ee;
+      --muted:#a7afbd;
+
+      --accent:#c8cf6a;   /* “verde amarelo” elegante */
+      --accent2:#7b7f39;
+
+      --shadow: 0 18px 50px rgba(0,0,0,.55);
+      --shadow2: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 12% 10%, rgba(200,207,106,.18), transparent 60%),
+        radial-gradient(720px 520px at 88% 18%, rgba(120,90,255,.16), transparent 55%),
+        radial-gradient(900px 600px at 50% 100%, rgba(70,190,255,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 28px auto;
+      padding: 0 18px 28px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .title{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: .2px;
+      font-weight: 700;
+    }
+    .subtitle{
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 62ch;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow2);
+      color: var(--muted);
+      user-select:none;
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .dot{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #fff, var(--accent) 45%, rgba(0,0,0,.2));
+      box-shadow: 0 0 0 3px rgba(200,207,106,.10);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .badge{ display:none; }
+    }
+
+    .card{
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Glass + fallback */
+    @supports (backdrop-filter: blur(12px)){
+      .card{
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+    }
+
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(700px 180px at 12% 0%, rgba(200,207,106,.22), transparent 60%),
+        radial-gradient(500px 220px at 95% 20%, rgba(120,90,255,.18), transparent 60%);
+      opacity: .55;
+      pointer-events:none;
+      filter: blur(18px);
+    }
+
+    .card > .inner{
+      position: relative;
+      padding: 16px;
+    }
+
+    .cardTitle{
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+
+    .pasteZone{
+      min-height: 280px;
+      border-radius: calc(var(--radius) - 6px);
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding: 18px;
+      outline: none;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .pasteZone:hover{
+      transform: translateY(-2px);
+      border-color: rgba(200,207,106,.35);
+      background: rgba(0,0,0,.22);
+    }
+    .pasteZone.isReady{
+      border-style: solid;
+      border-color: rgba(200,207,106,.45);
+      background: rgba(200,207,106,.08);
+    }
+
+    /* Focus com 2 camadas (bem visível no dark) */
+    :is(button, select, input, .pasteZone):focus-visible{
+      outline: 2px solid rgba(255,255,255,.85);
+      box-shadow: 0 0 0 5px rgba(0,0,0,.9), 0 0 0 6px rgba(200,207,106,.65);
+    }
+
+    .bigHint{
+      margin: 0;
+      font-size: 18px;
+      font-weight: 750;
+      letter-spacing: .2px;
+    }
+    .smallHint{
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .keys{
+      display:inline-flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    kbd{
+      font: inherit;
+      font-size: 12px;
+      color: rgba(231,233,238,.9);
+      padding: 7px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 18px rgba(0,0,0,.25);
+    }
+
+    .previewWrap{
+      margin-top: 14px;
+      border-radius: calc(var(--radius) - 6px);
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      overflow:hidden;
+    }
+    img.preview{
+      display:block;
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+      object-fit: contain;
+      background: rgba(0,0,0,.25);
+    }
+
+    .controls{
+      display:grid;
+      gap: 12px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .row{ grid-template-columns: 1fr; }
+    }
+
+    label{
+      display:grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select, input{
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+      transition: border-color .18s var(--ease), transform .18s var(--ease), background .18s var(--ease);
+    }
+    select:hover, input:hover{
+      border-color: rgba(255,255,255,.18);
+      background: rgba(0,0,0,.26);
+    }
+
+    .btnRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    button{
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 12px 26px rgba(0,0,0,.35);
+      transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease), filter .18s var(--ease);
+      cursor: pointer;
+      user-select:none;
+    }
+    button:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.20); }
+    button:active{ transform: translateY(0px) scale(.99); filter: brightness(.98); }
+
+    button.primary{
+      background: linear-gradient(180deg, rgba(200,207,106,.22), rgba(200,207,106,.10));
+      border-color: rgba(200,207,106,.35);
+      box-shadow: 0 18px 38px rgba(0,0,0,.45), 0 0 0 1px rgba(200,207,106,.10) inset;
+    }
+
+    button:disabled{
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 12px 26px rgba(0,0,0,.20);
+    }
+
+    .tiny{
+      margin: 10px 0 0;
+      color: rgba(167,175,189,.85);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .hr{
+      height: 1px;
+      background: rgba(255,255,255,.10);
+      margin: 12px 0;
+      border-radius: 999px;
+    }
+
+    .pill{
+      display:inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .tag{
+      font-size: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: rgba(231,233,238,.88);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title">Colar imagem e baixar</h1>
+        <p class="subtitle">Cole um print da área de transferência, pré-visualize e exporte em PNG/JPG/WebP com qualidade configurável.</p>
+      </div>
+      <div class="badge" title="Pronto para colar">
+        <span class="dot"></span>
+        Ctrl+V para colar
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- ESQUERDA: colar + preview -->
+      <section class="card">
+        <div class="inner">
+          <div class="cardTitle">Área de colagem</div>
+
+          <div id="pasteZone" class="pasteZone" tabindex="0" aria-label="Área para colar imagem">
+            <div>
+              <p class="bigHint">Cole aqui a imagem</p>
+              <p class="smallHint">Clique nesta área e use Ctrl+V. Aceita screenshot e “copiar imagem”.</p>
+              <div class="keys">
+                <kbd>Ctrl</kbd><kbd>V</kbd>
+                <kbd>ou</kbd>
+                <kbd>⌘</kbd><kbd>V</kbd>
+              </div>
+
+              <div class="pill" aria-hidden="true">
+                <span class="tag">Dark</span>
+                <span class="tag">Suave</span>
+                <span class="tag">Rápido</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="previewWrap" class="previewWrap" hidden>
+            <img id="preview" class="preview" alt="Pré-visualização da imagem colada" />
+          </div>
+
+          <p class="tiny" id="status">Dica: se colar texto, nada acontece — precisa ser uma imagem no clipboard.</p>
+        </div>
+      </section>
+
+      <!-- DIREITA: controles -->
+      <aside class="card">
+        <div class="inner controls">
+          <div>
+            <div class="cardTitle">Exportação</div>
+
+            <div class="row">
+              <label>
+                Formato
+                <select id="format">
+                  <option value="image/png">PNG</option>
+                  <option value="image/jpeg">JPG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+
+              <label>
+                Qualidade (JPG/WebP)
+                <input id="quality" type="number" min="0" max="1" step="0.05" value="0.92" />
+              </label>
+            </div>
+
+            <div class="btnRow">
+              <button id="downloadBtn" class="primary" disabled>Baixar</button>
+              <button id="clearBtn" disabled>Limpar</button>
+              <button id="pasteBtn" title="Requer permissão e geralmente HTTPS" type="button">Colar (API)</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <p class="tiny">
+              “Colar (API)” tenta ler o clipboard via <code>navigator.clipboard.read()</code>, que costuma exigir HTTPS e permissão do navegador. [web:16][web:41]
+            </p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const pasteZone = document.getElementById('pasteZone');
+    const previewWrap = document.getElementById('previewWrap');
+    const preview = document.getElementById('preview');
+    const statusEl = document.getElementById('status');
+
+    const downloadBtn = document.getElementById('downloadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const pasteBtn = document.getElementById('pasteBtn');
+
+    const formatSel = document.getElementById('format');
+    const qualityInp = document.getElementById('quality');
+
+    let lastBlob = null;
+    let lastFilenameBase = 'imagem-colada';
+
+    pasteZone.addEventListener('click', () => pasteZone.focus());
+
+    document.addEventListener('paste', (event) => {
+      const items = (event.clipboardData || event.originalEvent?.clipboardData)?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (!blob) continue;
+          setPreviewFromBlob(blob, `Imagem colada (${prettyBytes(blob.size)})`);
+          event.preventDefault();
+          return;
+        }
+      }
+
+      setStatus('Nada de imagem no clipboard (cole um print/screenshot).');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (preview.src) URL.revokeObjectURL(preview.src);
+      preview.removeAttribute('src');
+      previewWrap.hidden = true;
+
+      lastBlob = null;
+      downloadBtn.disabled = true;
+      clearBtn.disabled = true;
+
+      pasteZone.classList.remove('isReady');
+      setStatus('Limpo. Cole uma nova imagem.');
+      pasteZone.focus();
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+      if (!lastBlob) return;
+
+      const targetType = formatSel.value;
+      const q = clamp(Number(qualityInp.value), 0, 1);
+
+      // Se for PNG e já for PNG, baixa direto sem recompressão
+      if (lastBlob.type === targetType && targetType === 'image/png') {
+        downloadBlob(lastBlob, `${lastFilenameBase}.png`);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Fundo branco para JPG (evitar transparência preta)
+        if (targetType === 'image/jpeg') {
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob((outBlob) => {
+          if (!outBlob) return;
+          const ext = mimeToExt(targetType);
+          downloadBlob(outBlob, `${lastFilenameBase}.${ext}`);
+        }, targetType, (targetType === 'image/jpeg' || targetType === 'image/webp') ? q : undefined);
+      };
+      img.src = URL.createObjectURL(lastBlob);
+    });
+
+    // Botão opcional: tentar ler clipboard via API assíncrona (normalmente HTTPS + permissão)
+    pasteBtn.addEventListener('click', async () => {
+      if (!navigator.clipboard?.read) {
+        setStatus('Este navegador não suporta navigator.clipboard.read().');
+        return;
+      }
+
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const mime = item.types.find(t => t.startsWith('image/')) || (item.types.includes('image/png') ? 'image/png' : null);
+          if (!mime) continue;
+
+          const blob = await item.getType(mime);
+          setPreviewFromBlob(blob, `Imagem lida via API (${prettyBytes(blob.size)})`);
+          return;
+        }
+        setStatus('Clipboard lido, mas sem imagem.');
+      } catch (e) {
+        setStatus('Sem permissão/HTTPS ou bloqueado pelo navegador para ler o clipboard.');
+      }
+    });
+
+    function setPreviewFromBlob(blob, msg){
+      lastBlob = blob;
+
+      if (preview.src) URL.revokeObjectURL(preview.src);
+      preview.src = URL.createObjectURL(blob);
+      previewWrap.hidden = false;
+
+      downloadBtn.disabled = false;
+      clearBtn.disabled = false;
+
+      pasteZone.classList.add('isReady');
+      setStatus(msg || 'Imagem pronta.');
+    }
+
+    function setStatus(text){
+      statusEl.textContent = text;
+    }
+
+    function downloadBlob(blob, filename){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setStatus(`Download gerado: ${filename}`);
+    }
+
+    function mimeToExt(mime){
+      if (mime === 'image/jpeg') return 'jpg';
+      if (mime === 'image/webp') return 'webp';
+      return 'png';
+    }
+
+    function clamp(v, min, max){
+      return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : 0.92;
+    }
+
+    function prettyBytes(n){
+      const u = ['B','KB','MB','GB'];
+      let i = 0, num = n;
+      while (num >= 1024 && i < u.length - 1) { num /= 1024; i++; }
+      return `${num.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+    }
+  </script>
+</body>
+</html>
+
+    <script>
+
+    </script>
+</body>
+</html>
