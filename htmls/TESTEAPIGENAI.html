@@ -198,47 +198,76 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .model-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: inherit;
-            opacity: 0.9;
-            z-index: 0;
-        }
-        
-        .model-header span {
-            position: relative;
-            z-index: 1;
         }
         
         .model-badge {
-            position: relative;
-            z-index: 1;
-            background: rgba(255,255,255,0.25);
-            padding: 4px 10px;
+            background: rgba(255,255,255,0.3);
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            backdrop-filter: blur(10px);
         }
         
-        /* Cores por geração */
-        .model-gemini-3-pro { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .model-gemini-3-flash { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .model-gemini-2-5-pro { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .model-gemini-2-5-flash { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .model-gemini-2-5-lite { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .model-gemini-2-0-flash { background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 100%); }
-        .model-gemini-2-0-lite { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .model-gemini-1-5 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        /* Cores por geração - COM OVERLAY PARA MELHOR CONTRASTE */
+        .model-gemini-3-pro {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)),
+                linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .model-gemini-3-flash {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)),
+                linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .model-gemini-2-5-pro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .model-gemini-2-5-flash {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)),
+                linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .model-gemini-2-5-lite {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),
+                linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .model-gemini-2-0-flash {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)),
+                linear-gradient(135deg, #fa8bff 0%, #2bd2ff 100%);
+        }
+        
+        .model-gemini-2-0-lite {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)),
+                linear-gradient(135deg, #ff9a56 0%, #ffcf71 100%);
+        }
+        
+        .model-gemini-1-5-pro {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)),
+                linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .model-gemini-1-5-flash {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.22), rgba(0,0,0,0.22)),
+                linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+        }
+        
+        .model-gemini-1-5-lite {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)),
+                linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+        }
         
         .model-content {
             padding: 25px;
@@ -404,7 +433,7 @@
             </div>
             
             <button class="btn-test" onclick="testAllModels()">
-                🎯 Testar Todos os Modelos (13 variações)
+                🎯 Testar Todos os Modelos (11 variações)
             </button>
             
             <div id="status" class="status"></div>
@@ -415,44 +444,39 @@
 
     <script>
         const MODEL_GENERATIONS = {
-            'gemini3': {
+            gemini3: {
                 title: '🔥 Geração 3.0 (Mais Recente)',
                 models: [
-                    { name: 'Gemini 3 Pro Preview', id: 'gemini-3-pro-preview', type: 'pro', badge: 'Flagship Novo' },
-                    { name: 'Gemini 3 Flash Preview', id: 'gemini-3-flash-preview', type: 'flash', badge: 'Inteligência Rápida' }
+                    { name: 'Gemini 3 Pro Preview', id: 'gemini-3-pro-preview', badge: 'Flagship Novo', headerClass: 'model-gemini-3-pro' },
+                    { name: 'Gemini 3 Flash Preview', id: 'gemini-3-flash-preview', badge: 'Inteligência Rápida', headerClass: 'model-gemini-3-flash' }
                 ]
             },
-            'gemini2_5': {
+            gemini2_5: {
                 title: '⚡ Geração 2.5 (Estável Produção)',
                 models: [
-                    { name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro', type: 'pro', badge: 'Raciocínio Avançado' },
-                    { name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash', type: 'flash', badge: 'Melhor Custo-Benefício' },
-                    { name: 'Gemini 2.5 Flash-Lite', id: 'gemini-2.5-flash-lite', type: 'lite', badge: 'Ultra Rápido' }
+                    { name: 'Gemini 2.5 Pro', id: 'gemini-2.5-pro', badge: 'Raciocínio Avançado', headerClass: 'model-gemini-2-5-pro' },
+                    { name: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash', badge: 'Melhor Custo-Benefício', headerClass: 'model-gemini-2-5-flash' },
+                    { name: 'Gemini 2.5 Flash-Lite', id: 'gemini-2.5-flash-lite', badge: 'Ultra Rápido', headerClass: 'model-gemini-2-5-lite' }
                 ]
             },
-            'gemini2_0': {
+            gemini2_0: {
                 title: '💎 Geração 2.0 (Legacy Estável)',
                 models: [
-                    { name: 'Gemini 2.0 Flash', id: 'gemini-2.0-flash', type: 'flash', badge: '1M Context' },
-                    { name: 'Gemini 2.0 Flash-Lite', id: 'gemini-2.0-flash-lite', type: 'lite', badge: 'Economia' }
+                    { name: 'Gemini 2.0 Flash', id: 'gemini-2.0-flash', badge: '1M Context', headerClass: 'model-gemini-2-0-flash' },
+                    { name: 'Gemini 2.0 Flash-Lite', id: 'gemini-2.0-flash-lite', badge: 'Economia', headerClass: 'model-gemini-2-0-lite' }
                 ]
             },
-            'gemini1_5': {
+            gemini1_5: {
                 title: '🌟 Geração 1.5 (Primeira Geração)',
                 models: [
-                    { name: 'Gemini 1.5 Pro', id: 'gemini-1.5-pro', type: 'pro', badge: 'Clássico Pro' },
-                    { name: 'Gemini 1.5 Flash', id: 'gemini-1.5-flash', type: 'flash', badge: 'Clássico Flash' },
-                    { name: 'Gemini 1.5 Flash-8B', id: 'gemini-1.5-flash-8b', type: 'lite', badge: '8B Params' }
+                    { name: 'Gemini 1.5 Pro', id: 'gemini-1.5-pro', badge: 'Clássico Pro', headerClass: 'model-gemini-1-5-pro' },
+                    { name: 'Gemini 1.5 Flash', id: 'gemini-1.5-flash', badge: 'Clássico Flash', headerClass: 'model-gemini-1-5-flash' },
+                    { name: 'Gemini 1.5 Flash-8B', id: 'gemini-1.5-flash-8b', badge: '8B Params', headerClass: 'model-gemini-1-5-lite' }
                 ]
             }
         };
 
         let startTime = {};
-
-        function getModelClass(model) {
-            const generation = model.id.split('-')[1] + '-' + model.id.split('-')[2];
-            return `model-gemini-${generation}-${model.type}`;
-        }
 
         async function testSingleModel(model, delay) {
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -579,7 +603,6 @@
             
             resultsDiv.innerHTML = '';
             
-            // Cria seções por geração
             let allModels = [];
             let delayCounter = 0;
             
@@ -596,7 +619,7 @@
                     modelCard.className = 'model-card';
                     modelCard.id = `result-${model.id}`;
                     modelCard.innerHTML = `
-                        <div class="model-header ${getModelClass(model)}">
+                        <div class="model-header ${model.headerClass}">
                             <span>${model.name}</span>
                             <span class="model-badge">${model.badge}</span>
                         </div>
