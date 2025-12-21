@@ -1,409 +1,947 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor HTML + AI - htmls.site</title>
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
+
+  <!-- Importmap para React, ReactDOM e @google/genai via esm.sh -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
+      "@google/genai": "https://esm.sh/@google/genai@1.34.0"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+        --bg-main: #101014;
+        --bg-panel: #17171c;
+        --bg-header: #111117;
+        --border: #23232e;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --text-main: #e9e9ed;
+        --text-muted: #9ca3af;
+        --success: #10b981;
+        --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        background: var(--bg-main);
+        color: var(--text-main);
+    }
+
+    #root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    .header {
+        background: var(--bg-header);
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        flex-shrink: 0;
+    }
+    .header h1 { font-size: 18px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .main-container {
+        flex: 1;
+        display: flex;
+        height: calc(100vh - 60px);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .editor-section {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-panel);
+        border-right: 1px solid var(--border);
+        min-width: 300px;
+    }
+
+    .controls-panel {
+        padding: 12px;
+        background: var(--bg-header);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+    .input-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    input[type="text"], input[type="password"] {
+        background: var(--bg-main);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 8px 12px;
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        height: 36px;
+        width: 100%;
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent); }
+
+    .btn {
+        padding: 0 16px; border-radius: 6px; border: none; font-weight: 600;
+        cursor: pointer; font-size: 13px; transition: all 0.2s; height: 36px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-ai {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-ai:hover { filter: brightness(1.1); }
+
+    .btn-secondary { background: #2d2d3a; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+    .tabs { display: flex; background: var(--bg-header); border-bottom: 1px solid var(--border); }
+    .tab {
+        flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 12px;
+        font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border);
+        background: transparent; transition: all 0.2s;
+    }
+    .tab.active { background: var(--bg-panel); color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .tab:hover:not(.active) { color: var(--text-main); background: #1c1c24; }
+
+    .editor-container {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+    textarea.code-area {
+        width: 100%; height: 100%; background: var(--bg-panel); color: #e9e9ed;
+        border: none; padding: 16px; font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 14px; line-height: 1.5; resize: none; outline: none;
+    }
+
+    .file-manager {
+        height: 200px;
+        background: #0d0d11;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--border);
+    }
+    .fm-header {
+        padding: 8px 12px; display: flex; justify-content: space-between;
+        align-items: center; background: #141419; border-bottom: 1px solid var(--border);
+    }
+    .fm-header span { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+    .file-list { flex: 1; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
+    .file-item {
+        padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid #1f1f28; transition: background 0.1s;
+    }
+    .file-item:hover { background: #1c1c24; }
+    .file-info { display: flex; flex-direction: column; cursor: pointer; flex: 1; }
+    .file-name { font-size: 13px; color: var(--accent); font-weight: 500; }
+    .file-actions { display: flex; gap: 6px; }
+
+    .btn-icon {
+        padding: 4px; border-radius: 4px; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px;
+    }
+    .btn-del { background: #3a1d1d; color: #fca5a5; }
+
+    .preview-section {
+        flex: 1;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    iframe { width: 100%; height: 100%; border: none; background: white; }
+
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-content {
+        background: #1c1c24; border: 1px solid var(--border);
+        width: 90%; max-width: 500px; border-radius: 12px;
+        padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; gap: 16px;
+        max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; }
+    .modal-textarea {
+        width: 100%; height: 120px; background: #111116; border: 1px solid var(--border);
+        border-radius: 8px; color: white; padding: 12px; font-size: 14px;
+        resize: none; outline: none; font-family: sans-serif;
+    }
+    .modal-textarea:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+
+    .status-bar {
+        padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .status-info { background: #3b82f6; color: white; }
+    .status-success { background: var(--success); color: white; }
+    .status-error { background: var(--danger); color: white; }
+
+    .spinner {
+        width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%; border-top-color: white;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+        .main-container { flex-direction: column; overflow-y: auto; }
+        .editor-section, .preview-section { width: 100%; height: 50vh; }
+        .file-manager { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    import React, { useState, useEffect, useRef } from "react";
+    import { createRoot } from "react-dom/client";
+    import { GoogleGenAI, Type } from "@google/genai";
+
+    const DEFAULT_SETTINGS = {
+      githubToken: "",
+      githubOwner: "",
+      githubRepo: "",
+      githubPath: "htmls",
+      githubBranch: "main",
+      geminiApiKey: ""
+    };
+
+    const STORAGE_KEY = "htmls_site_settings_v1";
+
+    class GitHubService {
+      constructor(settings) {
+        this.settings = settings;
+      }
+      updateSettings(newSettings) {
+        this.settings = newSettings;
+      }
+      get headers() {
+        return {
+          "Authorization": `Bearer ${this.settings.githubToken}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        };
+      }
+      get isConfigured() {
+        return !!(this.settings.githubToken && this.settings.githubOwner && this.settings.githubRepo);
+      }
+      async listFiles() {
+        if (!this.isConfigured) return [];
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}?ref=${this.settings.githubBranch}`;
+        const res = await fetch(url, { headers: this.headers });
+        if (!res.ok) {
+          if (res.status === 404) return [];
+          throw new Error(`GitHub Error: ${res.statusText}`);
+        }
+        const files = await res.json();
+        if (!Array.isArray(files)) return [];
+        return files
+          .filter(f => f.name.endsWith(".html"))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      }
+      async getFile(filename) {
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}?ref=${this.settings.githubBranch}`;
+        const res = await fetch(url, { headers: this.headers });
+        if (!res.ok) throw new Error("Arquivo não encontrado");
+        const data = await res.json();
+        const content = new TextDecoder().decode(
+          Uint8Array.from(
+            atob(data.content.replace(/\s/g, "")),
+            c => c.charCodeAt(0)
+          )
+        );
+        return { content, sha: data.sha };
+      }
+      async saveFile(filename, content) {
+        const path = `${this.settings.githubPath}/${filename}`;
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${path}`;
+        let sha = null;
+        try {
+          const existing = await this.getFile(filename);
+          sha = existing.sha;
+        } catch (e) {}
+        const encodedContent = btoa(
+          String.fromCharCode(...new TextEncoder().encode(content))
+        );
+        const body = {
+          message: `Update ${filename} via HTML Editor`,
+          content: encodedContent,
+          branch: this.settings.githubBranch,
+          ...(sha ? { sha } : {})
+        };
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: this.headers,
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Erro ao salvar no GitHub");
+        }
+        return await res.json();
+      }
+      async deleteFile(filename) {
+        const file = await this.getFile(filename);
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}`;
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers: this.headers,
+          body: JSON.stringify({
+            message: `Delete ${filename}`,
+            sha: file.sha,
+            branch: this.settings.githubBranch
+          })
+        });
+        if (!res.ok) throw new Error("Erro ao deletar");
+      }
+    }
+
+    function App() {
+      const [html, setHtml] = useState("<h1>Olá Mundo!</h1>");
+      const [css, setCss] = useState("body { font-family: sans-serif; padding: 20px; background: #f0f0f0; } h1 { color: #333; }");
+      const [js, setJs] = useState('console.log("Página carregada");');
+      const [activeTab, setActiveTab] = useState("html");
+      const [filename, setFilename] = useState("index.html");
+      const [files, setFiles] = useState([]);
+      const [status, setStatus] = useState(null);
+      const [isSaving, setIsSaving] = useState(false);
+      const [isAIGenerating, setIsAIGenerating] = useState(false);
+      const [showAIModal, setShowAIModal] = useState(false);
+      const [showSettingsModal, setShowSettingsModal] = useState(false);
+      const [aiPrompt, setAiPrompt] = useState("");
+      const [isFullMode, setIsFullMode] = useState(false);
+      const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+      const [ghService, setGhService] = useState(new GitHubService(DEFAULT_SETTINGS));
+      const iframeRef = useRef(null);
+
+      useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setSettings(parsed);
+            const service = new GitHubService(parsed);
+            setGhService(service);
+            if (parsed.githubToken) {
+              service.listFiles().then(setFiles).catch(err => {
+                console.error(err);
+                showStatus("Erro ao listar arquivos. Verifique as configurações.", "error");
+              });
+            } else {
+              setShowSettingsModal(true);
+            }
+          } catch (e) {
+            console.error("Erro ao carregar configs", e);
+            setShowSettingsModal(true);
+          }
+        } else {
+          setShowSettingsModal(true);
+        }
+      }, []);
+
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          if (iframeRef.current) {
+            let doc;
+            if (isFullMode) {
+              doc = html;
+            } else {
+              doc = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>${css}</style>
+                </head>
+                <body>
+                    ${html}
+                    <script>${js}<\/script>
+                </body>
+                </html>
+              `;
+            }
+            iframeRef.current.srcdoc = doc;
+          }
+        }, 800);
+        return () => clearTimeout(timer);
+      }, [html, css, js, isFullMode]);
+
+      const showStatus = (msg, type = "info") => {
+        setStatus({ msg, type });
+        setTimeout(() => setStatus(null), 4000);
+      };
+
+      const handleSaveSettings = newSettings => {
+        setSettings(newSettings);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+        const service = new GitHubService(newSettings);
+        setGhService(service);
+        setShowSettingsModal(false);
+        showStatus("Configurações salvas!", "success");
+        service
+          .listFiles()
+          .then(list => {
+            setFiles(list);
+            showStatus("Conectado ao GitHub", "success");
+          })
+          .catch(e => showStatus("Erro ao conectar GitHub: " + e.message, "error"));
+      };
+
+      const refreshFileList = async () => {
+        try {
+          const list = await ghService.listFiles();
+          setFiles(list);
+        } catch (e) {
+          showStatus("Erro na lista: " + e.message, "error");
+        }
+      };
+
+      const toggleMode = () => {
+        if (isFullMode) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const styleTag = doc.querySelector("head style");
+          const extractedCss = styleTag ? styleTag.innerHTML.trim() : "";
+          if (styleTag) styleTag.remove();
+          const scriptTags = doc.querySelectorAll("body script");
+          let extractedJs = "";
+          scriptTags.forEach(s => {
+            if (s.innerHTML.trim()) {
+              extractedJs += s.innerHTML.trim() + "\n";
+              s.remove();
+            }
+          });
+          setCss(extractedCss);
+          setJs(extractedJs);
+          setHtml(doc.body ? doc.body.innerHTML.trim() : "");
+          setIsFullMode(false);
+          setActiveTab("html");
+          showStatus("Modo: Abas Separadas", "info");
+        } else {
+          const fullContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔍 Visualizador JSONBin - GitHub Token</title>
+    <title>${filename}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 800px;
-            width: 100%;
-            padding: 40px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-        }
-
-        .section-title {
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #555;
-            font-size: 13px;
-        }
-
-        .info-value {
-            font-family: 'Courier New', monospace;
-            color: #333;
-            font-size: 13px;
-            background: #f0f0f0;
-            padding: 4px 12px;
-            border-radius: 6px;
-            max-width: 500px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .token-display {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #856404;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .status {
-            text-align: center;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-weight: 600;
-            display: none;
-        }
-
-        .status.show {
-            display: block;
-        }
-
-        .status.loading {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .json-preview {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 15px;
-        }
-
-        .json-key {
-            color: #9cdcfe;
-        }
-
-        .json-string {
-            color: #ce9178;
-        }
-
-        .json-number {
-            color: #b5cea8;
-        }
-
-        .copy-btn {
-            background: #28a745;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .copy-btn:hover {
-            background: #218838;
-        }
-
-        .copy-btn:active {
-            transform: scale(0.95);
-        }
+${css}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 JSONBin Token Viewer</h1>
-        <p class="subtitle">Visualize o GitHub Token armazenado no JSONBin</p>
-
-        <div class="section">
-            <div class="section-title">📋 Configuração JSONBin</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">Bin ID:</span>
-                    <span class="info-value" id="binId">-</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Access Key:</span>
-                    <span class="info-value" id="accessKey">-</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">API URL:</span>
-                    <span class="info-value" id="apiUrl">-</span>
-                </div>
-            </div>
-        </div>
-
-        <button class="btn" id="fetchBtn">
-            <span id="btnText">🚀 Buscar Token do JSONBin</span>
-            <div class="spinner" id="spinner" style="display: none;"></div>
-        </button>
-
-        <div class="status" id="status"></div>
-
-        <div class="section" id="resultSection" style="display: none;">
-            <div class="section-title">
-                🔑 GitHub Token Encontrado
-                <button class="copy-btn" id="copyTokenBtn">📋 Copiar</button>
-            </div>
-            <div class="token-display" id="tokenDisplay">-</div>
-        </div>
-
-        <div class="section" id="jsonSection" style="display: none;">
-            <div class="section-title">
-                📄 JSON Completo
-                <button class="copy-btn" id="copyJsonBtn">📋 Copiar JSON</button>
-            </div>
-            <pre class="json-preview" id="jsonPreview"></pre>
-        </div>
-    </div>
-
+${html}
     <script>
-        const CONFIG = {
-            jsonbin: { 
-                binId: '691e49b043b1c97be9b81a9d', 
-                accessKey: '$2a$10$f9KK7vSowGnJI5elo/dAPurqjZAJ3bJaWnsinl/caDfgIcNt28kNi' 
-            }
-        };
-
-        // Elements
-        const fetchBtn = document.getElementById('fetchBtn');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('spinner');
-        const status = document.getElementById('status');
-        const resultSection = document.getElementById('resultSection');
-        const jsonSection = document.getElementById('jsonSection');
-        const tokenDisplay = document.getElementById('tokenDisplay');
-        const jsonPreview = document.getElementById('jsonPreview');
-        const copyTokenBtn = document.getElementById('copyTokenBtn');
-        const copyJsonBtn = document.getElementById('copyJsonBtn');
-
-        // Display config
-        document.getElementById('binId').textContent = CONFIG.jsonbin.binId;
-        document.getElementById('accessKey').textContent = CONFIG.jsonbin.accessKey.substring(0, 20) + '...';
-        document.getElementById('apiUrl').textContent = `https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`;
-
-        let fullJsonData = null;
-
-        // Show status
-        function showStatus(message, type) {
-            status.textContent = message;
-            status.className = `status show ${type}`;
-            setTimeout(() => {
-                status.classList.remove('show');
-            }, 5000);
+${js}
+    <\/script>
+</body>
+</html>`;
+          setHtml(fullContent);
+          setCss("");
+          setJs("");
+          setIsFullMode(true);
+          showStatus("Modo: Arquivo Completo", "info");
         }
+      };
 
-        // Format JSON with syntax highlighting
-        function formatJson(obj) {
-            return JSON.stringify(obj, null, 2)
-                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
-                .replace(/: "([^"]+)"/g, ': <span class="json-string">"$1"</span>')
-                .replace(/: (\d+)/g, ': <span class="json-number">$1</span>');
-        }
-
-        // Fetch token from JSONBin
-        async function fetchToken() {
-            fetchBtn.disabled = true;
-            btnText.style.display = 'none';
-            spinner.style.display = 'block';
-            showStatus('🔄 Buscando dados do JSONBin...', 'loading');
-
+      const handleLoadFile = async fname => {
+        showStatus(`Carregando ${fname}...`, "info");
+        try {
+          const data = await ghService.getFile(fname);
+          setFilename(fname);
+          const content = data.content;
+          if (content.includes("<html") && content.includes("</html>")) {
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`, {
-                    headers: { 
-                        'X-Access-Key': CONFIG.jsonbin.accessKey, 
-                        'X-Bin-Meta': 'false' 
-                    }
-                });
-
-                if (!res.ok) {
-                    throw new Error(`Erro HTTP: ${res.status} ${res.statusText}`);
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(content, "text/html");
+              const styleTag = doc.querySelector("head style");
+              setCss(styleTag ? styleTag.innerHTML.trim() : "");
+              if (styleTag) styleTag.remove();
+              const scriptTags = doc.querySelectorAll("body script");
+              let jsContent = "";
+              scriptTags.forEach(s => {
+                if (s.innerHTML.trim()) {
+                  jsContent += s.innerHTML.trim() + "\n";
+                  s.remove();
                 }
-
-                const data = await res.json();
-                fullJsonData = data;
-
-                // Display token
-                if (data.github_token) {
-                    tokenDisplay.textContent = data.github_token;
-                    resultSection.style.display = 'block';
-                    showStatus('✅ Token encontrado com sucesso!', 'success');
-                } else {
-                    showStatus('⚠️ Token não encontrado no JSON', 'error');
-                }
-
-                // Display full JSON
-                jsonPreview.innerHTML = formatJson(data);
-                jsonSection.style.display = 'block';
-
-            } catch (error) {
-                console.error('Erro:', error);
-                showStatus(`❌ Erro: ${error.message}`, 'error');
-                resultSection.style.display = 'none';
-                jsonSection.style.display = 'none';
-            } finally {
-                fetchBtn.disabled = false;
-                btnText.style.display = 'inline';
-                spinner.style.display = 'none';
+              });
+              setJs(jsContent.trim());
+              setHtml(doc.body.innerHTML.trim());
+              setIsFullMode(false);
+            } catch (e) {
+              setHtml(content);
+              setIsFullMode(true);
             }
+          } else {
+            setHtml(content);
+            setCss("");
+            setJs("");
+            setIsFullMode(false);
+          }
+          showStatus("Arquivo carregado", "success");
+        } catch (e) {
+          showStatus(e.message, "error");
+        }
+      };
+
+      const handleSave = async () => {
+        if (!ghService.isConfigured) {
+          setShowSettingsModal(true);
+          return;
+        }
+        if (!filename.endsWith(".html")) {
+          showStatus("O nome deve terminar em .html", "error");
+          return;
+        }
+        setIsSaving(true);
+        try {
+          let fullContent;
+          if (isFullMode) {
+            fullContent = html;
+          } else {
+            fullContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filename}</title>
+    <style>
+${css}
+    </style>
+</head>
+<body>
+${html}
+    <script>
+${js}
+    <\/script>
+</body>
+</html>`;
+          }
+          await ghService.saveFile(filename, fullContent);
+          showStatus("Salvo com sucesso!", "success");
+          refreshFileList();
+        } catch (e) {
+          showStatus(e.message, "error");
+        } finally {
+          setIsSaving(false);
+        }
+      };
+
+      const handleDelete = async fname => {
+        if (!confirm(`Apagar ${fname}?`)) return;
+        try {
+          await ghService.deleteFile(fname);
+          showStatus("Arquivo deletado", "success");
+          refreshFileList();
+        } catch (e) {
+          showStatus(e.message, "error");
+        }
+      };
+
+      const handleNew = () => {
+        setFilename("nova-pagina.html");
+        setHtml("<h1>Nova Página</h1>");
+        setCss("body { padding: 20px; font-family: sans-serif; }");
+        setJs("");
+        setIsFullMode(false);
+        showStatus("Novo projeto iniciado", "info");
+      };
+
+      const handleAIGenerate = async () => {
+        if (!settings.geminiApiKey) {
+          showStatus("Configure a API Key do Gemini nas configurações!", "error");
+          setShowSettingsModal(true);
+          return;
+        }
+        if (!aiPrompt.trim()) return;
+        setIsAIGenerating(true);
+        setShowAIModal(false);
+        showStatus("Gemini está pensando...", "info");
+        try {
+          const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
+          const prompt = `Create a single HTML file website based on this request: "${aiPrompt}".
+You must return a JSON object with 3 properties:
+1. "html": The HTML content inside <body> (do NOT include <body> tags).
+2. "css": The CSS content.
+3. "javascript": The JavaScript content.
+The code should be modern, responsive.`;
+          const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  html: { type: Type.STRING },
+                  css: { type: Type.STRING },
+                  javascript: { type: Type.STRING }
+                },
+                required: ["html", "css", "javascript"]
+              }
+            }
+          });
+          const jsonStr = response.text;
+          if (jsonStr) {
+            const data = JSON.parse(jsonStr);
+            setHtml(data.html || "");
+            setCss(data.css || "");
+            setJs(data.javascript || "");
+            setIsFullMode(false);
+            showStatus("Página gerada com sucesso!", "success");
+          } else {
+            throw new Error("Resposta vazia da IA");
+          }
+        } catch (e) {
+          console.error(e);
+          showStatus("Erro ao gerar com IA: " + e.message, "error");
+        } finally {
+          setIsAIGenerating(false);
+          setAiPrompt("");
+        }
+      };
+
+      // NOVO: abrir página publicada em /htmls/NOMESEMHTML
+      const openCurrentPage = () => {
+        const PUBLIC_PREFIX = "/htmls/"; // ex: https://htmls.site/htmls/sitescriado
+        let cleanName = filename.trim();
+
+        if (!cleanName) {
+          showStatus("Defina um nome de arquivo primeiro.", "error");
+          return;
         }
 
-        // Copy token to clipboard
-        async function copyToken() {
-            try {
-                await navigator.clipboard.writeText(tokenDisplay.textContent);
-                const originalText = copyTokenBtn.textContent;
-                copyTokenBtn.textContent = '✅ Copiado!';
-                copyTokenBtn.style.background = '#28a745';
-                setTimeout(() => {
-                    copyTokenBtn.textContent = originalText;
-                    copyTokenBtn.style.background = '#28a745';
-                }, 2000);
-                showStatus('📋 Token copiado para área de transferência!', 'success');
-            } catch (err) {
-                showStatus('❌ Erro ao copiar', 'error');
-            }
+        // remove .html do final se existir
+        if (cleanName.endsWith(".html")) {
+          cleanName = cleanName.slice(0, -5);
         }
 
-        // Copy JSON to clipboard
-        async function copyJson() {
-            try {
-                await navigator.clipboard.writeText(JSON.stringify(fullJsonData, null, 2));
-                const originalText = copyJsonBtn.textContent;
-                copyJsonBtn.textContent = '✅ Copiado!';
-                copyJsonBtn.style.background = '#28a745';
-                setTimeout(() => {
-                    copyJsonBtn.textContent = originalText;
-                    copyJsonBtn.style.background = '#28a745';
-                }, 2000);
-                showStatus('📋 JSON copiado para área de transferência!', 'success');
-            } catch (err) {
-                showStatus('❌ Erro ao copiar', 'error');
-            }
-        }
+        const url = `${PUBLIC_PREFIX}${cleanName}`;
+        window.open(url, "_blank", "noopener,noreferrer"); // abre em nova aba[web:47][web:63]
+        showStatus(`Abrindo ${url}`, "info");
+      };
 
-        // Event listeners
-        fetchBtn.addEventListener('click', fetchToken);
-        copyTokenBtn.addEventListener('click', copyToken);
-        copyJsonBtn.addEventListener('click', copyJson);
+      return (
+        React.createElement("div", { id: "app" },
+          React.createElement("div", { className: "header" },
+            React.createElement("h1", null, "🚀 Editor HTML (Frontend)"),
+            React.createElement("div", { style: { display: "flex", gap: "10px", alignItems: "center" } },
+              status && React.createElement(
+                "div",
+                {
+                  className: `status-bar status-${status.type}`,
+                  style: { position: "static", animation: "none", transform: "none", margin: 0 }
+                },
+                status.msg
+              ),
+              React.createElement(
+                "button",
+                {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowSettingsModal(true),
+                  title: "Configurações"
+                },
+                "⚙️ Config"
+              )
+            )
+          ),
+          React.createElement("div", { className: "main-container" },
+            React.createElement("div", { className: "editor-section" },
+              React.createElement("div", { className: "controls-panel" },
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Nome do Arquivo"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: filename,
+                    onChange: e => setFilename(e.target.value),
+                    placeholder: "ex: sitescriado.html"
+                  })
+                ),
+                React.createElement("button", {
+                  className: "btn btn-ai",
+                  onClick: () => setShowAIModal(true),
+                  disabled: isAIGenerating
+                }, isAIGenerating ? React.createElement("div", { className: "spinner" }) : "✨ IA"),
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: toggleMode,
+                  title: "Alternar Visualização"
+                }, isFullMode ? "📑 Dividir" : "📄 Unir"),
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: handleNew
+                }, "📄 Novo"),
+                React.createElement("button", {
+                  className: "btn btn-primary",
+                  onClick: handleSave,
+                  disabled: isSaving
+                }, isSaving ? "..." : "☁️ Salvar"),
+                // NOVO BOTÃO
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: openCurrentPage,
+                  title: "Abrir página publicada em /htmls/"
+                }, "🌐 Abrir página")
+              ),
+              !isFullMode && React.createElement("div", { className: "tabs" },
+                React.createElement("div", {
+                  className: `tab ${activeTab === "html" ? "active" : ""}`,
+                  onClick: () => setActiveTab("html")
+                }, "HTML"),
+                React.createElement("div", {
+                  className: `tab ${activeTab === "css" ? "active" : ""}`,
+                  onClick: () => setActiveTab("css")
+                }, "CSS"),
+                React.createElement("div", {
+                  className: `tab ${activeTab === "js" ? "active" : ""}`,
+                  onClick: () => setActiveTab("js")
+                }, "JS")
+              ),
+              React.createElement("div", { className: "editor-container" },
+                isFullMode
+                  ? React.createElement("textarea", {
+                      className: "code-area",
+                      value: html,
+                      onChange: e => setHtml(e.target.value),
+                      placeholder: "<!-- Código HTML Completo -->"
+                    })
+                  : React.createElement(React.Fragment, null,
+                      activeTab === "html" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: html,
+                        onChange: e => setHtml(e.target.value),
+                        placeholder: "<!-- Código HTML aqui -->"
+                      }),
+                      activeTab === "css" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: css,
+                        onChange: e => setCss(e.target.value),
+                        placeholder: "/* Código CSS aqui */"
+                      }),
+                      activeTab === "js" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: js,
+                        onChange: e => setJs(e.target.value),
+                        placeholder: "// Código JS aqui"
+                      })
+                    ),
+                isAIGenerating && React.createElement("div", {
+                  style: {
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    flexDirection: "column",
+                    gap: "16px",
+                    zIndex: 10
+                  }
+                },
+                  React.createElement("div", { className: "spinner", style: { width: 40, height: 40 } }),
+                  React.createElement("p", null, "Gerando com Gemini 3 Flash...")
+                )
+              ),
+              React.createElement("div", { className: "file-manager" },
+                React.createElement("div", { className: "fm-header" },
+                  React.createElement("span", null,
+                    settings.githubRepo
+                      ? `${settings.githubRepo}/${settings.githubPath}`
+                      : "Arquivos Remotos"
+                  ),
+                  React.createElement("button", {
+                    className: "btn-icon btn-secondary",
+                    onClick: refreshFileList
+                  }, "↻")
+                ),
+                React.createElement("ul", { className: "file-list" },
+                  files.length === 0 &&
+                    React.createElement("li", {
+                      style: { padding: "20px", textAlign: "center", color: "#555" }
+                    }, "Nenhum arquivo ou não conectado."),
+                  files.map(f =>
+                    React.createElement("li", { key: f.name, className: "file-item" },
+                      React.createElement("div", {
+                        className: "file-info",
+                        onClick: () => handleLoadFile(f.name)
+                      },
+                        React.createElement("span", { className: "file-name" }, f.name)
+                      ),
+                      React.createElement("div", { className: "file-actions" },
+                        React.createElement("button", {
+                          className: "btn-icon btn-del",
+                          onClick: e => { e.stopPropagation(); handleDelete(f.name); },
+                          title: "Apagar"
+                        }, "🗑️")
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            React.createElement("div", { className: "preview-section" },
+              React.createElement("iframe", { ref: iframeRef, title: "Preview" })
+            )
+          ),
+          showAIModal && React.createElement("div", {
+            className: "modal-overlay",
+            onClick: () => setShowAIModal(false)
+          },
+            React.createElement("div", {
+              className: "modal-content",
+              onClick: e => e.stopPropagation()
+            },
+              React.createElement("div", { className: "modal-title" }, "✨ Criar Página com IA"),
+              React.createElement("textarea", {
+                className: "modal-textarea",
+                placeholder: "Descreva a página... ex: 'Landing page para pizzaria com tema escuro e formulário de pedido'",
+                value: aiPrompt,
+                onChange: e => setAiPrompt(e.target.value),
+                autoFocus: true
+              }),
+              React.createElement("div", { className: "modal-actions" },
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowAIModal(false)
+                }, "Cancelar"),
+                React.createElement("button", {
+                  className: "btn btn-ai",
+                  onClick: handleAIGenerate
+                }, "Gerar")
+              )
+            )
+          ),
+          showSettingsModal && React.createElement("div", {
+            className: "modal-overlay",
+            style: { zIndex: 2000 }
+          },
+            React.createElement("div", {
+              className: "modal-content",
+              style: { maxWidth: "600px" }
+            },
+              React.createElement("div", { className: "modal-title" }, "⚙️ Configurações"),
+              React.createElement("p", {
+                style: { fontSize: "12px", color: "#999", margin: 0 }
+              }, "Seus dados ficam salvos apenas no seu navegador."),
+              React.createElement("div", {
+                style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }
+              },
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "GitHub User/Owner"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubOwner,
+                    onChange: e => setSettings({ ...settings, githubOwner: e.target.value }),
+                    placeholder: "ex: theweewee"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Repositório"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubRepo,
+                    onChange: e => setSettings({ ...settings, githubRepo: e.target.value }),
+                    placeholder: "ex: htmls.site"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Pasta (Path)"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubPath,
+                    onChange: e => setSettings({ ...settings, githubPath: e.target.value }),
+                    placeholder: "ex: htmls"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Branch"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubBranch,
+                    onChange: e => setSettings({ ...settings, githubBranch: e.target.value }),
+                    placeholder: "ex: main"
+                  })
+                )
+              ),
+              React.createElement("div", { className: "input-group" },
+                React.createElement("label", null, "GitHub Personal Access Token (Repo Scope)"),
+                React.createElement("input", {
+                  type: "password",
+                  value: settings.githubToken,
+                  onChange: e => setSettings({ ...settings, githubToken: e.target.value }),
+                  placeholder: "ghp_..."
+                })
+              ),
+              React.createElement("div", { className: "input-group" },
+                React.createElement("label", null, "Google Gemini API Key"),
+                React.createElement("input", {
+                  type: "password",
+                  value: settings.geminiApiKey,
+                  onChange: e => setSettings({ ...settings, geminiApiKey: e.target.value }),
+                  placeholder: "AIza..."
+                }),
+                React.createElement("small", {
+                  style: { fontSize: "10px", color: "#666" }
+                }, "Necessário para usar a funcionalidade de IA.")
+              ),
+              React.createElement("div", { className: "modal-actions" },
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowSettingsModal(false)
+                }, "Fechar"),
+                React.createElement("button", {
+                  className: "btn btn-primary",
+                  onClick: () => handleSaveSettings(settings)
+                }, "Salvar Configurações")
+              )
+            )
+          )
+        )
+      );
+    }
 
-        // Auto-fetch on load
-        window.addEventListener('load', () => {
-            setTimeout(fetchToken, 500);
-        });
-    </script>
+    const root = createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
 </body>
 </html>
