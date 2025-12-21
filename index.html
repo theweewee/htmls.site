@@ -6,13 +6,13 @@
     <title>Editor HTML AI Pro - htmls.site</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
     
-    <!-- Importmap para React, ReactDOM e Gemini AI -->
+    <!-- Importmap para React e Gemini AI -->
     <script type="importmap">
     {
         "imports": {
-                  "react": "https://esm.sh/react@18.3.1",
-                  "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-                  "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.21.0"
+            "react": "https://esm.sh/react@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.21.0"
         }
     }
     </script>
@@ -84,6 +84,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         /* ============= MAIN LAYOUT ============= */
@@ -162,7 +163,7 @@
             font-size: 13px;
             transition: all 0.2s;
             height: 46px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
@@ -225,9 +226,10 @@
             border: none;
             cursor: pointer;
             transition: all 0.2s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 4px;
+            height: auto;
         }
 
         .btn-del {
@@ -586,17 +588,12 @@
 
         /* ============= STATUS BAR ============= */
         .status-bar {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
             padding: 12px 20px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 600;
-            pointer-events: none;
-            z-index: 2000;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 10px;
         }
@@ -853,7 +850,7 @@
         }
 
         // ==========================================
-        // RESIZER SYSTEM
+        // RESIZER HOOK
         // ==========================================
         function useResizer() {
             const [isResizingV, setIsResizingV] = useState(false);
@@ -1009,7 +1006,7 @@ ${html}
                         }
                         previewRef.current.srcdoc = doc;
                     }
-                }, 800);
+                }, 500);
                 return () => clearTimeout(timer);
             }, [html, css, js, isFullMode]);
 
@@ -1096,7 +1093,7 @@ ${js}
                     const data = await ghService.getFile(fname);
                     setFilename(fname);
                     const content = data.content;
-                    if (content.includes('<html') || content.includes('<html')) {
+                    if (content.includes('<html') || content.includes('<HTML')) {
                         try {
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(content, 'text/html');
@@ -1186,9 +1183,9 @@ ${js}
 
             const handleNew = () => {
                 setFilename('nova-pagina.html');
-                setHtml('<h1>Nova Página</h1>');
-                setCss('body { padding: 20px; font-family: sans-serif; }');
-                setJs('');
+                setHtml('<div class="container">\n    <h1>Nova Página</h1>\n    <p>Comece a criar!</p>\n</div>');
+                setCss('body {\n    padding: 20px;\n    font-family: sans-serif;\n    background: #f5f5f5;\n}\n\n.container {\n    max-width: 800px;\n    margin: 0 auto;\n    background: white;\n    padding: 40px;\n    border-radius: 8px;\n}');
+                setJs('console.log("Nova página criada!");');
                 setIsFullMode(false);
                 showStatus('Novo projeto iniciado', 'info');
             };
@@ -1223,26 +1220,36 @@ ${js}
                 setShowAIModal(false);
                 showStatus('Gemini está pensando...', 'info');
                 try {
-                    const ai = new GoogleGenerativeAI(settings.geminiApiKey);
-                    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                    const genAI = new GoogleGenerativeAI(settings.geminiApiKey);
+                    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                    
                     const prompt = `Create a single HTML file website based on this request: ${aiPrompt}.
 
-You must return ONLY a valid JSON object with 3 properties:
-1. "html": The HTML content inside <body> (do NOT include <body> tags).
-2. "css": The CSS content.
-3. "javascript": The JavaScript content.
+You must return ONLY a valid JSON object with exactly these 3 properties:
+{
+  "html": "The HTML content inside <body> (do NOT include <body> tags)",
+  "css": "The CSS content",
+  "javascript": "The JavaScript content"
+}
 
-The code should be modern, responsive, and complete. Return ONLY the JSON, no markdown, no explanation.`;
+The code should be modern, responsive, and complete. Return ONLY the JSON object, no markdown formatting, no backticks, no explanation.`;
 
                     const result = await model.generateContent(prompt);
-                    const text = result.response.text(
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    const response = await result.response;
+                    const text = response.text();
+                    
+                    // Remove markdown code blocks if present
+                    const cleanText = text.replace(/``````\n?/g, '').trim();
+                    
+                    // Try to find JSON object
+                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const data = JSON.parse(jsonMatch[0]);
                         setHtml(data.html || '');
                         setCss(data.css || '');
                         setJs(data.javascript || data.js || '');
                         setIsFullMode(false);
+                        setActiveTab('html');
                         showStatus('Página gerada com sucesso!', 'success');
                     } else {
                         throw new Error('Resposta inválida da IA');
@@ -1256,20 +1263,20 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                 }
             };
 
+            // Render
             return React.createElement('div', { id: 'app' },
                 // Header
                 React.createElement('div', { className: 'header' },
                     React.createElement('h1', null, '🚀 Editor HTML AI Pro'),
                     React.createElement('div', { className: 'header-actions' },
                         status && React.createElement('div', {
-                            className: `status-bar status-${status.type}`,
-                            style: { position: 'static', animation: 'none', transform: 'none', margin: 0 }
+                            className: `status-bar status-${status.type}`
                         }, status.msg),
                         React.createElement('button', {
                             className: 'btn btn-secondary',
                             onClick: () => setShowSettingsModal(true),
                             title: 'Configurações'
-                        }, '⚙️ Config')
+                        }, '⚙️')
                     )
                 ),
 
@@ -1283,30 +1290,30 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                         // Controls
                         React.createElement('div', { className: 'controls-panel' },
                             React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', { htmlFor: 'filename' }, '📄 Nome do Arquivo'),
+                                React.createElement('label', { htmlFor: 'filename' }, '📄 Arquivo'),
                                 React.createElement('input', {
                                     type: 'text',
                                     id: 'filename',
                                     value: filename,
                                     onChange: e => setFilename(e.target.value),
-                                    placeholder: 'ex: index.html'
+                                    placeholder: 'index.html'
                                 })
                             ),
                             React.createElement('button', {
                                 className: 'btn btn-ai',
                                 onClick: () => setShowAIModal(true),
                                 disabled: isAIGenerating
-                            }, isAIGenerating ? React.createElement('div', { className: 'spinner' }) : '✨', ' IA'),
+                            }, isAIGenerating ? React.createElement('div', { className: 'spinner' }) : '✨ IA'),
                             React.createElement('button', {
                                 className: 'btn btn-secondary',
                                 onClick: toggleMode,
-                                title: 'Alternar Visualização'
+                                title: 'Alternar modo'
                             }, isFullMode ? '📑 Dividir' : '📄 Unir'),
                             React.createElement('button', {
                                 className: 'btn btn-view-live',
                                 onClick: handleViewLive,
-                                title: 'Abrir site em nova aba'
-                            }, '🌐 Ver Site'),
+                                title: 'Ver site ao vivo'
+                            }, '🌐 Ver'),
                             React.createElement('button', {
                                 className: 'btn btn-secondary',
                                 onClick: handleNew
@@ -1315,7 +1322,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                 className: 'btn btn-primary',
                                 onClick: handleSave,
                                 disabled: isSaving
-                            }, isSaving ? React.createElement('div', { className: 'spinner' }) : '🚀', ' Salvar')
+                            }, isSaving ? React.createElement('div', { className: 'spinner' }) : '🚀 Salvar')
                         ),
 
                         // Tabs
@@ -1331,7 +1338,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                             React.createElement('div', {
                                 className: `tab ${activeTab === 'js' ? 'active' : ''}`,
                                 onClick: () => setActiveTab('js')
-                            }, '⚡ JavaScript')
+                            }, '⚡ JS')
                         ),
 
                         // Editor
@@ -1343,25 +1350,25 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                 className: 'code-area',
                                 value: html,
                                 onChange: e => setHtml(e.target.value),
-                                placeholder: '<!-- Código HTML Completo -->'
+                                placeholder: '<!-- HTML Completo -->'
                             }) : React.createElement(React.Fragment, null,
                                 activeTab === 'html' && React.createElement('textarea', {
                                     className: 'code-area',
                                     value: html,
                                     onChange: e => setHtml(e.target.value),
-                                    placeholder: '<!-- Código HTML aqui -->'
+                                    placeholder: '<!-- HTML -->'
                                 }),
                                 activeTab === 'css' && React.createElement('textarea', {
                                     className: 'code-area',
                                     value: css,
                                     onChange: e => setCss(e.target.value),
-                                    placeholder: '/* Código CSS aqui */'
+                                    placeholder: '/* CSS */'
                                 }),
                                 activeTab === 'js' && React.createElement('textarea', {
                                     className: 'code-area',
                                     value: js,
                                     onChange: e => setJs(e.target.value),
-                                    placeholder: '// Código JS aqui'
+                                    placeholder: '// JavaScript'
                                 })
                             ),
                             isAIGenerating && React.createElement('div', {
@@ -1378,8 +1385,11 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                     zIndex: 10
                                 }
                             },
-                                React.createElement('div', { className: 'spinner', style: { width: 40, height: 40 } }),
-                                React.createElement('p', null, 'Gerando com Gemini Flash...')
+                                React.createElement('div', { 
+                                    className: 'spinner', 
+                                    style: { width: 40, height: 40, borderWidth: '3px' } 
+                                }),
+                                React.createElement('p', null, 'Gerando com Gemini...')
                             )
                         ),
 
@@ -1392,10 +1402,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                         // File Manager
                         React.createElement('div', { className: 'file-manager' },
                             React.createElement('div', { className: 'fm-header' },
-                                React.createElement('span', null,
-                                    '📁 ',
-                                    settings.githubRepo ? `${settings.githubRepo}/${settings.githubPath}` : 'Arquivos Remotos'
-                                ),
+                                React.createElement('span', null, '📁 Arquivos'),
                                 React.createElement('button', {
                                     className: 'btn-icon btn-secondary',
                                     onClick: refreshFileList
@@ -1405,7 +1412,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                 files.length === 0
                                     ? React.createElement('li', {
                                         style: { padding: '20px', textAlign: 'center', color: '#555' }
-                                    }, 'Nenhum arquivo ou não conectado.')
+                                    }, 'Configure o GitHub primeiro')
                                     : files.map(f => React.createElement('li', {
                                         key: f.name,
                                         className: 'file-item'
@@ -1450,7 +1457,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                         onMouseDown: startResizeV
                     }),
 
-                    // Preview Section
+                    // Preview
                     React.createElement('div', { className: 'preview-section' },
                         React.createElement('iframe', {
                             ref: (el) => {
@@ -1471,10 +1478,10 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                         className: 'modal-content',
                         onClick: e => e.stopPropagation()
                     },
-                        React.createElement('div', { className: 'modal-title' }, '✨ Criar Página com IA'),
+                        React.createElement('div', { className: 'modal-title' }, '✨ Criar com IA'),
                         React.createElement('textarea', {
                             className: 'modal-textarea',
-                            placeholder: 'Descreva a página... ex: Landing page para pizzaria com tema escuro e formulário de pedido...',
+                            placeholder: 'Descreva a página... ex: Landing page moderna para restaurante japonês',
                             value: aiPrompt,
                             onChange: e => setAiPrompt(e.target.value),
                             autoFocus: true
@@ -1504,15 +1511,15 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                         React.createElement('div', { className: 'modal-title' }, '⚙️ Configurações'),
                         React.createElement('p', {
                             style: { fontSize: '12px', color: '#999', margin: 0 }
-                        }, 'Seus dados ficam salvos apenas no seu navegador.'),
+                        }, 'Dados salvos apenas no navegador'),
                         React.createElement('div', { className: 'settings-grid' },
                             React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'GitHub User/Owner'),
+                                React.createElement('label', null, 'GitHub User'),
                                 React.createElement('input', {
                                     type: 'text',
                                     value: settings.githubOwner,
                                     onChange: e => setSettings({ ...settings, githubOwner: e.target.value }),
-                                    placeholder: 'ex: theweewee'
+                                    placeholder: 'theweewee'
                                 })
                             ),
                             React.createElement('div', { className: 'input-group' },
@@ -1521,16 +1528,16 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                     type: 'text',
                                     value: settings.githubRepo,
                                     onChange: e => setSettings({ ...settings, githubRepo: e.target.value }),
-                                    placeholder: 'ex: htmls.site'
+                                    placeholder: 'htmls.site'
                                 })
                             ),
                             React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'Pasta (Path)'),
+                                React.createElement('label', null, 'Pasta'),
                                 React.createElement('input', {
                                     type: 'text',
                                     value: settings.githubPath,
                                     onChange: e => setSettings({ ...settings, githubPath: e.target.value }),
-                                    placeholder: 'ex: htmls'
+                                    placeholder: 'htmls'
                                 })
                             ),
                             React.createElement('div', { className: 'input-group' },
@@ -1539,14 +1546,14 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                     type: 'text',
                                     value: settings.githubBranch,
                                     onChange: e => setSettings({ ...settings, githubBranch: e.target.value }),
-                                    placeholder: 'ex: main'
+                                    placeholder: 'main'
                                 })
                             ),
                             React.createElement('div', {
                                 className: 'input-group',
                                 style: { gridColumn: '1 / -1' }
                             },
-                                React.createElement('label', null, 'GitHub Personal Access Token (Repo Scope)'),
+                                React.createElement('label', null, 'GitHub Token'),
                                 React.createElement('input', {
                                     type: 'password',
                                     value: settings.githubToken,
@@ -1558,7 +1565,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                 className: 'input-group',
                                 style: { gridColumn: '1 / -1' }
                             },
-                                React.createElement('label', null, 'Google Gemini API Key'),
+                                React.createElement('label', null, 'Gemini API Key'),
                                 React.createElement('input', {
                                     type: 'password',
                                     value: settings.geminiApiKey,
@@ -1567,7 +1574,7 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                                 }),
                                 React.createElement('small', {
                                     style: { fontSize: '10px', color: '#666' }
-                                }, 'Necessário para usar a funcionalidade de IA.')
+                                }, 'Para usar IA')
                             )
                         ),
                         React.createElement('div', { className: 'modal-actions' },
@@ -1578,16 +1585,16 @@ The code should be modern, responsive, and complete. Return ONLY the JSON, no ma
                             React.createElement('button', {
                                 className: 'btn btn-primary',
                                 onClick: () => handleSaveSettings(settings)
-                            }, '💾 Salvar Configurações')
+                            }, '💾 Salvar')
                         )
                     )
                 )
             );
         }
 
-        // Render
+        // Initialize
         const root = createRoot(document.getElementById('root'));
         root.render(React.createElement(App));
     </script>
 </body>
-<!-- Fixed importmap: React 18.3.1, Gemini 0.21.0 --></html>
+</html>
