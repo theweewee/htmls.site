@@ -242,8 +242,7 @@
       githubRepo: "",
       githubPath: "htmls",
       githubBranch: "main",
-      geminiApiKey: "",
-      renderDeployHookUrl: ""
+      geminiApiKey: ""
     };
 
     const STORAGE_KEY = "htmls_site_settings_v1";
@@ -524,19 +523,6 @@ ${js}
         }
       };
 
-      const triggerRenderDeploy = async () => {
-        const hook = (settings.renderDeployHookUrl || "").trim();
-        if (!hook) return;
-
-        try {
-          const res = await fetch(hook, { method: "POST" }); // POST dispara o hook [web:133]
-          if (!res.ok) throw new Error(`Deploy hook falhou: HTTP ${res.status}`);
-          showStatus("Deploy disparado no Render!", "success");
-        } catch (e) {
-          showStatus("Falha ao disparar deploy: " + e.message, "error");
-        }
-      };
-
       const handleSave = async () => {
         if (!ghService.isConfigured) {
           setShowSettingsModal(true);
@@ -570,12 +556,8 @@ ${js}
 </body>
 </html>`;
           }
-
-          await ghService.saveFile(filename, fullContent); // cria/atualiza via Contents API [web:111]
+          await ghService.saveFile(filename, fullContent);
           showStatus("Salvo com sucesso!", "success");
-
-          await triggerRenderDeploy();
-
           refreshFileList();
         } catch (e) {
           showStatus(e.message, "error");
@@ -604,7 +586,7 @@ ${js}
         showStatus("Novo projeto iniciado", "info");
       };
 
-      // === Botão invisível injetado nas páginas geradas pela IA ===
+      // === NOVO: sempre injetar botão invisível no canto nas páginas geradas ===
       const HOME_URL = "https://htmls.site";
 
       const ensureHomeCornerButton = ({ html, css, javascript }) => {
@@ -663,9 +645,9 @@ ${js}
 })();
 `;
 
-        const hasBtn = (html || "").includes(\`id="\${btnId}"\`) || (html || "").includes(\`id='\${btnId}'\`);
-        const hasCss = (css || "").includes(\`#\${btnId}{\`) || (css || "").includes(\`#\${btnId} {\`);
-        const hasJs = (javascript || "").includes(\`"\${btnId}"\`);
+        const hasBtn = (html || "").includes(`id="${btnId}"`) || (html || "").includes(`id='${btnId}'`);
+        const hasCss = (css || "").includes(`#${btnId}{`) || (css || "").includes(`#${btnId} {`);
+        const hasJs = (javascript || "").includes(`"${btnId}"`);
 
         return {
           html: (html || "") + (hasBtn ? "" : `\n${buttonHtml}\n`),
@@ -712,6 +694,7 @@ The code should be modern, responsive.`;
           if (jsonStr) {
             const data = JSON.parse(jsonStr);
 
+            // NOVO: injeta o botão invisível sempre
             const patched = ensureHomeCornerButton({
               html: data.html || "",
               css: data.css || "",
@@ -719,8 +702,9 @@ The code should be modern, responsive.`;
             });
 
             setHtml(patched.html);
-            setCss(patched.css || "");
-            setJs(patched.javascript || "");
+            setCss(patched.css);
+            setJs(patched.javascript);
+
             setIsFullMode(false);
             showStatus("Página gerada com sucesso!", "success");
           } else {
@@ -992,18 +976,6 @@ The code should be modern, responsive.`;
                 React.createElement("small", {
                   style: { fontSize: "10px", color: "#666" }
                 }, "Necessário para usar a funcionalidade de IA.")
-              ),
-              React.createElement("div", { className: "input-group" },
-                React.createElement("label", null, "Render Deploy Hook URL"),
-                React.createElement("input", {
-                  type: "text",
-                  value: settings.renderDeployHookUrl || "",
-                  onChange: e => setSettings({ ...settings, renderDeployHookUrl: e.target.value }),
-                  placeholder: "https://api.render.com/deploy/srv-...?... "
-                }),
-                React.createElement("small", {
-                  style: { fontSize: "10px", color: "#666" }
-                }, "Se preenchido, o app chama esse hook automaticamente após salvar.")
               ),
               React.createElement("div", { className: "modal-actions" },
                 React.createElement("button", {
