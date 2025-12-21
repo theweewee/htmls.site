@@ -1235,7 +1235,7 @@ You must return ONLY a valid JSON object with 3 properties:
 The code should be modern, responsive, and complete. Return ONLY the JSON, no markdown, no explanation.`;
 
                     const result = await model.generateContent(prompt);
-                    const text = result.response.text();
+                    const text = result.response.text(
                     const jsonMatch = text.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const data = JSON.parse(jsonMatch[0]);
