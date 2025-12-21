@@ -458,23 +458,7 @@
           setActiveTab("html");
           showStatus("Modo: Abas Separadas", "info");
         } else {
-          const fullContent = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${filename}</title>
-    <style>
-${css}
-    </style>
-</head>
-<body>
-${html}
-    <script>
-${js}
-    <\/script>
-</body>
-</html>`;
+          const fullContent = `<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>${filename}</title>\n    <style>\n${css}\n    </style>\n</head>\n<body>\n${html}\n    <script>\n${js}\n    <\/script>\n</body>\n</html>`;
           setHtml(fullContent);
           setCss("");
           setJs("");
@@ -538,23 +522,7 @@ ${js}
           if (isFullMode) {
             fullContent = html;
           } else {
-            fullContent = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${filename}</title>
-    <style>
-${css}
-    </style>
-</head>
-<body>
-${html}
-    <script>
-${js}
-    <\/script>
-</body>
-</html>`;
+            fullContent = `<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>${filename}</title>\n    <style>\n${css}\n    </style>\n</head>\n<body>\n${html}\n    <script>\n${js}\n    <\/script>\n</body>\n</html>`;
           }
           await ghService.saveFile(filename, fullContent);
           showStatus("Salvo com sucesso!", "success");
@@ -598,12 +566,7 @@ ${js}
         showStatus("Gemini está pensando...", "info");
         try {
           const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
-          const prompt = `Create a single HTML file website based on this request: "${aiPrompt}".
-You must return a JSON object with 3 properties:
-1. "html": The HTML content inside <body> (do NOT include <body> tags).
-2. "css": The CSS content.
-3. "javascript": The JavaScript content.
-The code should be modern, responsive.`;
+          const prompt = `Create a single HTML file website based on this request: "${aiPrompt}".\nYou must return a JSON object with 3 properties:\n1. "html": The HTML content inside <body> (do NOT include <body> tags).\n2. "css": The CSS content.\n3. "javascript": The JavaScript content.\nThe code should be modern, responsive.`;
           const response = await ai.models.generateContent({
             model: "gemini-3-flash-preview",
             contents: prompt,
@@ -623,6 +586,51 @@ The code should be modern, responsive.`;
           const jsonStr = response.text;
           if (jsonStr) {
             const data = JSON.parse(jsonStr);
+
+            // NOVO: pós-process para garantir o hot-corner sempre
+            const HOME_URL = "https://htmls.site";
+
+            const ensureHomeCornerButton = ({ html = "", css = "", javascript = "" }) => {
+              const btnId = "htmls-home-corner-btn";
+              const marker = "htmls.site corner home button";
+
+              const buttonHtml =
+                `\n<!-- ${marker} -->\n` +
+                `<a id="${btnId}" href="${HOME_URL}" title="Voltar para htmls.site" aria-label="Voltar para htmls.site">⌂</a>\n`;
+
+              const buttonCss =
+                `\n/* ${marker} */\n` +
+                `#${btnId}{` +
+                `position:fixed;top:8px;left:8px;width:34px;height:34px;border-radius:10px;` +
+                `display:flex;align-items:center;justify-content:center;` +
+                `background:rgba(0,0,0,0);color:rgba(255,255,255,0);opacity:0.02;` +
+                `z-index:2147483647;text-decoration:none;` +
+                `font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-weight:700;` +
+                `user-select:none;` +
+                `transition:opacity .15s ease,background .15s ease,color .15s ease,box-shadow .15s ease;` +
+                `}\n` +
+                `#${btnId}:hover{opacity:0.95;background:rgba(15,15,20,0.9);color:rgba(255,255,255,1);box-shadow:0 8px 26px rgba(0,0,0,0.45);}\n` +
+                `#${btnId}:focus{opacity:0.95;outline:2px solid rgba(99,102,241,.8);outline-offset:2px;background:rgba(15,15,20,0.9);color:#fff;}\n`;
+
+              const buttonJs =
+                `\n/* ${marker} */\n` +
+                `(()=>{try{` +
+                `const el=document.getElementById("${btnId}");` +
+                `if(!el)return;` +
+                `el.addEventListener("click",(e)=>{e.preventDefault();window.location.href="${HOME_URL}";});` +
+                `}catch(_){}})();\n`;
+
+              const hasBtn = html.includes(btnId);
+              const hasCss = css.includes(btnId) || css.includes(marker);
+              const hasJs = javascript.includes(btnId) || javascript.includes(marker);
+
+              return {
+                html: hasBtn ? html : (html + buttonHtml),
+                css: hasCss ? css : (css + buttonCss),
+                javascript: hasJs ? javascript : (javascript + buttonJs),
+              };
+            };
+
             const patched = ensureHomeCornerButton({
               html: data.html || "",
               css: data.css || "",
@@ -632,6 +640,7 @@ The code should be modern, responsive.`;
             setHtml(patched.html);
             setCss(patched.css);
             setJs(patched.javascript);
+
             setIsFullMode(false);
             showStatus("Página gerada com sucesso!", "success");
           } else {
@@ -662,7 +671,7 @@ The code should be modern, responsive.`;
         }
 
         const url = `${PUBLIC_PREFIX}${cleanName}`;
-        window.open(url, "_blank", "noopener,noreferrer"); // abre em nova aba[web:47][web:63]
+        window.open(url, "_blank", "noopener,noreferrer"); // abre em nova aba
         showStatus(`Abrindo ${url}`, "info");
       };
 
