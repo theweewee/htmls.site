@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: htmls.site
+    env: static
+    staticSite:
+      rootDir: ./
