@@ -1,1068 +1,464 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor HTML AI Pro - htmls.site</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
-    
-    <!-- Importmap para React e Gemini AI -->
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.21.0"
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor HTML + AI - htmls.site</title>
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='90'>🚀</text></svg>">
+
+  <!-- Importmap para React, ReactDOM e @google/genai via esm.sh -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
+      "@google/genai": "https://esm.sh/@google/genai@1.34.0"
     }
-    </script>
-
-    <style>
-        :root {
-            --bg-main: #0a0a0f;
-            --bg-panel: #13131a;
-            --bg-header: #0d0d14;
-            --border: #1f1f2e;
-            --accent: #5865f2;
-            --accent-hover: #4752c4;
-            --text-main: #e9eaed;
-            --text-muted: #8b92a8;
-            --success: #0dbd8b;
-            --danger: #ed4245;
-            --warning: #faa61a;
-        }
-
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-        }
-
-        html, body {
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-main);
-            color: var(--text-main);
-        }
-
-        #root {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* ============= HEADER ============= */
-        .header {
-            background: linear-gradient(135deg, var(--bg-header) 0%, #0e0e16 100%);
-            padding: 14px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            min-height: 62px;
-            flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .header h1 {
-            font-size: 19px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(135deg, var(--accent) 0%, #7289da 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        /* ============= MAIN LAYOUT ============= */
-        .main-container {
-            flex: 1;
-            display: flex;
-            height: calc(100vh - 62px);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .editor-section {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-panel);
-            min-width: 280px;
-            max-width: 85%;
-            position: relative;
-        }
-
-        /* ============= CONTROLS PANEL ============= */
-        .controls-panel {
-            padding: 16px 20px;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex: 1;
-            min-width: 160px;
-        }
-
-        .input-group label {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            background: var(--bg-main);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 10px 14px;
-            border-radius: 8px;
-            outline: none;
-            font-size: 14px;
-            transition: all 0.2s;
-            height: 46px;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.1);
-        }
-
-        /* ============= BUTTONS ============= */
-        .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-            height: 46px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, #4752c4 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
-        }
-
-        .btn-ai {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .btn-ai:hover:not(:disabled) {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: var(--bg-main);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--accent);
-            background: #0e0e16;
-        }
-
-        .btn-view-live {
-            background: linear-gradient(135deg, #0dbd8b 0%, #09a677 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(13, 189, 139, 0.3);
-        }
-
-        .btn-view-live:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(13, 189, 139, 0.4);
-        }
-
-        .btn-icon {
-            padding: 6px 10px;
-            font-size: 12px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            height: auto;
-        }
-
-        .btn-del {
-            background: #3a1d1d;
-            color: #fca5a5;
-        }
-
-        .btn-del:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        /* ============= TABS ============= */
-        .tabs {
-            display: flex;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-            padding: 0 20px;
-        }
-
-        .tab {
-            padding: 14px 20px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            background: transparent;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
-            position: relative;
-        }
-
-        .tab.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
-
-        .tab:hover:not(.active) {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        /* ============= EDITOR ============= */
-        .editor-container {
-            height: 60%;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            min-height: 150px;
-        }
-
-        textarea.code-area {
-            width: 100%;
-            height: 100%;
-            background: var(--bg-panel);
-            color: #e9eaed;
-            border: none;
-            padding: 20px;
-            font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            resize: none;
-            outline: none;
-        }
-
-        textarea.code-area::placeholder {
-            color: var(--text-muted);
-            opacity: 0.5;
-        }
-
-        /* ============= FILE MANAGER ============= */
-        .file-manager {
-            flex: 1;
-            background: var(--bg-main);
-            display: flex;
-            flex-direction: column;
-            min-height: 150px;
-            overflow: hidden;
-            border-top: 1px solid var(--border);
-        }
-
-        .fm-header {
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .fm-header span {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-        }
-
-        .file-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-            margin: 0;
-            list-style: none;
-        }
-
-        .file-list::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .file-list::-webkit-scrollbar-track {
-            background: var(--bg-main);
-        }
-
-        .file-list::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        .file-list::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-
-        .file-item {
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            transition: all 0.2s;
-        }
-
-        .file-item:hover {
-            background: rgba(88, 101, 242, 0.05);
-            border-left: 3px solid var(--accent);
-            padding-left: 17px;
-        }
-
-        .file-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-            cursor: pointer;
-        }
-
-        .file-name {
-            font-size: 14px;
-            color: var(--accent);
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .file-name:hover {
-            text-decoration: underline;
-            color: var(--accent-hover);
-        }
-
-        .file-url {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: 'Consolas', monospace;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .copy-url {
-            cursor: pointer;
-            opacity: 0;
-            transition: all 0.2s;
-            font-size: 12px;
-        }
-
-        .file-item:hover .copy-url {
-            opacity: 1;
-        }
-
-        .copy-url:hover {
-            color: var(--accent);
-        }
-
-        .file-actions {
-            display: flex;
-            gap: 8px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-
-        .file-item:hover .file-actions {
-            opacity: 1;
-        }
-
-        /* ============= PREVIEW ============= */
-        .preview-section {
-            flex: 1;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            min-width: 280px;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
-        }
-
-        /* ============= RESIZERS ============= */
-        .resizer-horizontal {
-            height: 6px;
-            background: var(--bg-main);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            cursor: row-resize;
-            flex-shrink: 0;
-            transition: all 0.2s;
-            z-index: 10;
-            position: relative;
-        }
-
-        .resizer-horizontal::after {
-            content: '⋯';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--text-muted);
-            font-size: 16px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .resizer-horizontal:hover,
-        .resizer-horizontal.resizing {
-            background: var(--accent);
-            height: 8px;
-        }
-
-        .resizer-horizontal:hover::after {
-            opacity: 1;
-        }
-
-        .resizer-vertical {
-            width: 6px;
-            background: var(--bg-main);
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-            cursor: col-resize;
-            flex-shrink: 0;
-            transition: all 0.2s;
-            z-index: 10;
-            position: relative;
-        }
-
-        .resizer-vertical::after {
-            content: '⋮';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--text-muted);
-            font-size: 16px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .resizer-vertical:hover,
-        .resizer-vertical.resizing {
-            background: var(--accent);
-            width: 8px;
-        }
-
-        .resizer-vertical:hover::after {
-            opacity: 1;
-        }
-
-        .pointer-events-none {
-            pointer-events: none;
-        }
-
-        /* ============= MODAL ============= */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #1c1c24;
-            border: 1px solid var(--border);
-            width: 90%;
-            max-width: 600px;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .modal-textarea {
-            width: 100%;
-            min-height: 120px;
-            background: #111116;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: white;
-            padding: 12px;
-            font-size: 14px;
-            resize: vertical;
-            outline: none;
-            font-family: sans-serif;
-        }
-
-        .modal-textarea:focus {
-            border-color: var(--accent);
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        /* ============= STATUS BAR ============= */
-        .status-bar {
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-info {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-        }
-
-        .status-success {
-            background: linear-gradient(135deg, var(--success) 0%, #09a677 100%);
-            color: white;
-        }
-
-        .status-error {
-            background: linear-gradient(135deg, var(--danger) 0%, #c73434 100%);
-            color: white;
-        }
-
-        /* ============= SPINNER ============= */
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ============= RESPONSIVE ============= */
-        @media (max-width: 1024px) {
-            .controls-panel {
-                gap: 8px;
-            }
-            .btn {
-                padding: 8px 14px;
-                font-size: 12px;
-            }
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                padding: 10px 12px;
-            }
-            .header h1 {
-                font-size: 16px;
-            }
-            .main-container {
-                flex-direction: column;
-                overflow-y: auto;
-                height: auto;
-            }
-            .editor-section,
-            .preview-section {
-                width: 100% !important;
-                min-width: 100%;
-                max-width: 100%;
-            }
-            .editor-section {
-                height: 60vh;
-                min-height: 400px;
-            }
-            .preview-section {
-                height: 40vh;
-                min-height: 300px;
-            }
-            .resizer-vertical {
-                display: none;
-            }
-            .resizer-horizontal {
-                display: none;
-            }
-            .editor-container {
-                height: 50% !important;
-            }
-            .file-manager {
-                height: 50% !important;
-            }
-            .controls-panel {
-                padding: 12px;
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .input-group {
-                min-width: 100%;
-            }
-            .btn {
-                width: 100%;
-            }
-            .tabs {
-                padding: 0 10px;
-            }
-            .tab {
-                padding: 12px 14px;
-                font-size: 12px;
-            }
-            textarea.code-area {
-                padding: 12px;
-                font-size: 13px;
-            }
-            .file-url {
-                font-size: 10px;
-                word-break: break-all;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header h1 {
-                font-size: 14px;
-            }
-        }
-
-        /* Dark scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--bg-main);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 5px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-    </style>
+  }
+  </script>
+
+  <style>
+    :root {
+        --bg-main: #101014;
+        --bg-panel: #17171c;
+        --bg-header: #111117;
+        --border: #23232e;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --text-main: #e9e9ed;
+        --text-muted: #9ca3af;
+        --success: #10b981;
+        --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        background: var(--bg-main);
+        color: var(--text-main);
+    }
+
+    #root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    .header {
+        background: var(--bg-header);
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        flex-shrink: 0;
+    }
+    .header h1 { font-size: 18px; margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .main-container {
+        flex: 1;
+        display: flex;
+        height: calc(100vh - 60px);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .editor-section {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-panel);
+        border-right: 1px solid var(--border);
+        min-width: 300px;
+    }
+
+    .controls-panel {
+        padding: 12px;
+        background: var(--bg-header);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+    .input-group label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    input[type="text"], input[type="password"] {
+        background: var(--bg-main);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 8px 12px;
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        height: 36px;
+        width: 100%;
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent); }
+
+    .btn {
+        padding: 0 16px; border-radius: 6px; border: none; font-weight: 600;
+        cursor: pointer; font-size: 13px; transition: all 0.2s; height: 36px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-ai {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-ai:hover { filter: brightness(1.1); }
+
+    .btn-secondary { background: #2d2d3a; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+    .tabs { display: flex; background: var(--bg-header); border-bottom: 1px solid var(--border); }
+    .tab {
+        flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 12px;
+        font-weight: 600; color: var(--text-muted); border-right: 1px solid var(--border);
+        background: transparent; transition: all 0.2s;
+    }
+    .tab.active { background: var(--bg-panel); color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .tab:hover:not(.active) { color: var(--text-main); background: #1c1c24; }
+
+    .editor-container {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+    textarea.code-area {
+        width: 100%; height: 100%; background: var(--bg-panel); color: #e9e9ed;
+        border: none; padding: 16px; font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 14px; line-height: 1.5; resize: none; outline: none;
+    }
+
+    .file-manager {
+        height: 200px;
+        background: #0d0d11;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--border);
+    }
+    .fm-header {
+        padding: 8px 12px; display: flex; justify-content: space-between;
+        align-items: center; background: #141419; border-bottom: 1px solid var(--border);
+    }
+    .fm-header span { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+    .file-list { flex: 1; overflow-y: auto; padding: 0; margin: 0; list-style: none; }
+    .file-item {
+        padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid #1f1f28; transition: background 0.1s;
+    }
+    .file-item:hover { background: #1c1c24; }
+    .file-info { display: flex; flex-direction: column; cursor: pointer; flex: 1; }
+    .file-name { font-size: 13px; color: var(--accent); font-weight: 500; }
+    .file-actions { display: flex; gap: 6px; }
+
+    .btn-icon {
+        padding: 4px; border-radius: 4px; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px;
+    }
+    .btn-del { background: #3a1d1d; color: #fca5a5; }
+
+    .preview-section {
+        flex: 1;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    iframe { width: 100%; height: 100%; border: none; background: white; }
+
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-content {
+        background: #1c1c24; border: 1px solid var(--border);
+        width: 90%; max-width: 500px; border-radius: 12px;
+        padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; gap: 16px;
+        max-height: 90vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; }
+    .modal-textarea {
+        width: 100%; height: 120px; background: #111116; border: 1px solid var(--border);
+        border-radius: 8px; color: white; padding: 12px; font-size: 14px;
+        resize: none; outline: none; font-family: sans-serif;
+    }
+    .modal-textarea:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+
+    .status-bar {
+        padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .status-info { background: #3b82f6; color: white; }
+    .status-success { background: var(--success); color: white; }
+    .status-error { background: var(--danger); color: white; }
+
+    .spinner {
+        width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%; border-top-color: white;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+        .main-container { flex-direction: column; overflow-y: auto; }
+        .editor-section, .preview-section { width: 100%; height: 50vh; }
+        .file-manager { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+  <div id="root"></div>
 
-    <script type="module">
-        import React, { useState, useEffect, useRef } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { GoogleGenerativeAI } from '@google/generative-ai';
+  <script type="module">
+    import React, { useState, useEffect, useRef } from "react";
+    import { createRoot } from "react-dom/client";
+    import { GoogleGenAI, Type } from "@google/genai";
 
-        const DEFAULT_SETTINGS = {
-            githubToken: '',
-            githubOwner: '',
-            githubRepo: '',
-            githubPath: 'htmls',
-            githubBranch: 'main',
-            geminiApiKey: ''
+    const DEFAULT_SETTINGS = {
+      githubToken: "",
+      githubOwner: "",
+      githubRepo: "",
+      githubPath: "htmls",
+      githubBranch: "main",
+      geminiApiKey: ""
+    };
+
+    const STORAGE_KEY = "htmls_site_settings_v1";
+
+    class GitHubService {
+      constructor(settings) {
+        this.settings = settings;
+      }
+      updateSettings(newSettings) {
+        this.settings = newSettings;
+      }
+      get headers() {
+        return {
+          "Authorization": `Bearer ${this.settings.githubToken}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
         };
-
-        const STORAGE_KEY = 'htmls_site_settings_v2';
-
-        // ==========================================
-        // GITHUB SERVICE
-        // ==========================================
-        class GitHubService {
-            constructor(settings) {
-                this.settings = settings;
-            }
-
-            updateSettings(newSettings) {
-                this.settings = newSettings;
-            }
-
-            get headers() {
-                return {
-                    'Authorization': `Bearer ${this.settings.githubToken}`,
-                    'Accept': 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                };
-            }
-
-            get isConfigured() {
-                return !!(this.settings.githubToken && this.settings.githubOwner && this.settings.githubRepo);
-            }
-
-            get baseUrl() {
-                return `https://${this.settings.githubOwner}.github.io/${this.settings.githubRepo}`;
-            }
-
-            async listFiles() {
-                if (!this.isConfigured) return [];
-                const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}?ref=${this.settings.githubBranch}`;
-                const res = await fetch(url, { headers: this.headers });
-                if (!res.ok) {
-                    if (res.status === 404) return [];
-                    throw new Error(`GitHub Error: ${res.statusText}`);
-                }
-                const files = await res.json();
-                if (!Array.isArray(files)) return [];
-                return files
-                    .filter(f => f.name.endsWith('.html'))
-                    .sort((a, b) => a.name.localeCompare(b.name));
-            }
-
-            async getFile(filename) {
-                const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}?ref=${this.settings.githubBranch}`;
-                const res = await fetch(url, { headers: this.headers });
-                if (!res.ok) throw new Error('Arquivo não encontrado');
-                const data = await res.json();
-                const content = new TextDecoder().decode(
-                    Uint8Array.from(atob(data.content.replace(/\s/g, '')), c => c.charCodeAt(0))
-                );
-                return { content, sha: data.sha };
-            }
-
-            async saveFile(filename, content) {
-                const path = `${this.settings.githubPath}/${filename}`;
-                const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${path}`;
-                let sha = null;
-                try {
-                    const existing = await this.getFile(filename);
-                    sha = existing.sha;
-                } catch (e) {}
-
-                const encodedContent = btoa(String.fromCharCode(...new TextEncoder().encode(content)));
-                const body = {
-                    message: `Update ${filename} via HTML Editor Pro`,
-                    content: encodedContent,
-                    branch: this.settings.githubBranch,
-                    ...(sha && { sha })
-                };
-
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: this.headers,
-                    body: JSON.stringify(body)
-                });
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.message || 'Erro ao salvar no GitHub');
-                }
-                return await res.json();
-            }
-
-            async deleteFile(filename) {
-                const file = await this.getFile(filename);
-                const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}`;
-                const res = await fetch(url, {
-                    method: 'DELETE',
-                    headers: this.headers,
-                    body: JSON.stringify({
-                        message: `Delete ${filename}`,
-                        sha: file.sha,
-                        branch: this.settings.githubBranch
-                    })
-                });
-                if (!res.ok) throw new Error('Erro ao deletar');
-            }
+      }
+      get isConfigured() {
+        return !!(this.settings.githubToken && this.settings.githubOwner && this.settings.githubRepo);
+      }
+      async listFiles() {
+        if (!this.isConfigured) return [];
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}?ref=${this.settings.githubBranch}`;
+        const res = await fetch(url, { headers: this.headers });
+        if (!res.ok) {
+          if (res.status === 404) return [];
+          throw new Error(`GitHub Error: ${res.statusText}`);
         }
-
-        // ==========================================
-        // RESIZER HOOK
-        // ==========================================
-        function useResizer() {
-            const [isResizingV, setIsResizingV] = useState(false);
-            const [isResizingH, setIsResizingH] = useState(false);
-            const editorRef = useRef(null);
-            const topPanelRef = useRef(null);
-            const iframeRef = useRef(null);
-
-            useEffect(() => {
-                const handleMouseMove = (e) => {
-                    if (isResizingV && editorRef.current) {
-                        const newWidth = e.clientX;
-                        const minWidth = 280;
-                        const maxWidth = window.innerWidth - 280;
-                        if (newWidth > minWidth && newWidth < maxWidth) {
-                            editorRef.current.style.width = `${newWidth}px`;
-                        }
-                    }
-                    if (isResizingH && editorRef.current && topPanelRef.current) {
-                        const rect = editorRef.current.getBoundingClientRect();
-                        const newHeight = e.clientY - rect.top - 120;
-                        const minHeight = 150;
-                        const maxHeight = rect.height - 150;
-                        if (newHeight > minHeight && newHeight < maxHeight) {
-                            topPanelRef.current.style.height = `${newHeight}px`;
-                        }
-                    }
-                };
-
-                const handleMouseUp = () => {
-                    setIsResizingV(false);
-                    setIsResizingH(false);
-                    document.body.style.cursor = 'default';
-                    if (iframeRef.current) {
-                        iframeRef.current.classList.remove('pointer-events-none');
-                    }
-                };
-
-                if (isResizingV || isResizingH) {
-                    document.addEventListener('mousemove', handleMouseMove);
-                    document.addEventListener('mouseup', handleMouseUp);
-                    if (iframeRef.current) {
-                        iframeRef.current.classList.add('pointer-events-none');
-                    }
-                }
-
-                return () => {
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                };
-            }, [isResizingV, isResizingH]);
-
-            const startResizeV = (e) => {
-                e.preventDefault();
-                setIsResizingV(true);
-                document.body.style.cursor = 'col-resize';
-            };
-
-            const startResizeH = (e) => {
-                e.preventDefault();
-                setIsResizingH(true);
-                document.body.style.cursor = 'row-resize';
-            };
-
-            return {
-                editorRef,
-                topPanelRef,
-                iframeRef,
-                isResizingV,
-                isResizingH,
-                startResizeV,
-                startResizeH
-            };
+        const files = await res.json();
+        if (!Array.isArray(files)) return [];
+        return files
+          .filter(f => f.name.endsWith(".html"))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      }
+      async getFile(filename) {
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}?ref=${this.settings.githubBranch}`;
+        const res = await fetch(url, { headers: this.headers });
+        if (!res.ok) throw new Error("Arquivo não encontrado");
+        const data = await res.json();
+        const content = new TextDecoder().decode(
+          Uint8Array.from(
+            atob(data.content.replace(/\s/g, "")),
+            c => c.charCodeAt(0)
+          )
+        );
+        return { content, sha: data.sha };
+      }
+      async saveFile(filename, content) {
+        const path = `${this.settings.githubPath}/${filename}`;
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${path}`;
+        let sha = null;
+        try {
+          const existing = await this.getFile(filename);
+          sha = existing.sha;
+        } catch (e) {}
+        const encodedContent = btoa(
+          String.fromCharCode(...new TextEncoder().encode(content))
+        );
+        const body = {
+          message: `Update ${filename} via HTML Editor`,
+          content: encodedContent,
+          branch: this.settings.githubBranch,
+          ...(sha ? { sha } : {})
+        };
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: this.headers,
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Erro ao salvar no GitHub");
         }
+        return await res.json();
+      }
+      async deleteFile(filename) {
+        const file = await this.getFile(filename);
+        const url = `https://api.github.com/repos/${this.settings.githubOwner}/${this.settings.githubRepo}/contents/${this.settings.githubPath}/${filename}`;
+        const res = await fetch(url, {
+          method: "DELETE",
+          headers: this.headers,
+          body: JSON.stringify({
+            message: `Delete ${filename}`,
+            sha: file.sha,
+            branch: this.settings.githubBranch
+          })
+        });
+        if (!res.ok) throw new Error("Erro ao deletar");
+      }
+    }
 
-        // ==========================================
-        // MAIN APP
-        // ==========================================
-        function App() {
-            const [html, setHtml] = useState('<h1>Olá Mundo!</h1>');
-            const [css, setCss] = useState('body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }\nh1 { color: #333; }');
-            const [js, setJs] = useState('console.log("Página carregada");');
-            const [activeTab, setActiveTab] = useState('html');
-            const [filename, setFilename] = useState('index.html');
-            const [files, setFiles] = useState([]);
-            const [status, setStatus] = useState(null);
-            const [isSaving, setIsSaving] = useState(false);
-            const [isAIGenerating, setIsAIGenerating] = useState(false);
-            const [showAIModal, setShowAIModal] = useState(false);
-            const [showSettingsModal, setShowSettingsModal] = useState(false);
-            const [aiPrompt, setAiPrompt] = useState('');
-            const [isFullMode, setIsFullMode] = useState(false);
-            const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-            const [ghService, setGhService] = useState(new GitHubService(DEFAULT_SETTINGS));
+    function App() {
+      const [html, setHtml] = useState("<h1>Olá Mundo!</h1>");
+      const [css, setCss] = useState("body { font-family: sans-serif; padding: 20px; background: #f0f0f0; } h1 { color: #333; }");
+      const [js, setJs] = useState('console.log("Página carregada");');
+      const [activeTab, setActiveTab] = useState("html");
+      const [filename, setFilename] = useState("index.html");
+      const [files, setFiles] = useState([]);
+      const [status, setStatus] = useState(null);
+      const [isSaving, setIsSaving] = useState(false);
+      const [isAIGenerating, setIsAIGenerating] = useState(false);
+      const [showAIModal, setShowAIModal] = useState(false);
+      const [showSettingsModal, setShowSettingsModal] = useState(false);
+      const [aiPrompt, setAiPrompt] = useState("");
+      const [isFullMode, setIsFullMode] = useState(false);
+      const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+      const [ghService, setGhService] = useState(new GitHubService(DEFAULT_SETTINGS));
+      const iframeRef = useRef(null);
 
-            const previewRef = useRef(null);
-            const {
-                editorRef,
-                topPanelRef,
-                iframeRef,
-                isResizingV,
-                isResizingH,
-                startResizeV,
-                startResizeH
-            } = useResizer();
+      useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setSettings(parsed);
+            const service = new GitHubService(parsed);
+            setGhService(service);
+            if (parsed.githubToken) {
+              service.listFiles().then(setFiles).catch(err => {
+                console.error(err);
+                showStatus("Erro ao listar arquivos. Verifique as configurações.", "error");
+              });
+            } else {
+              setShowSettingsModal(true);
+            }
+          } catch (e) {
+            console.error("Erro ao carregar configs", e);
+            setShowSettingsModal(true);
+          }
+        } else {
+          setShowSettingsModal(true);
+        }
+      }, []);
 
-            // Load settings
-            useEffect(() => {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        setSettings(parsed);
-                        const service = new GitHubService(parsed);
-                        setGhService(service);
-                        if (parsed.githubToken) {
-                            service.listFiles().then(setFiles).catch(err => {
-                                console.error(err);
-                                showStatus('Erro ao listar arquivos. Verifique as configurações.', 'error');
-                            });
-                        } else {
-                            setShowSettingsModal(true);
-                        }
-                    } catch (e) {
-                        console.error('Erro ao carregar configs:', e);
-                        setShowSettingsModal(true);
-                    }
-                } else {
-                    setShowSettingsModal(true);
-                }
-            }, []);
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          if (iframeRef.current) {
+            let doc;
+            if (isFullMode) {
+              doc = html;
+            } else {
+              doc = `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>${css}</style>
+                </head>
+                <body>
+                    ${html}
+                    <script>${js}<\/script>
+                </body>
+                </html>
+              `;
+            }
+            iframeRef.current.srcdoc = doc;
+          }
+        }, 800);
+        return () => clearTimeout(timer);
+      }, [html, css, js, isFullMode]);
 
-            // Update preview
-            useEffect(() => {
-                const timer = setTimeout(() => {
-                    if (previewRef.current) {
-                        let doc;
-                        if (isFullMode) {
-                            doc = html;
-                        } else {
-                            doc = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>${css}</style>
-</head>
-<body>
-${html}
-    <script>${js}<\/script>
-</body>
-</html>`;
-                        }
-                        previewRef.current.srcdoc = doc;
-                    }
-                }, 500);
-                return () => clearTimeout(timer);
-            }, [html, css, js, isFullMode]);
+      const showStatus = (msg, type = "info") => {
+        setStatus({ msg, type });
+        setTimeout(() => setStatus(null), 4000);
+      };
 
-            const showStatus = (msg, type = 'info') => {
-                setStatus({ msg, type });
-                setTimeout(() => setStatus(null), 4000);
-            };
+      const handleSaveSettings = newSettings => {
+        setSettings(newSettings);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+        const service = new GitHubService(newSettings);
+        setGhService(service);
+        setShowSettingsModal(false);
+        showStatus("Configurações salvas!", "success");
+        service
+          .listFiles()
+          .then(list => {
+            setFiles(list);
+            showStatus("Conectado ao GitHub", "success");
+          })
+          .catch(e => showStatus("Erro ao conectar GitHub: " + e.message, "error"));
+      };
 
-            const handleSaveSettings = (newSettings) => {
-                setSettings(newSettings);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
-                const service = new GitHubService(newSettings);
-                setGhService(service);
-                setShowSettingsModal(false);
-                showStatus('Configurações salvas!', 'success');
-                service
-                    .listFiles()
-                    .then(list => {
-                        setFiles(list);
-                        showStatus('Conectado ao GitHub', 'success');
-                    })
-                    .catch(e => showStatus(`Erro ao conectar: ${e.message}`, 'error'));
-            };
+      const refreshFileList = async () => {
+        try {
+          const list = await ghService.listFiles();
+          setFiles(list);
+        } catch (e) {
+          showStatus("Erro na lista: " + e.message, "error");
+        }
+      };
 
-            const refreshFileList = async () => {
-                try {
-                    const list = await ghService.listFiles();
-                    setFiles(list);
-                } catch (e) {
-                    showStatus(`Erro na lista: ${e.message}`, 'error');
-                }
-            };
-
-            const toggleMode = () => {
-                if (isFullMode) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const styleTag = doc.querySelector('head style');
-                    const extractedCss = styleTag ? styleTag.innerHTML.trim() : '';
-                    if (styleTag) styleTag.remove();
-                    const scriptTags = doc.querySelectorAll('body script');
-                    let extractedJs = '';
-                    scriptTags.forEach(s => {
-                        if (s.innerHTML.trim()) {
-                            extractedJs = s.innerHTML.trim();
-                            s.remove();
-                        }
-                    });
-                    setCss(extractedCss);
-                    setJs(extractedJs);
-                    setHtml(doc.body ? doc.body.innerHTML.trim() : '');
-                    setIsFullMode(false);
-                    setActiveTab('html');
-                    showStatus('Modo Abas Separadas', 'info');
-                } else {
-                    const fullContent = `<!DOCTYPE html>
+      const toggleMode = () => {
+        if (isFullMode) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const styleTag = doc.querySelector("head style");
+          const extractedCss = styleTag ? styleTag.innerHTML.trim() : "";
+          if (styleTag) styleTag.remove();
+          const scriptTags = doc.querySelectorAll("body script");
+          let extractedJs = "";
+          scriptTags.forEach(s => {
+            if (s.innerHTML.trim()) {
+              extractedJs += s.innerHTML.trim() + "\n";
+              s.remove();
+            }
+          });
+          setCss(extractedCss);
+          setJs(extractedJs);
+          setHtml(doc.body ? doc.body.innerHTML.trim() : "");
+          setIsFullMode(false);
+          setActiveTab("html");
+          showStatus("Modo: Abas Separadas", "info");
+        } else {
+          const fullContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1079,70 +475,70 @@ ${js}
     <\/script>
 </body>
 </html>`;
-                    setHtml(fullContent);
-                    setCss('');
-                    setJs('');
-                    setIsFullMode(true);
-                    showStatus('Modo Arquivo Completo', 'info');
-                }
-            };
+          setHtml(fullContent);
+          setCss("");
+          setJs("");
+          setIsFullMode(true);
+          showStatus("Modo: Arquivo Completo", "info");
+        }
+      };
 
-            const handleLoadFile = async (fname) => {
-                showStatus(`Carregando ${fname}...`, 'info');
-                try {
-                    const data = await ghService.getFile(fname);
-                    setFilename(fname);
-                    const content = data.content;
-                    if (content.includes('<html') || content.includes('<HTML')) {
-                        try {
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(content, 'text/html');
-                            const styleTag = doc.querySelector('head style');
-                            setCss(styleTag ? styleTag.innerHTML.trim() : '');
-                            if (styleTag) styleTag.remove();
-                            const scriptTags = doc.querySelectorAll('body script');
-                            let jsContent = '';
-                            scriptTags.forEach(s => {
-                                if (s.innerHTML.trim()) {
-                                    jsContent = s.innerHTML.trim();
-                                    s.remove();
-                                }
-                            });
-                            setJs(jsContent.trim());
-                            setHtml(doc.body.innerHTML.trim());
-                            setIsFullMode(false);
-                        } catch (e) {
-                            setHtml(content);
-                            setIsFullMode(true);
-                        }
-                    } else {
-                        setHtml(content);
-                        setCss('');
-                        setJs('');
-                        setIsFullMode(false);
-                    }
-                    showStatus('Arquivo carregado', 'success');
-                } catch (e) {
-                    showStatus(e.message, 'error');
+      const handleLoadFile = async fname => {
+        showStatus(`Carregando ${fname}...`, "info");
+        try {
+          const data = await ghService.getFile(fname);
+          setFilename(fname);
+          const content = data.content;
+          if (content.includes("<html") && content.includes("</html>")) {
+            try {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(content, "text/html");
+              const styleTag = doc.querySelector("head style");
+              setCss(styleTag ? styleTag.innerHTML.trim() : "");
+              if (styleTag) styleTag.remove();
+              const scriptTags = doc.querySelectorAll("body script");
+              let jsContent = "";
+              scriptTags.forEach(s => {
+                if (s.innerHTML.trim()) {
+                  jsContent += s.innerHTML.trim() + "\n";
+                  s.remove();
                 }
-            };
+              });
+              setJs(jsContent.trim());
+              setHtml(doc.body.innerHTML.trim());
+              setIsFullMode(false);
+            } catch (e) {
+              setHtml(content);
+              setIsFullMode(true);
+            }
+          } else {
+            setHtml(content);
+            setCss("");
+            setJs("");
+            setIsFullMode(false);
+          }
+          showStatus("Arquivo carregado", "success");
+        } catch (e) {
+          showStatus(e.message, "error");
+        }
+      };
 
-            const handleSave = async () => {
-                if (!ghService.isConfigured) {
-                    setShowSettingsModal(true);
-                    return;
-                }
-                if (!filename.endsWith('.html')) {
-                    showStatus('O nome deve terminar em .html', 'error');
-                    return;
-                }
-                setIsSaving(true);
-                try {
-                    let fullContent;
-                    if (isFullMode) {
-                        fullContent = html;
-                    } else {
-                        fullContent = `<!DOCTYPE html>
+      const handleSave = async () => {
+        if (!ghService.isConfigured) {
+          setShowSettingsModal(true);
+          return;
+        }
+        if (!filename.endsWith(".html")) {
+          showStatus("O nome deve terminar em .html", "error");
+          return;
+        }
+        setIsSaving(true);
+        try {
+          let fullContent;
+          if (isFullMode) {
+            fullContent = html;
+          } else {
+            fullContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1159,442 +555,367 @@ ${js}
     <\/script>
 </body>
 </html>`;
-                    }
-                    await ghService.saveFile(filename, fullContent);
-                    showStatus('Salvo com sucesso!', 'success');
-                    refreshFileList();
-                } catch (e) {
-                    showStatus(e.message, 'error');
-                } finally {
-                    setIsSaving(false);
-                }
-            };
+          }
+          await ghService.saveFile(filename, fullContent);
+          showStatus("Salvo com sucesso!", "success");
+          refreshFileList();
+        } catch (e) {
+          showStatus(e.message, "error");
+        } finally {
+          setIsSaving(false);
+        }
+      };
 
-            const handleDelete = async (fname) => {
-                if (!confirm(`Apagar ${fname}?`)) return;
-                try {
-                    await ghService.deleteFile(fname);
-                    showStatus('Arquivo deletado', 'success');
-                    refreshFileList();
-                } catch (e) {
-                    showStatus(e.message, 'error');
-                }
-            };
+      const handleDelete = async fname => {
+        if (!confirm(`Apagar ${fname}?`)) return;
+        try {
+          await ghService.deleteFile(fname);
+          showStatus("Arquivo deletado", "success");
+          refreshFileList();
+        } catch (e) {
+          showStatus(e.message, "error");
+        }
+      };
 
-            const handleNew = () => {
-                setFilename('nova-pagina.html');
-                setHtml('<div class="container">\n    <h1>Nova Página</h1>\n    <p>Comece a criar!</p>\n</div>');
-                setCss('body {\n    padding: 20px;\n    font-family: sans-serif;\n    background: #f5f5f5;\n}\n\n.container {\n    max-width: 800px;\n    margin: 0 auto;\n    background: white;\n    padding: 40px;\n    border-radius: 8px;\n}');
-                setJs('console.log("Nova página criada!");');
-                setIsFullMode(false);
-                showStatus('Novo projeto iniciado', 'info');
-            };
+      const handleNew = () => {
+        setFilename("nova-pagina.html");
+        setHtml("<h1>Nova Página</h1>");
+        setCss("body { padding: 20px; font-family: sans-serif; }");
+        setJs("");
+        setIsFullMode(false);
+        showStatus("Novo projeto iniciado", "info");
+      };
 
-            const handleViewLive = () => {
-                if (!filename) {
-                    showStatus('Digite um nome de arquivo', 'error');
-                    return;
-                }
-                const url = `${ghService.baseUrl}/${ghService.settings.githubPath}/${filename}`;
-                window.open(url, '_blank');
-                showStatus('Abrindo site...', 'info');
-            };
+      const handleAIGenerate = async () => {
+        if (!settings.geminiApiKey) {
+          showStatus("Configure a API Key do Gemini nas configurações!", "error");
+          setShowSettingsModal(true);
+          return;
+        }
+        if (!aiPrompt.trim()) return;
+        setIsAIGenerating(true);
+        setShowAIModal(false);
+        showStatus("Gemini está pensando...", "info");
+        try {
+          const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
+          const prompt = `Create a single HTML file website based on this request: "${aiPrompt}".
+You must return a JSON object with 3 properties:
+1. "html": The HTML content inside <body> (do NOT include <body> tags).
+2. "css": The CSS content.
+3. "javascript": The JavaScript content.
+The code should be modern, responsive.`;
+          const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  html: { type: Type.STRING },
+                  css: { type: Type.STRING },
+                  javascript: { type: Type.STRING }
+                },
+                required: ["html", "css", "javascript"]
+              }
+            }
+          });
+          const jsonStr = response.text;
+          if (jsonStr) {
+            const data = JSON.parse(jsonStr);
+            setHtml(data.html || "");
+            setCss(data.css || "");
+            setJs(data.javascript || "");
+            setIsFullMode(false);
+            showStatus("Página gerada com sucesso!", "success");
+          } else {
+            throw new Error("Resposta vazia da IA");
+          }
+        } catch (e) {
+          console.error(e);
+          showStatus("Erro ao gerar com IA: " + e.message, "error");
+        } finally {
+          setIsAIGenerating(false);
+          setAiPrompt("");
+        }
+      };
 
-            const copyUrl = async (url) => {
-                try {
-                    await navigator.clipboard.writeText(url);
-                    showStatus('URL copiada!', 'success');
-                } catch (e) {
-                    showStatus('Erro ao copiar', 'error');
-                }
-            };
-
-            const handleAIGenerate = async () => {
-                if (!settings.geminiApiKey) {
-                    showStatus('Configure a API Key do Gemini nas configurações!', 'error');
-                    setShowSettingsModal(true);
-                    return;
-                }
-                if (!aiPrompt.trim()) return;
-                setIsAIGenerating(true);
-                setShowAIModal(false);
-                showStatus('Gemini está pensando...', 'info');
-                try {
-                    const genAI = new GoogleGenerativeAI(settings.geminiApiKey);
-                    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-                    
-                    const prompt = `Create a single HTML file website based on this request: ${aiPrompt}.
-
-You must return ONLY a valid JSON object with exactly these 3 properties:
-{
-  "html": "The HTML content inside <body> (do NOT include <body> tags)",
-  "css": "The CSS content",
-  "javascript": "The JavaScript content"
-}
-
-The code should be modern, responsive, and complete. Return ONLY the JSON object, no markdown formatting, no backticks, no explanation.`;
-
-                    const result = await model.generateContent(prompt);
-                    const response = await result.response;
-                    const text = response.text();
-                    
-                    // Remove markdown code blocks if present
-                    const cleanText = text.replace(/``````\n?/g, '').trim();
-                    
-                    // Try to find JSON object
-                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const data = JSON.parse(jsonMatch[0]);
-                        setHtml(data.html || '');
-                        setCss(data.css || '');
-                        setJs(data.javascript || data.js || '');
-                        setIsFullMode(false);
-                        setActiveTab('html');
-                        showStatus('Página gerada com sucesso!', 'success');
-                    } else {
-                        throw new Error('Resposta inválida da IA');
-                    }
-                } catch (e) {
-                    console.error(e);
-                    showStatus(`Erro ao gerar com IA: ${e.message}`, 'error');
-                } finally {
-                    setIsAIGenerating(false);
-                    setAiPrompt('');
-                }
-            };
-
-            // Render
-            return React.createElement('div', { id: 'app' },
-                // Header
-                React.createElement('div', { className: 'header' },
-                    React.createElement('h1', null, '🚀 Editor HTML AI Pro'),
-                    React.createElement('div', { className: 'header-actions' },
-                        status && React.createElement('div', {
-                            className: `status-bar status-${status.type}`
-                        }, status.msg),
-                        React.createElement('button', {
-                            className: 'btn btn-secondary',
-                            onClick: () => setShowSettingsModal(true),
-                            title: 'Configurações'
-                        }, '⚙️')
-                    )
+      return (
+        React.createElement("div", { id: "app" },
+          React.createElement("div", { className: "header" },
+            React.createElement("h1", null, "🚀 Editor HTML (Frontend)"),
+            React.createElement("div", { style: { display: "flex", gap: "10px", alignItems: "center" } },
+              status && React.createElement(
+                "div",
+                {
+                  className: `status-bar status-${status.type}`,
+                  style: { position: "static", animation: "none", transform: "none", margin: 0 }
+                },
+                status.msg
+              ),
+              React.createElement(
+                "button",
+                {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowSettingsModal(true),
+                  title: "Configurações"
+                },
+                "⚙️ Config"
+              )
+            )
+          ),
+          React.createElement("div", { className: "main-container" },
+            React.createElement("div", { className: "editor-section" },
+              React.createElement("div", { className: "controls-panel" },
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Nome do Arquivo"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: filename,
+                    onChange: e => setFilename(e.target.value),
+                    placeholder: "ex: index.html"
+                  })
                 ),
-
-                // Main Container
-                React.createElement('div', { className: 'main-container' },
-                    // Editor Section
-                    React.createElement('div', {
-                        className: 'editor-section',
-                        ref: editorRef
-                    },
-                        // Controls
-                        React.createElement('div', { className: 'controls-panel' },
-                            React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', { htmlFor: 'filename' }, '📄 Arquivo'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    id: 'filename',
-                                    value: filename,
-                                    onChange: e => setFilename(e.target.value),
-                                    placeholder: 'index.html'
-                                })
-                            ),
-                            React.createElement('button', {
-                                className: 'btn btn-ai',
-                                onClick: () => setShowAIModal(true),
-                                disabled: isAIGenerating
-                            }, isAIGenerating ? React.createElement('div', { className: 'spinner' }) : '✨ IA'),
-                            React.createElement('button', {
-                                className: 'btn btn-secondary',
-                                onClick: toggleMode,
-                                title: 'Alternar modo'
-                            }, isFullMode ? '📑 Dividir' : '📄 Unir'),
-                            React.createElement('button', {
-                                className: 'btn btn-view-live',
-                                onClick: handleViewLive,
-                                title: 'Ver site ao vivo'
-                            }, '🌐 Ver'),
-                            React.createElement('button', {
-                                className: 'btn btn-secondary',
-                                onClick: handleNew
-                            }, '✨ Novo'),
-                            React.createElement('button', {
-                                className: 'btn btn-primary',
-                                onClick: handleSave,
-                                disabled: isSaving
-                            }, isSaving ? React.createElement('div', { className: 'spinner' }) : '🚀 Salvar')
-                        ),
-
-                        // Tabs
-                        !isFullMode && React.createElement('div', { className: 'tabs' },
-                            React.createElement('div', {
-                                className: `tab ${activeTab === 'html' ? 'active' : ''}`,
-                                onClick: () => setActiveTab('html')
-                            }, '📝 HTML'),
-                            React.createElement('div', {
-                                className: `tab ${activeTab === 'css' ? 'active' : ''}`,
-                                onClick: () => setActiveTab('css')
-                            }, '🎨 CSS'),
-                            React.createElement('div', {
-                                className: `tab ${activeTab === 'js' ? 'active' : ''}`,
-                                onClick: () => setActiveTab('js')
-                            }, '⚡ JS')
-                        ),
-
-                        // Editor
-                        React.createElement('div', {
-                            className: 'editor-container',
-                            ref: topPanelRef
-                        },
-                            isFullMode ? React.createElement('textarea', {
-                                className: 'code-area',
-                                value: html,
-                                onChange: e => setHtml(e.target.value),
-                                placeholder: '<!-- HTML Completo -->'
-                            }) : React.createElement(React.Fragment, null,
-                                activeTab === 'html' && React.createElement('textarea', {
-                                    className: 'code-area',
-                                    value: html,
-                                    onChange: e => setHtml(e.target.value),
-                                    placeholder: '<!-- HTML -->'
-                                }),
-                                activeTab === 'css' && React.createElement('textarea', {
-                                    className: 'code-area',
-                                    value: css,
-                                    onChange: e => setCss(e.target.value),
-                                    placeholder: '/* CSS */'
-                                }),
-                                activeTab === 'js' && React.createElement('textarea', {
-                                    className: 'code-area',
-                                    value: js,
-                                    onChange: e => setJs(e.target.value),
-                                    placeholder: '// JavaScript'
-                                })
-                            ),
-                            isAIGenerating && React.createElement('div', {
-                                style: {
-                                    position: 'absolute',
-                                    inset: 0,
-                                    background: 'rgba(0,0,0,0.8)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                    flexDirection: 'column',
-                                    gap: '16px',
-                                    zIndex: 10
-                                }
-                            },
-                                React.createElement('div', { 
-                                    className: 'spinner', 
-                                    style: { width: 40, height: 40, borderWidth: '3px' } 
-                                }),
-                                React.createElement('p', null, 'Gerando com Gemini...')
-                            )
-                        ),
-
-                        // Resizer Horizontal
-                        React.createElement('div', {
-                            className: `resizer-horizontal ${isResizingH ? 'resizing' : ''}`,
-                            onMouseDown: startResizeH
-                        }),
-
-                        // File Manager
-                        React.createElement('div', { className: 'file-manager' },
-                            React.createElement('div', { className: 'fm-header' },
-                                React.createElement('span', null, '📁 Arquivos'),
-                                React.createElement('button', {
-                                    className: 'btn-icon btn-secondary',
-                                    onClick: refreshFileList
-                                }, '↻')
-                            ),
-                            React.createElement('ul', { className: 'file-list' },
-                                files.length === 0
-                                    ? React.createElement('li', {
-                                        style: { padding: '20px', textAlign: 'center', color: '#555' }
-                                    }, 'Configure o GitHub primeiro')
-                                    : files.map(f => React.createElement('li', {
-                                        key: f.name,
-                                        className: 'file-item'
-                                    },
-                                        React.createElement('div', {
-                                            className: 'file-info',
-                                            onClick: () => handleLoadFile(f.name)
-                                        },
-                                            React.createElement('span', { className: 'file-name' }, f.name),
-                                            React.createElement('div', { className: 'file-url' },
-                                                React.createElement('span', null,
-                                                    `${ghService.baseUrl}/${ghService.settings.githubPath}/${f.name}`
-                                                ),
-                                                React.createElement('span', {
-                                                    className: 'copy-url',
-                                                    onClick: (e) => {
-                                                        e.stopPropagation();
-                                                        copyUrl(`${ghService.baseUrl}/${ghService.settings.githubPath}/${f.name}`);
-                                                    },
-                                                    title: 'Copiar URL'
-                                                }, '📋')
-                                            )
-                                        ),
-                                        React.createElement('div', { className: 'file-actions' },
-                                            React.createElement('button', {
-                                                className: 'btn-icon btn-del',
-                                                onClick: (e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(f.name);
-                                                },
-                                                title: 'Apagar'
-                                            }, '🗑️')
-                                        )
-                                    ))
-                            )
-                        )
+                React.createElement("button", {
+                  className: "btn btn-ai",
+                  onClick: () => setShowAIModal(true),
+                  disabled: isAIGenerating
+                }, isAIGenerating ? React.createElement("div", { className: "spinner" }) : "✨ IA"),
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: toggleMode,
+                  title: "Alternar Visualização"
+                }, isFullMode ? "📑 Dividir" : "📄 Unir"),
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: handleNew
+                }, "📄 Novo"),
+                React.createElement("button", {
+                  className: "btn btn-primary",
+                  onClick: handleSave,
+                  disabled: isSaving
+                }, isSaving ? "..." : "☁️ Salvar")
+              ),
+              !isFullMode && React.createElement("div", { className: "tabs" },
+                React.createElement("div", {
+                  className: `tab ${activeTab === "html" ? "active" : ""}`,
+                  onClick: () => setActiveTab("html")
+                }, "HTML"),
+                React.createElement("div", {
+                  className: `tab ${activeTab === "css" ? "active" : ""}`,
+                  onClick: () => setActiveTab("css")
+                }, "CSS"),
+                React.createElement("div", {
+                  className: `tab ${activeTab === "js" ? "active" : ""}`,
+                  onClick: () => setActiveTab("js")
+                }, "JS")
+              ),
+              React.createElement("div", { className: "editor-container" },
+                isFullMode
+                  ? React.createElement("textarea", {
+                      className: "code-area",
+                      value: html,
+                      onChange: e => setHtml(e.target.value),
+                      placeholder: "<!-- Código HTML Completo -->"
+                    })
+                  : React.createElement(React.Fragment, null,
+                      activeTab === "html" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: html,
+                        onChange: e => setHtml(e.target.value),
+                        placeholder: "<!-- Código HTML aqui -->"
+                      }),
+                      activeTab === "css" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: css,
+                        onChange: e => setCss(e.target.value),
+                        placeholder: "/* Código CSS aqui */"
+                      }),
+                      activeTab === "js" && React.createElement("textarea", {
+                        className: "code-area",
+                        value: js,
+                        onChange: e => setJs(e.target.value),
+                        placeholder: "// Código JS aqui"
+                      })
                     ),
-
-                    // Resizer Vertical
-                    React.createElement('div', {
-                        className: `resizer-vertical ${isResizingV ? 'resizing' : ''}`,
-                        onMouseDown: startResizeV
-                    }),
-
-                    // Preview
-                    React.createElement('div', { className: 'preview-section' },
-                        React.createElement('iframe', {
-                            ref: (el) => {
-                                previewRef.current = el;
-                                iframeRef.current = el;
-                            },
-                            title: 'Preview'
-                        })
-                    )
-                ),
-
-                // AI Modal
-                showAIModal && React.createElement('div', {
-                    className: 'modal-overlay',
-                    onClick: () => setShowAIModal(false)
+                isAIGenerating && React.createElement("div", {
+                  style: {
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    flexDirection: "column",
+                    gap: "16px",
+                    zIndex: 10
+                  }
                 },
-                    React.createElement('div', {
-                        className: 'modal-content',
-                        onClick: e => e.stopPropagation()
-                    },
-                        React.createElement('div', { className: 'modal-title' }, '✨ Criar com IA'),
-                        React.createElement('textarea', {
-                            className: 'modal-textarea',
-                            placeholder: 'Descreva a página... ex: Landing page moderna para restaurante japonês',
-                            value: aiPrompt,
-                            onChange: e => setAiPrompt(e.target.value),
-                            autoFocus: true
-                        }),
-                        React.createElement('div', { className: 'modal-actions' },
-                            React.createElement('button', {
-                                className: 'btn btn-secondary',
-                                onClick: () => setShowAIModal(false)
-                            }, 'Cancelar'),
-                            React.createElement('button', {
-                                className: 'btn btn-ai',
-                                onClick: handleAIGenerate
-                            }, '✨ Gerar')
-                        )
-                    )
-                ),
-
-                // Settings Modal
-                showSettingsModal && React.createElement('div', {
-                    className: 'modal-overlay',
-                    style: { zIndex: 2000 }
-                },
-                    React.createElement('div', {
-                        className: 'modal-content',
-                        style: { maxWidth: '700px' }
-                    },
-                        React.createElement('div', { className: 'modal-title' }, '⚙️ Configurações'),
-                        React.createElement('p', {
-                            style: { fontSize: '12px', color: '#999', margin: 0 }
-                        }, 'Dados salvos apenas no navegador'),
-                        React.createElement('div', { className: 'settings-grid' },
-                            React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'GitHub User'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    value: settings.githubOwner,
-                                    onChange: e => setSettings({ ...settings, githubOwner: e.target.value }),
-                                    placeholder: 'theweewee'
-                                })
-                            ),
-                            React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'Repositório'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    value: settings.githubRepo,
-                                    onChange: e => setSettings({ ...settings, githubRepo: e.target.value }),
-                                    placeholder: 'htmls.site'
-                                })
-                            ),
-                            React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'Pasta'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    value: settings.githubPath,
-                                    onChange: e => setSettings({ ...settings, githubPath: e.target.value }),
-                                    placeholder: 'htmls'
-                                })
-                            ),
-                            React.createElement('div', { className: 'input-group' },
-                                React.createElement('label', null, 'Branch'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    value: settings.githubBranch,
-                                    onChange: e => setSettings({ ...settings, githubBranch: e.target.value }),
-                                    placeholder: 'main'
-                                })
-                            ),
-                            React.createElement('div', {
-                                className: 'input-group',
-                                style: { gridColumn: '1 / -1' }
-                            },
-                                React.createElement('label', null, 'GitHub Token'),
-                                React.createElement('input', {
-                                    type: 'password',
-                                    value: settings.githubToken,
-                                    onChange: e => setSettings({ ...settings, githubToken: e.target.value }),
-                                    placeholder: 'ghp_...'
-                                })
-                            ),
-                            React.createElement('div', {
-                                className: 'input-group',
-                                style: { gridColumn: '1 / -1' }
-                            },
-                                React.createElement('label', null, 'Gemini API Key'),
-                                React.createElement('input', {
-                                    type: 'password',
-                                    value: settings.geminiApiKey,
-                                    onChange: e => setSettings({ ...settings, geminiApiKey: e.target.value }),
-                                    placeholder: 'AIza...'
-                                }),
-                                React.createElement('small', {
-                                    style: { fontSize: '10px', color: '#666' }
-                                }, 'Para usar IA')
-                            )
-                        ),
-                        React.createElement('div', { className: 'modal-actions' },
-                            React.createElement('button', {
-                                className: 'btn btn-secondary',
-                                onClick: () => setShowSettingsModal(false)
-                            }, 'Fechar'),
-                            React.createElement('button', {
-                                className: 'btn btn-primary',
-                                onClick: () => handleSaveSettings(settings)
-                            }, '💾 Salvar')
-                        )
-                    )
+                  React.createElement("div", { className: "spinner", style: { width: 40, height: 40 } }),
+                  React.createElement("p", null, "Gerando com Gemini 3 Flash...")
                 )
-            );
-        }
+              ),
+              React.createElement("div", { className: "file-manager" },
+                React.createElement("div", { className: "fm-header" },
+                  React.createElement("span", null,
+                    settings.githubRepo
+                      ? `${settings.githubRepo}/${settings.githubPath}`
+                      : "Arquivos Remotos"
+                  ),
+                  React.createElement("button", {
+                    className: "btn-icon btn-secondary",
+                    onClick: refreshFileList
+                  }, "↻")
+                ),
+                React.createElement("ul", { className: "file-list" },
+                  files.length === 0 &&
+                    React.createElement("li", {
+                      style: { padding: "20px", textAlign: "center", color: "#555" }
+                    }, "Nenhum arquivo ou não conectado."),
+                  files.map(f =>
+                    React.createElement("li", { key: f.name, className: "file-item" },
+                      React.createElement("div", {
+                        className: "file-info",
+                        onClick: () => handleLoadFile(f.name)
+                      },
+                        React.createElement("span", { className: "file-name" }, f.name)
+                      ),
+                      React.createElement("div", { className: "file-actions" },
+                        React.createElement("button", {
+                          className: "btn-icon btn-del",
+                          onClick: e => { e.stopPropagation(); handleDelete(f.name); },
+                          title: "Apagar"
+                        }, "🗑️")
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            React.createElement("div", { className: "preview-section" },
+              React.createElement("iframe", { ref: iframeRef, title: "Preview" })
+            )
+          ),
+          showAIModal && React.createElement("div", {
+            className: "modal-overlay",
+            onClick: () => setShowAIModal(false)
+          },
+            React.createElement("div", {
+              className: "modal-content",
+              onClick: e => e.stopPropagation()
+            },
+              React.createElement("div", { className: "modal-title" }, "✨ Criar Página com IA"),
+              React.createElement("textarea", {
+                className: "modal-textarea",
+                placeholder: "Descreva a página... ex: 'Landing page para pizzaria com tema escuro e formulário de pedido'",
+                value: aiPrompt,
+                onChange: e => setAiPrompt(e.target.value),
+                autoFocus: true
+              }),
+              React.createElement("div", { className: "modal-actions" },
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowAIModal(false)
+                }, "Cancelar"),
+                React.createElement("button", {
+                  className: "btn btn-ai",
+                  onClick: handleAIGenerate
+                }, "Gerar")
+              )
+            )
+          ),
+          showSettingsModal && React.createElement("div", {
+            className: "modal-overlay",
+            style: { zIndex: 2000 }
+          },
+            React.createElement("div", {
+              className: "modal-content",
+              style: { maxWidth: "600px" }
+            },
+              React.createElement("div", { className: "modal-title" }, "⚙️ Configurações"),
+              React.createElement("p", {
+                style: { fontSize: "12px", color: "#999", margin: 0 }
+              }, "Seus dados ficam salvos apenas no seu navegador."),
+              React.createElement("div", {
+                style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }
+              },
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "GitHub User/Owner"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubOwner,
+                    onChange: e => setSettings({ ...settings, githubOwner: e.target.value }),
+                    placeholder: "ex: theweewee"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Repositório"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubRepo,
+                    onChange: e => setSettings({ ...settings, githubRepo: e.target.value }),
+                    placeholder: "ex: htmls.site"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Pasta (Path)"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubPath,
+                    onChange: e => setSettings({ ...settings, githubPath: e.target.value }),
+                    placeholder: "ex: htmls"
+                  })
+                ),
+                React.createElement("div", { className: "input-group" },
+                  React.createElement("label", null, "Branch"),
+                  React.createElement("input", {
+                    type: "text",
+                    value: settings.githubBranch,
+                    onChange: e => setSettings({ ...settings, githubBranch: e.target.value }),
+                    placeholder: "ex: main"
+                  })
+                )
+              ),
+              React.createElement("div", { className: "input-group" },
+                React.createElement("label", null, "GitHub Personal Access Token (Repo Scope)"),
+                React.createElement("input", {
+                  type: "password",
+                  value: settings.githubToken,
+                  onChange: e => setSettings({ ...settings, githubToken: e.target.value }),
+                  placeholder: "ghp_..."
+                })
+              ),
+              React.createElement("div", { className: "input-group" },
+                React.createElement("label", null, "Google Gemini API Key"),
+                React.createElement("input", {
+                  type: "password",
+                  value: settings.geminiApiKey,
+                  onChange: e => setSettings({ ...settings, geminiApiKey: e.target.value }),
+                  placeholder: "AIza..."
+                }),
+                React.createElement("small", {
+                  style: { fontSize: "10px", color: "#666" }
+                }, "Necessário para usar a funcionalidade de IA.")
+              ),
+              React.createElement("div", { className: "modal-actions" },
+                React.createElement("button", {
+                  className: "btn btn-secondary",
+                  onClick: () => setShowSettingsModal(false)
+                }, "Fechar"),
+                React.createElement("button", {
+                  className: "btn btn-primary",
+                  onClick: () => handleSaveSettings(settings)
+                }, "Salvar Configurações")
+              )
+            )
+          )
+        )
+      );
+    }
 
-        // Initialize
-        const root = createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
-    </script>
+    const root = createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
 </body>
 </html>
