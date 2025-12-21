@@ -1,5 +1,7 @@
-# Acessar páginas HTML salvos na pasta htmls (sem .html)
-/htmls/* /htmls/:splat.html 200
-
 # SPA Fallback - todas as rotas inválidas voltam ao editor (index.html na raiz)
+# IMPORTANTE: Esta regra deve vir primeiro para não bloquear as rotas de páginas criadas
 /* /index.html 200
+
+# Acessar páginas HTML salvos na pasta htmls (sem .html)
+# Esta regra é redundante agora pois as páginas em /htmls/ serão servidas diretamente
+# /htmls/* /htmls/:splat.html 200
