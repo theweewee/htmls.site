@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>filminhos.html</title>
+    <style>
+body { font-family: sans-serif; padding: 20px; background: #f0f0f0; } h1 { color: #333; }
+    </style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperFlix Search & Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ajuste para o player responsivo */
+        .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: 0.5rem;
+        }
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-red-500 mb-2">SuperFlix<span class="text-white">Integration</span></h1>
+            <p class="text-gray-400 text-sm">Pesquise no TMDB e assista via SuperFlix API</p>
+        </header>
+
+        <!-- Configuração API Key (Opcional se hardcoded) -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6 border border-gray-700">
+            <label class="block text-xs text-gray-400 mb-1">Sua API Key do TMDB (v3 auth):bbd242a4dedabc93d26b08b7af509d57</label>
+            <input type="text" id="tmdbKey" placeholder="Cole sua chave aqui ex: a1b2c3d4..." 
+                   class="w-full bg-gray-900 text-gray-200 text-sm p-2 rounded border border-gray-600 focus:outline-none focus:border-red-500">
+            <p class="text-xs text-gray-500 mt-1">Obtenha grátis em <a href="https://www.themoviedb.org/settings/api" target="_blank" class="text-blue-400 hover:underline">themoviedb.org</a></p>
+        </div>
+
+        <!-- Formulário de Busca -->
+        <div class="flex gap-2 mb-8">
+            <input type="text" id="searchInput" placeholder="Nome do filme ou série..." 
+                   class="flex-1 bg-gray-800 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                   onkeypress="handleEnter(event)">
+            <button onclick="searchMedia()" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors">
+                Buscar
+            </button>
+        </div>
+
+        <!-- Área de Player (Escondido inicialmente) -->
+        <div id="playerSection" class="hidden mb-10">
+            <h2 id="playerTitle" class="text-xl font-semibold mb-4 text-center"></h2>
+            
+            <!-- Controles de Episódio (Apenas para séries) -->
+            <div id="seriesControls" class="hidden flex justify-center gap-4 mb-4">
+                <input type="number" id="seasonInput" value="1" min="1" class="w-20 bg-gray-700 p-2 rounded text-center" placeholder="Temp">
+                <input type="number" id="episodeInput" value="1" min="1" class="w-20 bg-gray-700 p-2 rounded text-center" placeholder="Ep">
+                <button onclick="loadSeriesEpisode()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Carregar Ep</button>
+            </div>
+
+            <div class="player-wrapper shadow-2xl shadow-red-900/20">
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- Grid de Resultados -->
+        <div id="resultsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Os cards serão injetados aqui via JS -->
+        </div>
+    </div>
+
+    <script>
+        // Variável global para armazenar ID selecionado
+        let currentMediaId = null;
+        let currentMediaType = null; // 'movie' ou 'tv'
+
+        // 1. Função de Busca no TMDB
+        async function searchMedia() {
+            const query = document.getElementById('searchInput').value;
+            const apiKey = document.getElementById('tmdbKey').value;
+            const grid = document.getElementById('resultsGrid');
+
+            if (!apiKey) {
+                alert('Por favor, insira uma API Key do TMDB válida.');
+                return;
+            }
+            if (!query) return;
+
+            grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Pesquisando...</p>';
+
+            try {
+                // Busca multi (filmes e séries)
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&language=pt-BR&query=${encodeURIComponent(query)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                grid.innerHTML = '';
+
+                if (!data.results || data.results.length === 0) {
+                    grid.innerHTML = '<p class="text-center col-span-4">Nenhum resultado encontrado.</p>';
+                    return;
+                }
+
+                data.results.forEach(item => {
+                    if (item.media_type !== 'movie' && item.media_type !== 'tv') return;
+
+                    const title = item.title || item.name;
+                    const date = item.release_date || item.first_air_date || '???';
+                    const poster = item.poster_path 
+                        ? `https://image.tmdb.org/t/p/w300${item.poster_path}` 
+                        : 'https://via.placeholder.com/300x450?text=Sem+Imagem';
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
+                    card.onclick = () => selectMedia(item.id, item.media_type, title, item.imdb_id); // Nota: TMDB search nem sempre retorna imdb_id direto
+                    
+                    card.innerHTML = `
+                        <div class="relative">
+                            <img src="${poster}" class="w-full h-auto object-cover aspect-[2/3]">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all">
+                                <span class="text-transparent group-hover:text-white font-bold text-lg">Assistir ▶</span>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold text-sm truncate" title="${title}">${title}</h3>
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>${date.split('-')[0]}</span>
+                                <span class="uppercase border border-gray-600 px-1 rounded">${item.media_type === 'tv' ? 'Série' : 'Filme'}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro na API (Verifique sua Key).</p>';
+            }
+        }
+
+        // 2. Selecionar Mídia e Montar Player
+        async function selectMedia(tmdbId, type, title) {
+            currentMediaId = tmdbId;
+            currentMediaType = type;
+
+            document.getElementById('playerSection').classList.remove('hidden');
+            document.getElementById('playerTitle').innerText = `Assistindo: ${title}`;
+            
+            const iframe = document.getElementById('videoFrame');
+            const seriesControls = document.getElementById('seriesControls');
+
+            // Scroll suave até o player
+            document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth' });
+
+            if (type === 'movie') {
+                seriesControls.classList.add('hidden');
+                // Para filmes, o endpoint idealmente usa o IMDB ID. 
+                // A SuperFlix às vezes aceita TMDB direto, mas o padrão é IMDB.
+                // Vamos tentar buscar o external_id primeiro.
+                const imdbId = await getImdbId(tmdbId, 'movie');
+                const finalId = imdbId || tmdbId; // Fallback para TMDB se falhar
+                
+                // Construção da URL de Filme
+                iframe.src = `https://superflixapi.buzz/filme/${finalId}`;
+            
+            } else if (type === 'tv') {
+                seriesControls.classList.remove('hidden');
+                // Para séries, usa TMDB ID + Season + Episode
+                loadSeriesEpisode(); 
+            }
+        }
+
+        // 3. Lógica Específica para Séries (Atualizar S/E)
+        function loadSeriesEpisode() {
+            if (currentMediaType !== 'tv') return;
+            
+            const season = document.getElementById('seasonInput').value;
+            const episode = document.getElementById('episodeInput').value;
+            const iframe = document.getElementById('videoFrame');
+
+            // Construção da URL de Série
+            iframe.src = `https://superflixapi.buzz/serie/${currentMediaId}/${season}/${episode}`;
+        }
+
+        // Helper: Buscar ID IMDB (necessário para filmes na maioria das APIs warez)
+        async function getImdbId(id, type) {
+            const apiKey = document.getElementById('tmdbKey').value;
+            try {
+                const url = `https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${apiKey}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                return data.imdb_id;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') searchMedia();
+        }
+    </script>
+</body>
+</html>
+
+    <script>
+console.log("Página carregada");
+    </script>
+</body>
+</html>
