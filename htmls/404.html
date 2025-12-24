@@ -3,6 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404.html</title>
+    <style>
+body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #main-interface {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+            transition: transform 0.05s;
+        }
+
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        .glitch-text {
+            font-family: 'Share Tech Mono', monospace;
+            position: relative;
+            animation: glitch-anim-main 3s infinite linear alternate-reverse;
+            transition: text-shadow 0.1s; 
+        }
+
+        @keyframes glitch-anim-main {
+            0% { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+            2% { text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff; }
+            4% { text-shadow: -2px 0 #ff00ff, 2px 0 #00ffff; }
+            5% { text-shadow: 0 0 transparent; }
+            100% { text-shadow: 0 0 transparent; }
+        }
+
+        .glitch-intense {
+            animation: glitch-anim-intense var(--glitch-speed, 0.1s) infinite !important;
+            color: #ffffff !important;
+        }
+
+        @keyframes glitch-anim-intense {
+            0% { text-shadow: -10px 0 #ff00ff, 10px 0 #00ffff; transform: skewX(-20deg); }
+            25% { text-shadow: 10px 0 #ff00ff, -10px 0 #00ffff; transform: skewX(20deg); }
+            50% { text-shadow: -5px 0 #ff00ff, 5px 0 #00ffff; transform: translate(-5px, 5px); }
+            75% { text-shadow: 5px 0 #ff00ff, -5px 0 #00ffff; transform: translate(5px, -5px); }
+            100% { text-shadow: 0 0 transparent; transform: skewX(0); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-neon {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-neon:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.3;
+        }
+
+        /* --- ESTILOS DO SISTEMA DE SOBRECARGA --- */
+        .instability-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--bar-height, 6px);
+            background: #111;
+            z-index: 50;
+            transition: height 0.5s ease;
+        }
+
+        #instability-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ff0000);
+            box-shadow: 0 0 10px #ff0000;
+            transition: width 0.1s linear;
+        }
+
+        #bsod-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0000AA;
+            color: white;
+            z-index: 100;
+            font-family: 'Share Tech Mono', monospace;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 10%;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        .bsod-face { font-size: 8rem; margin-bottom: 2rem; }
+        .bsod-title { font-size: 2rem; margin-bottom: 1rem; }
+        .bsod-text { font-size: 1.2rem; line-height: 1.5; margin-bottom: 2rem; }
+        .bsod-detail { font-size: 0.9rem; opacity: 0.7; }
+
+        @keyframes alarm-flash {
+            0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+            50% { box-shadow: inset 0 0 100px 20px rgba(255, 0, 0, 0.5); }
+        }
+        
+        .alarm-active {
+            animation: alarm-flash 0.5s infinite;
+        }
+
+        /* --- ZALGO GLITCH STATUS (HEADER) --- */
+        .zalgo-header {
+            color: #FFF;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            position: relative;
+            font-size: 1.5rem; 
+            text-shadow: 2px 2px 0px #FF0000, -2px -2px 0px #0000FF;
+            animation: shake 2s infinite;
+            white-space: nowrap;
+            z-index: 20; 
+        }
+        @media (min-width: 768px) { .zalgo-header { font-size: 2.5rem; } }
+
+        /* --- NOVO ESTILO: ZALGO SYSTEM STATUS (BADGE) --- */
+        #system-status-text {
+            display: inline-block;
+            width: 180px; /* Largura FIXA para padronizar e evitar pular */
+            text-align: left;
+            font-family: 'Share Tech Mono', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            vertical-align: bottom;
+        }
+        
+        /* Animação sutil de cor para o texto do status */
+        @keyframes status-flicker {
+            0%, 100% { color: #f0abfc; opacity: 1; }
+            50% { color: #ff00ff; opacity: 0.8; }
+            90% { color: #d8b4fe; opacity: 0.5; }
+        }
+        
+        .status-glitching {
+            animation: status-flicker 0.2s infinite;
+        }
+    </style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WHY404 - Overload System</title>
     <!-- Tailwind CSS para UI -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -289,6 +487,554 @@
 
     <script>
         // ==========================================
+        // 1. CONFIGURAÇÃO & ESTADO
+        // ==========================================
+        let config = {
+            heatIncrement: 0.5,
+            shakeMultiplier: 5,     
+            maxShake: 20,
+            audioPitchMultiplier: 1.5,
+            audioDetuneMultiplier: 10,
+            voxelSpeedBase: 10,
+            voxelHeightBase: 0.5,
+            glitchFactorDistortion: 0.5,
+            glitchFactorRGB: 1.0,
+            extremeMode: false
+        };
+
+        let state = { holding: false, heat: 0, crashed: false };
+
+        // Função Secreta para ativar o modo EXTREME
+        function enableExtremeMode() {
+            if(config.extremeMode) return; 
+            
+            // 1. Atualizar Configurações para EXTREME
+            config = {
+                heatIncrement: 0.8,
+                shakeMultiplier: 2,     
+                maxShake: 50,
+                audioPitchMultiplier: 2.5,
+                audioDetuneMultiplier: 50,
+                voxelSpeedBase: 30,
+                voxelHeightBase: 1.0,
+                glitchFactorDistortion: 1.5,
+                glitchFactorRGB: 2.0,
+                extremeMode: true
+            };
+
+            // 2. Atualizar UI
+            document.title = "WHY404 - EXTREME EDITION";
+            const extremeBadge = document.getElementById('extreme-badge');
+            if(extremeBadge) extremeBadge.classList.remove('hidden');
+            
+            document.body.style.setProperty('--glitch-speed', '0.05s'); 
+            document.body.style.setProperty('--bar-height', '10px'); 
+            
+            const tempDisplay = document.getElementById('temp-display');
+            if(tempDisplay) {
+                tempDisplay.innerText = "OVERRIDE";
+                tempDisplay.style.color = "red";
+                tempDisplay.classList.remove("cursor-pointer"); 
+            }
+
+            // 3. Feedback visual imediato
+            const uiMain = document.getElementById('main-interface');
+            if(uiMain) {
+                uiMain.classList.add("alarm-active");
+                setTimeout(() => uiMain.classList.remove("alarm-active"), 1000); 
+            }
+            
+            console.log("⚠️ EXTREME MODE ACTIVATED ⚠️");
+        }
+
+        // ==========================================
+        // 2. SISTEMA ZALGO DE STATUS
+        // ==========================================
+        const statusElement = document.getElementById('system-status-text');
+        
+        const errorMessages = [
+            "Syntax Error", "Logical Error", "Runtime Error", "Internal Error",
+            "Not Found", "Forbidden", "Unauthorized", "Bad Request",
+            "Service Unavailable", "Timeout Error", "Connection Failure",
+            "Out of Memory", "Permission Denied", "Bad Format"
+        ];
+
+        const zalgoUp = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
+        const zalgoDown = ['\u0316', '\u0317', '\u0318', '\u0319', '\u031c', '\u031d', '\u031e', '\u031f', '\u0320', '\u0324', '\u0325', '\u0326', '\u0327', '\u0328', '\u0329', '\u032a', '\u032b', '\u032c', '\u032d', '\u032e', '\u032f', '\u0330', '\u0331', '\u0332', '\u0333', '\u0339', '\u033a', '\u033b', '\u033c', '\u0345', '\u0347', '\u0348', '\u0349', '\u034d', '\u034e', '\u0353', '\u0354', '\u0355', '\u0356', '\u0359', '\u035a', '\u0323'];
+        const zalgoMid = ['\u0315', '\u031b', '\u0340', '\u0341', '\u0358', '\u0321', '\u0322', '\u0334', '\u0335', '\u0336', '\u0337', '\u0338', '\u0360', '\u0361', '\u0362'];
+
+        function getRandomZalgo(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function zalgify(text, intensity = 1) {
+            let newText = '';
+            for (let i = 0; i < text.length; i++) {
+                newText += text[i];
+                const numUp = Math.floor(Math.random() * (intensity * 2));
+                const numMid = Math.floor(Math.random() * (intensity * 1));
+                const numDown = Math.floor(Math.random() * (intensity * 2));
+                for (let j = 0; j < numUp; j++) newText += getRandomZalgo(zalgoUp);
+                for (let j = 0; j < numMid; j++) newText += getRandomZalgo(zalgoMid);
+                for (let j = 0; j < numDown; j++) newText += getRandomZalgo(zalgoDown);
+            }
+            return newText;
+        }
+
+        function updateStatusLoop() {
+            const nextUpdate = Math.random() * 2000 + 100;
+            const rawMsg = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+            const intensity = Math.random() * 3; 
+            const corruptedMsg = zalgify(rawMsg, intensity);
+            
+            if(statusElement) {
+                statusElement.innerText = corruptedMsg;
+                statusElement.classList.add('status-glitching');
+                setTimeout(() => {
+                    statusElement.classList.remove('status-glitching');
+                }, 200);
+            }
+            if(!state.crashed) setTimeout(updateStatusLoop, nextUpdate);
+        }
+        
+        setTimeout(updateStatusLoop, 1000);
+
+        // ==========================================
+        // 3. GERADOR DE ÁUDIO
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // --- MÚSICA DE FUNDO GENERATIVA (Ambient Tech) ---
+        const bgMusic = {
+            playing: false,
+            isPlaying: false,
+            
+            start: function() {
+                if(this.isPlaying) return;
+                this.isPlaying = true;
+                
+                // Sintetizador de Drone/Ambiente
+                const createDrone = (freq, type, pan) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const panner = audioCtx.createStereoPanner();
+                    const filter = audioCtx.createBiquadFilter();
+                    
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 200; // Bem abafado
+                    
+                    // Modulação lenta do filtro
+                    const lfo = audioCtx.createOscillator();
+                    lfo.type = 'sine';
+                    lfo.frequency.value = 0.1; // Muito lento
+                    const lfoGain = audioCtx.createGain();
+                    lfoGain.gain.value = 100;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(filter.frequency);
+                    lfo.start();
+
+                    gain.gain.value = 0.03; // Volume BEM BAIXO
+                    panner.pan.value = pan;
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(panner);
+                    panner.connect(audioCtx.destination);
+                    
+                    osc.start();
+                };
+
+                // Acorde menor misterioso e grave
+                createDrone(55, 'sawtooth', -0.3); // A1
+                createDrone(110, 'triangle', 0.3);  // A2
+                createDrone(130.81, 'sine', 0);     // C3
+            }
+        };
+
+        // Iniciar música no primeiro clique (qualquer lugar)
+        window.addEventListener('mousedown', () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            bgMusic.start();
+        }, { once: true });
+        window.addEventListener('touchstart', () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            bgMusic.start();
+        }, { once: true });
+
+        const audioChaos = {
+            oscillator: null,
+            gainNode: null,
+            volume: 0,
+            playbackRate: 1,
+            isPlaying: false,
+            
+            play: function() {
+                if (this.isPlaying) return;
+                this.isPlaying = true;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                this.oscillator = audioCtx.createOscillator();
+                this.gainNode = audioCtx.createGain();
+                
+                this.oscillator.type = 'sawtooth';
+                this.oscillator.frequency.value = 50; 
+                this.gainNode.gain.value = 0.1;
+                
+                this.oscillator.connect(this.gainNode);
+                this.gainNode.connect(audioCtx.destination);
+                this.oscillator.start();
+            },
+            
+            pause: function() {
+                if (!this.isPlaying) return;
+                this.isPlaying = false;
+                if (this.oscillator) {
+                    const now = audioCtx.currentTime;
+                    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+                    this.gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    this.oscillator.stop(now + 0.1);
+                }
+            },
+
+            update: function(heat) {
+                if (!this.isPlaying || !this.oscillator) return;
+                this.gainNode.gain.value = Math.min(this.volume * 0.5, 0.5); 
+                
+                this.oscillator.frequency.value = 60 * (this.playbackRate * config.audioPitchMultiplier); 
+                const now = audioCtx.currentTime; 
+                this.oscillator.detune.value = Math.sin(now * 50) * (heat * config.audioDetuneMultiplier);
+            }
+        };
+
+        const audioCrash = {
+            play: function() {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                // Aumentado buffer para 4.5 segundos para garantir que cubra a contagem
+                const bufferSize = audioCtx.sampleRate * 4.5; 
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0.5;
+                noise.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start();
+            }
+        };
+
+        // ==========================================
+        // 4. ELEMENTOS UI
+        // ==========================================
+        const uiMain = document.getElementById('main-interface'); 
+        const uiBar = document.getElementById('instability-bar'); 
+        const uiBsod = document.getElementById('bsod-screen');
+        const mainTitle = document.getElementById('main-title');
+        const tempDisplay = document.getElementById('temp-display');
+        const xpErrorSound = document.getElementById('audio-windows-error');
+
+        // ==========================================
+        // 5. GAME LOOP LÓGICO
+        // ==========================================
+        function gameLoop() {
+            if (state.crashed) return;
+
+            if (state.holding) {
+                state.heat += config.heatIncrement; 
+                
+                const intensity = Math.min(state.heat / config.shakeMultiplier, config.maxShake);
+                const x = (Math.random() - 0.5) * intensity;
+                const y = (Math.random() - 0.5) * intensity;
+                uiMain.style.transform = `translate(${x}px, ${y}px)`;
+
+                audioChaos.volume = Math.min(0.2 + (state.heat / 50), 1);
+                audioChaos.playbackRate = 0.8 + (state.heat / 50);
+                audioChaos.update(state.heat);
+
+                if(config.extremeMode && state.heat > 50) {
+                    if(tempDisplay) {
+                        tempDisplay.innerText = "CRITICAL " + Math.floor(state.heat * 10) + "°C";
+                        tempDisplay.style.color = "red";
+                    }
+                    uiMain.classList.add("alarm-active");
+                } 
+
+                if (state.heat >= 100) {
+                    crashSystem(); 
+                }
+            } else {
+                if (state.heat > 0) state.heat -= 2;
+                if (state.heat < 0) state.heat = 0;
+                uiMain.style.transform = `translate(0px, 0px)`;
+                
+                if(config.extremeMode && state.heat < 50) {
+                    if(tempDisplay) tempDisplay.innerText = "OVERRIDE"; 
+                    uiMain.classList.remove("alarm-active");
+                } 
+            }
+
+            uiBar.style.width = state.heat + '%';
+            
+            if(state.heat > 80) {
+                uiBar.style.boxShadow = `0 0 ${state.heat}px #ff0000`;
+            } else {
+                uiBar.style.boxShadow = `0 0 10px #ff0000`;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function crashSystem() {
+            state.crashed = true; 
+            audioChaos.pause();
+            audioCrash.play(); 
+            
+            if (xpErrorSound) {
+                xpErrorSound.volume = 1.0;
+                xpErrorSound.play().catch(e => console.log("Erro ao tocar som XP:", e));
+            }
+            
+            uiMain.style.display = 'none';
+            uiBsod.style.display = 'flex'; 
+            
+            // --- NOVA LÓGICA DE CONTAGEM CALIBRADA PARA 3 SEGUNDOS ---
+            let progress = 0;
+            const progressElement = document.getElementById('bsod-progress');
+            
+            // Intervalo de 60ms para suavidade
+            // Incremento médio de 2% por tick
+            // 50 ticks * 60ms = 3000ms (3 segundos)
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 3) + 1; // 1, 2 ou 3
+                
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    if (progressElement) progressElement.innerText = 100;
+                    
+                    // Espera 0.5s mostrando 100% antes de resetar
+                    setTimeout(() => { 
+                        location.reload(); 
+                    }, 500);
+                } else {
+                    if (progressElement) progressElement.innerText = progress;
+                }
+            }, 60); 
+        }
+
+        function startChaos() {
+            if (state.crashed) return;
+            state.holding = true;
+            mainTitle.classList.add('glitch-intense');
+            audioChaos.play(); 
+        }
+
+        function stopChaos() {
+            state.holding = false;
+            mainTitle.classList.remove('glitch-intense');
+            audioChaos.pause(); 
+        }
+
+        window.addEventListener('mousedown', startChaos);
+        window.addEventListener('mouseup', stopChaos);
+        window.addEventListener('touchstart', (e) => { e.preventDefault(); startChaos(); }, {passive: false});
+        window.addEventListener('touchend', stopChaos);
+
+        requestAnimationFrame(gameLoop);
+
+        // ==========================================
+        // 6. CENA 3D (THREE.JS)
+        // ==========================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 15;
+        camera.position.y = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+        const pointLight1 = new THREE.PointLight(0x00ffff, 2, 50);
+        pointLight1.position.set(-5, 5, 5);
+        scene.add(pointLight1);
+        const pointLight2 = new THREE.PointLight(0xff00ff, 2, 50);
+        pointLight2.position.set(5, -5, 5);
+        scene.add(pointLight2);
+
+        const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x222222,
+            roughness: 0.2,
+            metalness: 0.8,
+            emissive: 0x000000
+        });
+
+        const gridSize = 20;
+        const count = gridSize * gridSize;
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+        const dummy = new THREE.Object3D();
+        
+        // Loop de inicialização 3D (AGORA SEGURO pois 'config' e 'state' já existem)
+        let i = 0;
+        for (let x = 0; x < gridSize; x++) {
+            for (let z = 0; z < gridSize; z++) {
+                dummy.position.set((x - gridSize / 2) * 1.5, 0, (z - gridSize / 2) * 1.5);
+                
+                // Agora 'state' e 'config' estão definidos, então não vai travar
+                const waveSpeed = state.holding ? config.voxelSpeedBase : 2; 
+                const waveHeight = state.holding ? config.voxelHeightBase + (state.heat/10) : 2; 
+                
+                // Usando tempo 0 para posição inicial
+                const offset = Math.sqrt(Math.pow(x - gridSize/2, 2) + Math.pow(z - gridSize/2, 2));
+                dummy.position.y = Math.sin(0 * waveSpeed + offset * 0.5) * waveHeight; 
+                
+                const rotSpeed = config.extremeMode && state.holding ? 5 : 0.5;
+                
+                // Usando valores estáticos iniciais antes do loop de animação
+                dummy.rotation.x = x * 0.1; 
+                dummy.rotation.z = z * 0.1;
+                dummy.updateMatrix();
+                
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+                
+                // Cores
+                if (Math.random() > 0.9) {
+                    instancedMesh.setColorAt(i, new THREE.Color().setHSL(Math.random(), 1.0, 0.5));
+                } else {
+                    instancedMesh.setColorAt(i, new THREE.Color(0x222222));
+                }
+                
+                i++;
+            }
+        }
+        instancedMesh.instanceMatrix.needsUpdate = true;
+        instancedMesh.instanceColor.needsUpdate = true;
+        scene.add(instancedMesh);
+
+        const gridHelper = new THREE.GridHelper(100, 50, 0x333333, 0x111111);
+        gridHelper.position.y = -5;
+        scene.add(gridHelper);
+
+        const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+        const postScene = new THREE.Scene();
+        const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        
+        const glitchMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                tDiffuse: { value: null },
+                time: { value: 0 },
+                distortion: { value: 0.0 },
+                rgbShift: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float time;
+                uniform float distortion;
+                uniform float rgbShift;
+                varying vec2 vUv;
+                float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+                void main() {
+                    vec2 p = vUv;
+                    float slice = random(vec2(0.0, floor(p.y * 10.0 + time * 5.0)));
+                    if (slice < distortion) p.x += (random(vec2(time)) - 0.5) * 0.1;
+                    vec2 rOffset = vec2(rgbShift * 0.02, 0.0);
+                    vec2 bOffset = vec2(-rgbShift * 0.02, 0.0);
+                    float r = texture2D(tDiffuse, p + rOffset).r;
+                    float g = texture2D(tDiffuse, p).g;
+                    float b = texture2D(tDiffuse, p + bOffset).b;
+                    gl_FragColor = vec4(r, g, b, 1.0) - (sin(p.y * 800.0) * 0.04);
+                }
+            `
+        });
+        postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), glitchMaterial));
+
+        const mouse = new THREE.Vector2();
+        document.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderTarget.setSize(window.innerWidth, window.innerHeight);
+            glitchMaterial.uniforms.tDiffuse.value = renderTarget.texture;
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            if(state.crashed) return; 
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            let idx = 0;
+            for (let x = 0; x < gridSize; x++) {
+                for (let z = 0; z < gridSize; z++) {
+                    dummy.position.set((x - gridSize / 2) * 1.5, 0, (z - gridSize / 2) * 1.5);
+                    
+                    const waveSpeed = state.holding ? config.voxelSpeedBase : 2; 
+                    const waveHeight = state.holding ? config.voxelHeightBase + (state.heat/10) : 2; 
+                    
+                    const offset = Math.sqrt(Math.pow(x - gridSize/2, 2) + Math.pow(z - gridSize/2, 2));
+                    dummy.position.y = Math.sin(time * waveSpeed + offset * 0.5) * waveHeight;
+                    
+                    const rotSpeed = config.extremeMode && state.holding ? 5 : 0.5;
+                    
+                    dummy.rotation.x = time * rotSpeed + x * 0.1; 
+                    dummy.rotation.z = time * (config.extremeMode && state.holding ? 5 : 0.3) + z * 0.1;
+                    dummy.updateMatrix();
+                    instancedMesh.setMatrixAt(idx, dummy.matrix);
+                    idx++;
+                }
+            }
+            instancedMesh.instanceMatrix.needsUpdate = true;
+
+            camera.position.x += (mouse.x * 10 - camera.position.x) * 0.05;
+            camera.position.y += (5 + mouse.y * 5 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            const distFromCenter = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+            const heatFactor = state.heat / 50; 
+            
+            glitchMaterial.uniforms.time.value = time;
+            // Usa config dinâmica para distorção
+            glitchMaterial.uniforms.distortion.value = (distFromCenter * 0.1) + (heatFactor * config.glitchFactorDistortion);
+            glitchMaterial.uniforms.rgbShift.value = (distFromCenter * 0.5) + (heatFactor * config.glitchFactorRGB);
+            glitchMaterial.uniforms.tDiffuse.value = renderTarget.texture;
+
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
+            renderer.setRenderTarget(null);
+            renderer.render(postScene, postCamera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
+    <script>
+// ==========================================
         // 1. CONFIGURAÇÃO & ESTADO
         // ==========================================
         let config = {
