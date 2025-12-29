@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urltest.html</title>
+    <style>
+body { font-family: sans-serif; padding: 20px; background: #f0f0f0; } h1 { color: #333; }
+    </style>
+</head>
+<body>
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Site Tester + Bitdefender JSON-RPC</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 1100px; }
+    @media (min-width: 980px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .card { border: 1px solid #333; border-radius: 12px; padding: 16px; background: #121212; }
+    label { display:block; font-size: 12px; opacity: .85; margin-top: 10px; }
+    input, select, textarea, button {
+      width: 100%; box-sizing: border-box;
+      border: 1px solid #333; border-radius: 10px;
+      background: #0b0b0b; color: #eaeaea;
+      padding: 10px; margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    button { cursor: pointer; font-family: ui-sans-serif, system-ui; font-weight: 600; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 980px){ .row { grid-template-columns: 1fr 1fr; } }
+    pre {
+      white-space: pre-wrap; word-break: break-word;
+      background: #0b0b0b; border: 1px solid #333;
+      border-radius: 10px; padding: 10px; margin: 10px 0 0;
+      min-height: 160px;
+    }
+    .hint { font-size: 12px; opacity: .8; line-height: 1.35; }
+    .ok { color: #7CFF8A; }
+    .bad { color: #FF7C7C; }
+  </style>
+</head>
+<body>
+  <h1>Testes rápidos (HTTP + Bitdefender JSON-RPC)</h1>
+
+  <div class="grid">
+    <!-- URL tester -->
+    <section class="card">
+      <h2>Testar sites/URLs</h2>
+      <p class="hint">
+        Alguns sites bloqueiam requisições cross-origin (CORS), então “Falha” aqui nem sempre significa que o site está fora.
+        Se precisar de teste 100% confiável, use um backend/proxy.
+      </p>
+
+      <label>URLs (uma por linha)</label>
+      <textarea id="urls" placeholder="https://example.com
+https://status.example.com/health"></textarea>
+
+      <div class="row">
+        <div>
+          <label>Método</label>
+          <select id="urlMethod">
+            <option>GET</option>
+            <option>HEAD</option>
+          </select>
+        </div>
+        <div>
+          <label>Timeout (ms)</label>
+          <input id="urlTimeout" type="number" value="8000" />
+        </div>
+      </div>
+
+      <button id="btnCheckUrls">Testar URLs</button>
+      <pre id="urlOut"></pre>
+    </section>
+
+    <!-- Bitdefender JSON-RPC -->
+    <section class="card">
+      <h2>Bitdefender GravityZone (JSON-RPC)</h2>
+      <p class="hint">
+        Monta e envia um POST JSON-RPC 2.0 no padrão:
+        <code>ACCESS_URL/v1.0/jsonrpc/{api}</code> ou <code>v1.1</code>.
+        Auth: Basic Base64(<code>API_KEY:</code>).
+      </p>
+
+      <label>Access URL (do “My Account” → Control Center API → Access URL)</label>
+      <input id="accessUrl" placeholder="https://...." />
+
+      <div class="row">
+        <div>
+          <label>Versão</label>
+          <select id="version">
+            <option value="v1.0">v1.0</option>
+            <option value="v1.1">v1.1</option>
+          </select>
+        </div>
+        <div>
+          <label>API</label>
+          <select id="apiName">
+            <option value="companies">companies</option>
+            <option value="accounts">accounts</option>
+            <option value="network">network</option>
+            <option value="packages">packages</option>
+            <option value="policies">policies</option>
+            <option value="reports">reports</option>
+            <option value="licensing">licensing</option>
+            <option value="integrations">integrations</option>
+            <option value="incidents">incidents</option>
+            <option value="quarantine">quarantine</option>
+            <option value="maintenanceWindows">maintenanceWindows</option>
+            <option value="push">push</option>
+            <option value="general">general</option>
+            <option value="phasr">phasr</option>
+          </select>
+        </div>
+      </div>
+
+      <label>API Key</label>
+      <input id="apiKey" type="password" placeholder="cole sua API key (não compartilhe)" />
+
+      <label>Método JSON-RPC</label>
+      <input id="rpcMethod" value="updateCompanyDetails" />
+
+      <label>Params (JSON)</label>
+      <textarea id="rpcParams">{ "name": "My Company Name" }</textarea>
+
+      <button id="btnCall">Enviar JSON-RPC</button>
+      <pre id="rpcOut"></pre>
+    </section>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function safeJsonParse(text) {
+    try { return { ok: true, value: JSON.parse(text) }; }
+    catch (e) { return { ok: false, error: String(e) }; }
+  }
+
+  function withTimeout(ms, promise) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(new DOMException("Timeout", "AbortError")), ms);
+    return Promise.race([
+      promise(ctrl.signal).finally(() => clearTimeout(t)),
+    ]);
+  }
+
+  function nowMs() { return performance.now(); }
+
+  $("btnCheckUrls").addEventListener("click", async () => {
+    const urls = $("urls").value.split("
+").map(s => s.trim()).filter(Boolean);
+    const method = $("urlMethod").value;
+    const timeout = Number($("urlTimeout").value || 8000);
+    const out = [];
+
+    if (!urls.length) {
+      $("urlOut").textContent = "Cole pelo menos 1 URL.";
+      return;
+    }
+
+    for (const url of urls) {
+      const t0 = nowMs();
+      try {
+        const res = await withTimeout(timeout, (signal) =>
+          fetch(url, { method, signal, cache: "no-store" })
+        );
+        const dt = Math.round(nowMs() - t0);
+        out.push(`[OK] ${url}
+  status=${res.status} ${res.statusText}  time=${dt}ms`);
+      } catch (e) {
+        const dt = Math.round(nowMs() - t0);
+        out.push(`[FALHA] ${url}
+  erro=${String(e)}  time=${dt}ms`);
+      }
+    }
+
+    $("urlOut").textContent = out.join("
+
+");
+  });
+
+  function buildRpcUrl(accessUrl, version, apiName) {
+    const base = (accessUrl || "").trim().replace(//+$/, "");
+    return `${base}/${version}/jsonrpc/${apiName}`;
+  }
+
+  function basicAuthFromApiKey(apiKey) {
+    // Username=apiKey, password vazio => "apiKey:" em Base64
+    return "Basic " + btoa(`${apiKey}:`);
+  }
+
+  $("btnCall").addEventListener("click", async () => {
+    const accessUrl = $("accessUrl").value.trim();
+    const version = $("version").value;
+    const apiName = $("apiName").value;
+    const apiKey = $("apiKey").value;
+    const method = $("rpcMethod").value.trim();
+    const paramsText = $("rpcParams").value.trim();
+
+    if (!accessUrl || !apiKey || !method) {
+      $("rpcOut").textContent = "Preencha Access URL, API Key e Método.";
+      return;
+    }
+
+    const parsed = safeJsonParse(paramsText || "{}");
+    if (!parsed.ok) {
+      $("rpcOut").textContent = `JSON inválido em params: ${parsed.error}`;
+      return;
+    }
+
+    const url = buildRpcUrl(accessUrl, version, apiName);
+    const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+
+    const payload = {
+      id,
+      jsonrpc: "2.0",
+      method,
+      params: parsed.value
+    };
+
+    const t0 = nowMs();
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": basicAuthFromApiKey(apiKey),
+        },
+        body: JSON.stringify(payload),
+      });
+      const dt = Math.round(nowMs() - t0);
+      const text = await res.text();
+      const maybeJson = safeJsonParse(text);
+
+      $("rpcOut").textContent =
+`URL: ${url}
+HTTP: ${res.status} ${res.statusText}
+Tempo: ${dt}ms
+
+Request:
+${JSON.stringify(payload, null, 2)}
+
+Response:
+${maybeJson.ok ? JSON.stringify(maybeJson.value, null, 2) : text}`;
+    } catch (e) {
+      const dt = Math.round(nowMs() - t0);
+      $("rpcOut").textContent =
+`URL: ${url}
+Falha: ${String(e)}
+Tempo: ${dt}ms`;
+    }
+  });
+</script>
+</body>
+</html>
+    <script>
+console.log("Página carregada");
+    </script>
+</body>
+</html>
