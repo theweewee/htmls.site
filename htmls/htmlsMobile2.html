@@ -513,15 +513,15 @@
                 h("label",null,"Arquivo"),
                 h("input",{type:"text",value:filename,onChange:e=>setFilename(e.target.value),placeholder:"arquivo.html"})
               ),
-              h("button",{className:"btn btn-ai",onClick:()=>setShowAI(true),disabled:aiLoading,title:"Gerar com IA"},aiLoading?h("div",{className:"spinner"}):"✨"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:()=>setShowTemplates(true),title:"Templates"},"📋"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:()=>setShowHistory(true),title:"Histórico"},"🕐"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:toggleMode,title:fullMode?"Dividir":"Unir"},fullMode?"📑":"📄"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:()=>setShowSearch(s=>!s),title:"Buscar"},"🔍"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:handleNew,title:"Novo"},"➕"),
-              h("button",{className:"btn btn-primary",onClick:handleSave,disabled:saving,title:"Salvar"},saving?"...":"☁️"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:handleOpenFiles,title:"Arquivos GitHub"},"📂"),
-              h("button",{className:"btn btn-secondary btn-icon",onClick:openPage,title:"Abrir"},"🌐")
+              h("button",{className:"btn btn-ai",onClick:()=>setShowAI(true),disabled:aiLoading,title:"Gerar com IA"},aiLoading?h("div",{className:"spinner"}):"✨ IA"),
+              h("button",{className:"btn btn-secondary",onClick:()=>setShowTemplates(true),title:"Templates"},"📋 Templates"),
+              h("button",{className:"btn btn-secondary",onClick:()=>setShowHistory(true),title:"Histórico"},"🕐 Histórico"),
+              h("button",{className:"btn btn-secondary",onClick:toggleMode,title:fullMode?"Dividir":"Unir"},fullMode?"📑 Dividir":"📄 Unir"),
+              h("button",{className:"btn btn-secondary",onClick:()=>setShowSearch(s=>!s),title:"Buscar"},"🔍 Buscar"),
+              h("button",{className:"btn btn-secondary",onClick:handleNew,title:"Novo"},"➕ Novo"),
+              h("button",{className:"btn btn-primary",onClick:handleSave,disabled:saving,title:"Salvar"},saving?"...":"☁️ Salvar"),
+              h("button",{className:"btn btn-secondary",onClick:handleOpenFiles,title:"Arquivos GitHub"},"📂 Arquivos"),
+              h("button",{className:"btn btn-secondary",onClick:openPage,title:"Abrir"},"🌐 Abrir")
             ),
 
             showSearch && h("div",{className:"search-bar"},
