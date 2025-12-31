@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Praça de IA (OpenRouter)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f1730;
+      --panel2:#0d142a;
+      --text:#e8eeff;
+      --muted:#a7b2d6;
+      --border:#22305a;
+      --accent:#6aa9ff;
+      --ok:#66ffb3;
+      --bad:#ff5c7a;
+      --shadow: 0 10px 35px rgba(0,0,0,.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(106,169,255,.22), transparent 55%),
+        radial-gradient(700px 450px at 85% 35%, rgba(102,255,179,.12), transparent 50%),
+        var(--bg);
+      color:var(--text);
+    }
+    .app{
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:14px;
+      padding:14px;
+      height:100%;
+    }
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      min-height:0;
+    }
+    .sidebar{display:flex; flex-direction:column; min-height:0}
+    .header{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid rgba(34,48,90,.7);
+      background: linear-gradient(180deg, rgba(106,169,255,.08), transparent);
+    }
+    .title{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .title h1{font-size:15px; margin:0; font-weight:750; letter-spacing:.2px}
+    .pill{
+      font-size:12px; padding:5px 9px; border-radius:999px;
+      border:1px solid rgba(34,48,90,.9);
+      color:var(--muted); background: rgba(15,23,48,.8);
+    }
+    .hint{color: var(--muted); font-size:12px; line-height: 1.35; margin-top:10px}
+    .content{padding:14px; overflow:auto; min-height:0}
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+    input, select, textarea{
+      width:100%;
+      background: rgba(13,20,42,.95);
+      color: var(--text);
+      border: 1px solid rgba(34,48,90,.95);
+      border-radius: 12px;
+      padding: 10px 11px;
+      outline:none;
+    }
+    textarea{min-height: 82px; resize: vertical}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+    button{
+      cursor:pointer;
+      border:1px solid rgba(34,48,90,.95);
+      background: rgba(15,23,48,.9);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight:750;
+    }
+    button.primary{
+      background: linear-gradient(180deg, rgba(106,169,255,.28), rgba(106,169,255,.12));
+      border-color: rgba(106,169,255,.55);
+    }
+    button.good{
+      background: linear-gradient(180deg, rgba(102,255,179,.22), rgba(102,255,179,.10));
+      border-color: rgba(102,255,179,.40);
+    }
+    button.danger{
+      background: rgba(255,92,122,.10);
+      border-color: rgba(255,92,122,.45);
+    }
+    button:disabled{opacity:.55; cursor:not-allowed}
+    .divider{height:1px; background: rgba(34,48,90,.75); margin:14px 0}
+    .switch{
+      display:flex; align-items:center; gap:10px;
+      margin-top:10px;
+      padding:10px 10px;
+      border:1px dashed rgba(34,48,90,.85);
+      border-radius:12px;
+      background: rgba(13,20,42,.5);
+    }
+    .switch input{width:auto}
+    .main{display:flex; flex-direction:column; min-height:0}
+    .chatTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(34,48,90,.7);
+      background: linear-gradient(180deg, rgba(102,255,179,.08), transparent);
+    }
+    .chatTop .meta{display:flex; flex-direction:column; gap:4px}
+    .chatTop .meta .name{font-weight:800; font-size:13px}
+    .chatTop .meta .sub{font-size:12px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:4px 9px; border-radius: 999px;
+      border:1px solid rgba(34,48,90,.85);
+      background: rgba(13,20,42,.55);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .chatTop .actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    .chatArea{padding:14px; overflow:auto; min-height:0}
+    .msg{
+      border:1px solid rgba(34,48,90,.75);
+      background: rgba(13,20,42,.65);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .msg .top{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:6px;
+    }
+    .role{
+      font-size:12px; font-weight:900; letter-spacing:.25px;
+      text-transform:uppercase;
+    }
+    .role.user{color: rgba(106,169,255,.95)}
+    .role.assistant{color: rgba(102,255,179,.95)}
+    .role.system{color: rgba(255,210,120,.95)}
+    .time{font-size:12px; color: var(--muted)}
+    .text{white-space: pre-wrap; line-height: 1.45; font-size: 14px}
+    .code{
+      margin-top: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(34,48,90,.85);
+      background: rgba(10,14,28,.95);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      overflow:auto;
+      white-space: pre;
+    }
+    .composer{
+      border-top: 1px solid rgba(34,48,90,.7);
+      padding: 12px 14px;
+      background: rgba(15,23,48,.55);
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+    }
+    .composer textarea{min-height: 70px; max-height: 240px}
+    .status{
+      padding: 10px 14px;
+      border-top: 1px solid rgba(34,48,90,.7);
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(13,20,42,.35);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .status code{font-family: var(--mono); font-size: 12px; color: var(--text)}
+    @media (max-width: 980px){
+      .app{grid-template-columns: 1fr; height:auto}
+      .main{height: calc(100vh - 28px)}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel sidebar">
+      <div class="header">
+        <div class="title">
+          <h1>Praça de IA (OpenRouter)</h1>
+          <span class="pill">index.html</span>
+        </div>
+        <div class="hint">
+          Chat sem conta + links compartilháveis. Para “grátis sem limites” de verdade, normalmente precisa de backend/antiabuso; aqui é BYOK (API key do usuário).
+        </div>
+      </div>
+
+      <div class="content">
+        <label>OpenRouter API Key (BYOK)</label>
+        <input id="apiKey" type="password" placeholder="sk-or-..." />
+
+        <div class="switch">
+          <input id="saveKey" type="checkbox" />
+          <div>
+            <div style="font-weight:800">Salvar API key localmente</div>
+            <div class="hint" style="margin:2px 0 0">Somente no seu navegador (localStorage).</div>
+          </div>
+        </div>
+
+        <label>Model</label>
+        <input id="model" placeholder="ex: openrouter/auto, anthropic/claude-3.5-sonnet, openai/gpt-4o..." value="openrouter/auto"/>
+
+        <label>Fallback models (opcional, até 3)</label>
+        <input id="fallbackModels" placeholder="ex: anthropic/claude-3.5-sonnet, openai/gpt-4o-mini" />
+
+        <div class="row3">
+          <div>
+            <label>Temperature</label>
+            <input id="temperature" type="number" step="0.1" min="0" max="2" value="0.7" />
+          </div>
+          <div>
+            <label>Max tokens</label>
+            <input id="maxTokens" type="number" step="1" min="16" max="8192" value="1024" />
+          </div>
+          <div>
+            <label>Stream</label>
+            <select id="stream">
+              <option value="true" selected>Sim</option>
+              <option value="false">Não</option>
+            </select>
+          </div>
+        </div>
+
+        <label>System prompt</label>
+        <textarea id="systemPrompt" placeholder="Defina o comportamento do assistente..."></textarea>
+
+        <div class="switch">
+          <input id="persist" type="checkbox" checked />
+          <div>
+            <div style="font-weight:800">Salvar histórico do chat</div>
+            <div class="hint" style="margin:2px 0 0">Persistência no navegador (localStorage).</div>
+          </div>
+        </div>
+
+        <label>Atribuição do app (opcional)</label>
+        <div class="row">
+          <input id="appTitle" placeholder="X-Title" value="Praca de IA" />
+          <input id="appReferer" placeholder="HTTP-Referer" />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="btnrow">
+          <button id="newChatBtn">Novo chat</button>
+          <button id="exportBtn">Exportar .md</button>
+          <button id="copyAllBtn">Copiar conversa</button>
+          <button class="danger" id="wipeBtn">Apagar storage</button>
+        </div>
+
+        <div class="hint" id="storageHint"></div>
+      </div>
+    </aside>
+
+    <main class="panel main">
+      <div class="chatTop">
+        <div class="meta">
+          <div class="name">Conversa</div>
+          <div class="sub">
+            <span class="badge" id="msgCount">0 msgs</span>
+            <span class="badge" id="netBadge">OpenRouter</span>
+            <span class="badge" id="modelBadge">model: openrouter/auto</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="shareBtn" class="good">Gerar link</button>
+          <button id="copyLinkBtn">Copiar link</button>
+          <button class="danger" id="clearChatBtn">Limpar chat</button>
+        </div>
+      </div>
+
+      <div class="chatArea" id="chatArea" aria-live="polite"></div>
+
+      <div class="composer">
+        <textarea id="prompt" placeholder="Digite sua mensagem... (Ctrl+Enter envia)"></textarea>
+        <button class="primary" id="sendBtn">Enviar</button>
+      </div>
+
+      <div class="status" id="status">
+        <span>Pronto.</span>
+        <span><code id="miniInfo">/api/v1/chat/completions</code></span>
+      </div>
+    </main>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+  const STORE_CHAT = "praca_ai_chat_v1";
+  const STORE_SETTINGS = "praca_ai_settings_v1";
+
+  const els = {
+    apiKey: $("apiKey"),
+    saveKey: $("saveKey"),
+
+    model: $("model"),
+    fallbackModels: $("fallbackModels"),
+    temperature: $("temperature"),
+    maxTokens: $("maxTokens"),
+    stream: $("stream"),
+    systemPrompt: $("systemPrompt"),
+
+    persist: $("persist"),
+    appTitle: $("appTitle"),
+    appReferer: $("appReferer"),
+
+    newChatBtn: $("newChatBtn"),
+    exportBtn: $("exportBtn"),
+    copyAllBtn: $("copyAllBtn"),
+    wipeBtn: $("wipeBtn"),
+    storageHint: $("storageHint"),
+
+    msgCount: $("msgCount"),
+    modelBadge: $("modelBadge"),
+    chatArea: $("chatArea"),
+    prompt: $("prompt"),
+    sendBtn: $("sendBtn"),
+    status: $("status"),
+    miniInfo: $("miniInfo"),
+
+    shareBtn: $("shareBtn"),
+    copyLinkBtn: $("copyLinkBtn"),
+    clearChatBtn: $("clearChatBtn"),
+  };
+
+  const state = {
+    sessionId: randomId(),
+    messages: [],
+    shareUrl: "",
+    busy: false,
+    aborter: null,
+  };
+
+  function randomId() {
+    const bytes = new Uint8Array(10);
+    (crypto?.getRandomValues?.(bytes) || bytes.fill(Math.random()*255));
+    return Array.from(bytes).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  const safeJsonParse = (s, fallback) => { try { return JSON.parse(s); } catch { return fallback; } };
+  const nowIso = () => new Date().toISOString();
+
+  // base64url (para link compartilhável)
+  const b64u = {
+    enc: (str) => {
+      const b64 = btoa(unescape(encodeURIComponent(str)));
+      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    },
+    dec: (s) => {
+      let x = s.replace(/-/g, "+").replace(/_/g, "/");
+      while (x.length % 4) x += "=";
+      return decodeURIComponent(escape(atob(x)));
+    }
+  };
+
+  function splitCodeBlocks(s) {
+    const out = [];
+    const re = /``````/g;
+    let last = 0, m;
+    while ((m = re.exec(s)) !== null) {
+      if (m.index > last) out.push({ type:"text", value: s.slice(last, m.index) });
+      out.push({ type:"code", value: (m[1] || "").replace(/^\n/, "") });
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) out.push({ type:"text", value: s.slice(last) });
+    return out.length ? out : [{ type:"text", value:s }];
+  }
+
+  function renderMessage(m) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg";
+
+    const top = document.createElement("div");
+    top.className = "top";
+
+    const role = document.createElement("div");
+    role.className = `role ${m.role}`;
+    role.textContent = m.role;
+
+    const time = document.createElement("div");
+    time.className = "time";
+    time.textContent = new Date(m.ts).toLocaleString();
+
+    top.appendChild(role);
+    top.appendChild(time);
+
+    wrap.appendChild(top);
+
+    const parts = splitCodeBlocks(m.content || "");
+    for (const p of parts) {
+      if (!p.value) continue;
+      if (p.type === "code") {
+        const pre = document.createElement("pre");
+        pre.className = "code";
+        pre.textContent = p.value;
+        wrap.appendChild(pre);
+      } else {
+        const div = document.createElement("div");
+        div.className = "text";
+        div.textContent = p.value;
+        wrap.appendChild(div);
+      }
+    }
+    return wrap;
+  }
+
+  function render() {
+    els.chatArea.innerHTML = "";
+    for (const m of state.messages) els.chatArea.appendChild(renderMessage(m));
+    els.msgCount.textContent = `${state.messages.length} msgs`;
+    els.modelBadge.textContent = `model: ${els.model.value.trim() || "-"}`;
+    els.chatArea.scrollTop = els.chatArea.scrollHeight;
+  }
+
+  function setStatus(text) {
+    els.status.firstElementChild.textContent = text;
+  }
+
+  function setBusy(b) {
+    state.busy = b;
+    els.sendBtn.disabled = b;
+    els.newChatBtn.disabled = b;
+    els.clearChatBtn.disabled = b;
+    if (!b) state.aborter = null;
+  }
+
+  function persistIfEnabled() {
+    if (!els.persist.checked) return;
+    localStorage.setItem(STORE_CHAT, JSON.stringify({
+      v: 1,
+      updatedAt: nowIso(),
+      sessionId: state.sessionId,
+      messages: state.messages
+    }));
+    els.storageHint.textContent = "Histórico salvo localmente.";
+  }
+
+  function loadChatIfAny() {
+    if (!els.persist.checked) return;
+    const p = safeJsonParse(localStorage.getItem(STORE_CHAT), null);
+    if (!p || !Array.isArray(p.messages)) return;
+    state.sessionId = p.sessionId || randomId();
+    state.messages = p.messages;
+  }
+
+  function saveSettings() {
+    const s = {
+      saveKey: !!els.saveKey.checked,
+      apiKey: els.saveKey.checked ? (els.apiKey.value || "") : "",
+      model: els.model.value,
+      fallbackModels: els.fallbackModels.value,
+      temperature: Number(els.temperature.value || 0.7),
+      maxTokens: Number(els.maxTokens.value || 1024),
+      stream: els.stream.value,
+      systemPrompt: els.systemPrompt.value,
+      persist: !!els.persist.checked,
+      appTitle: els.appTitle.value,
+      appReferer: els.appReferer.value
+    };
+    localStorage.setItem(STORE_SETTINGS, JSON.stringify(s));
+  }
+
+  function loadSettings() {
+    const s = safeJsonParse(localStorage.getItem(STORE_SETTINGS), null);
+    if (!s) return;
+
+    els.saveKey.checked = !!s.saveKey;
+    if (s.saveKey && s.apiKey) els.apiKey.value = s.apiKey;
+
+    if (s.model) els.model.value = s.model;
+    if (typeof s.fallbackModels === "string") els.fallbackModels.value = s.fallbackModels;
+    if (typeof s.temperature !== "undefined") els.temperature.value = s.temperature;
+    if (typeof s.maxTokens !== "undefined") els.maxTokens.value = s.maxTokens;
+    if (typeof s.stream !== "undefined") els.stream.value = String(s.stream);
+    if (typeof s.systemPrompt !== "undefined") els.systemPrompt.value = s.systemPrompt;
+    if (typeof s.persist !== "undefined") els.persist.checked = !!s.persist;
+    if (typeof s.appTitle !== "undefined") els.appTitle.value = s.appTitle;
+    if (typeof s.appReferer !== "undefined") els.appReferer.value = s.appReferer;
+  }
+
+  function wipeAll() {
+    localStorage.removeItem(STORE_CHAT);
+    localStorage.removeItem(STORE_SETTINGS);
+    els.storageHint.textContent = "Storage apagado.";
+  }
+
+  function clearChat() {
+    state.sessionId = randomId();
+    state.messages = [];
+    state.shareUrl = "";
+    render();
+    persistIfEnabled();
+  }
+
+  function systemMessageIfAny() {
+    const sp = (els.systemPrompt.value || "").trim();
+    if (!sp) return null;
+    return { role: "system", content: sp, ts: nowIso() };
+  }
+
+  function messagesForAPI() {
+    const sys = systemMessageIfAny();
+    const out = [];
+    if (sys) out.push({ role: "system", content: sys.content });
+    for (const m of state.messages) {
+      if (m.role === "system") continue;
+      out.push({ role: m.role, content: m.content });
+    }
+    return out;
+  }
+
+  function parseFallbacks() {
+    const raw = (els.fallbackModels.value || "").trim();
+    if (!raw) return [];
+    return raw.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3);
+  }
+
+  async function send() {
+    const text = (els.prompt.value || "").trim();
+    if (!text || state.busy) return;
+
+    const apiKey = (els.apiKey.value || "").trim();
+    if (!apiKey) {
+      state.messages.push({ role:"assistant", content:"Falta API key do OpenRouter. Cole a key no campo da esquerda (BYOK).", ts: nowIso() });
+      render();
+      return;
+    }
+
+    // user msg
+    state.messages.push({ role:"user", content:text, ts: nowIso() });
+    els.prompt.value = "";
+    render();
+    persistIfEnabled();
+
+    setBusy(true);
+    setStatus("Gerando resposta...");
+
+    // placeholder do assistente (para streaming)
+    const assistantIndex = state.messages.length;
+    state.messages.push({ role:"assistant", content:"", ts: nowIso() });
+    render();
+
+    const aborter = new AbortController();
+    state.aborter = aborter;
+
+    try {
+      const model = (els.model.value || "").trim();
+      if (!model) throw new Error("Model vazio.");
+
+      const temperature = Number(els.temperature.value || 0.7);
+      const max_tokens = Number(els.maxTokens.value || 1024);
+      const stream = String(els.stream.value) === "true";
+      const fallbacks = parseFallbacks();
+
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      };
+
+      // Atribuição opcional
+      const xTitle = (els.appTitle.value || "").trim();
+      const referer = (els.appReferer.value || "").trim() || location.origin;
+      if (referer) headers["HTTP-Referer"] = referer;
+      if (xTitle) headers["X-Title"] = xTitle;
+
+      const body = {
+        temperature,
+        max_tokens,
+        stream,
+        messages: messagesForAPI(),
+      };
+
+      // OpenRouter: usar routing por lista de modelos (fallback) quando fornecido
+      if (fallbacks.length > 0) {
+        body.models = [model, ...fallbacks].slice(0, 3);
+        body.route = "fallback";
+      } else {
+        body.model = model;
+      }
+
+      const res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: aborter.signal
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status}: ${t.slice(0, 800)}`);
+      }
+
+      if (!stream) {
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if (!content) throw new Error("Resposta inválida (sem choices[0].message.content).");
+        state.messages[assistantIndex].content = content;
+        render();
+        persistIfEnabled();
+        setStatus("Pronto.");
+        return;
+      }
+
+      // Streaming (SSE no formato OpenAI: linhas 'data: {...}' e 'data: [DONE]')
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // processa eventos por linha
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const l = line.trim();
+          if (!l) continue;
+          if (!l.startsWith("data:")) continue;
+
+          const payload = l.slice(5).trim();
+          if (payload === "[DONE]") continue;
+
+          let json;
+          try { json = JSON.parse(payload); } catch { continue; }
+
+          // delta padrão
+          const delta = json?.choices?.[0]?.delta?.content;
+          if (typeof delta === "string" && delta.length) {
+            state.messages[assistantIndex].content += delta;
+            render();
+            persistIfEnabled();
+          }
+
+          // alguns providers retornam message direto em partes (fallback defensivo)
+          const msg = json?.choices?.[0]?.message?.content;
+          if (typeof msg === "string" && msg.length && !state.messages[assistantIndex].content) {
+            state.messages[assistantIndex].content = msg;
+            render();
+            persistIfEnabled();
+          }
+        }
+      }
+
+      setStatus("Pronto.");
+    } catch (err) {
+      const emsg = (err && err.name === "AbortError")
+        ? "Cancelado."
+        : ((err && err.message) ? err.message : String(err));
+
+      state.messages[assistantIndex].content = `Erro: ${emsg}`;
+      render();
+      setStatus("Falha ao responder.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function exportMarkdown() {
+    const lines = [];
+    lines.push(`# Chat export (${new Date().toISOString()})`);
+    lines.push("");
+    lines.push(`- model: ${els.model.value || "-"}`);
+    lines.push(`- fallback: ${els.fallbackModels.value || "-"}`);
+    lines.push(`- temperature: ${els.temperature.value}`);
+    lines.push(`- max_tokens: ${els.maxTokens.value}`);
+    lines.push(`- stream: ${els.stream.value}`);
+    lines.push("");
+
+    const sp = (els.systemPrompt.value || "").trim();
+    if (sp) {
+      lines.push("## system");
+      lines.push("");
+      lines.push(sp);
+      lines.push("");
+    }
+
+    for (const m of state.messages) {
+      lines.push(`## ${m.role} — ${new Date(m.ts).toLocaleString()}`);
+      lines.push("");
+      lines.push(m.content || "");
+      lines.push("");
+    }
+
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `chat-${state.sessionId}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function copyText(txt) {
+    await navigator.clipboard.writeText(txt);
+  }
+
+  function conversationText() {
+    const lines = [];
+    for (const m of state.messages) {
+      lines.push(`[${m.role}] ${new Date(m.ts).toLocaleString()}`);
+      lines.push(m.content || "");
+      lines.push("");
+    }
+    return lines.join("\n");
+  }
+
+  function sharePayload() {
+    // só o necessário pro link ser compartilhável
+    return {
+      v: 1,
+      createdAt: nowIso(),
+      model: els.model.value,
+      temperature: els.temperature.value,
+      maxTokens: els.maxTokens.value,
+      systemPrompt: els.systemPrompt.value,
+      messages: state.messages
+    };
+  }
+
+  function makeShareUrl() {
+    const u = new URL(location.href);
+    const sp = new URLSearchParams(u.search);
+    sp.set("c", b64u.enc(JSON.stringify(sharePayload())));
+    u.search = sp.toString();
+    u.hash = "";
+    return u.toString();
+  }
+
+  function loadFromShareUrlIfAny() {
+    const u = new URL(location.href);
+    const sp = new URLSearchParams(u.search);
+    const c = sp.get("c");
+    if (!c) return false;
+
+    let payload;
+    try { payload = safeJsonParse(b64u.dec(c), null); } catch { payload = null; }
+    if (!payload || !Array.isArray(payload.messages)) return false;
+
+    // aplica config básica (sem tocar em apiKey)
+    if (payload.model) els.model.value = payload.model;
+    if (payload.temperature) els.temperature.value = payload.temperature;
+    if (payload.maxTokens) els.maxTokens.value = payload.maxTokens;
+    if (typeof payload.systemPrompt === "string") els.systemPrompt.value = payload.systemPrompt;
+
+    state.sessionId = randomId();
+    state.messages = payload.messages.map(m => ({
+      role: m.role || "assistant",
+      content: String(m.content || ""),
+      ts: m.ts || nowIso()
+    }));
+
+    // limpa o URL
+    sp.delete("c");
+    u.search = sp.toString();
+    history.replaceState({}, "", u.toString());
+    return true;
+  }
+
+  // Events
+  for (const el of [
+    els.apiKey, els.saveKey, els.model, els.fallbackModels,
+    els.temperature, els.maxTokens, els.stream,
+    els.systemPrompt, els.persist, els.appTitle, els.appReferer
+  ]) {
+    el.addEventListener("input", saveSettings);
+    el.addEventListener("change", saveSettings);
+  }
+
+  els.sendBtn.addEventListener("click", send);
+  els.prompt.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") send();
+  });
+
+  els.newChatBtn.addEventListener("click", clearChat);
+  els.clearChatBtn.addEventListener("click", clearChat);
+
+  els.exportBtn.addEventListener("click", exportMarkdown);
+
+  els.copyAllBtn.addEventListener("click", async () => {
+    try {
+      await copyText(conversationText());
+      setStatus("Conversa copiada.");
+    } catch {
+      setStatus("Não foi possível copiar.");
+    }
+  });
+
+  els.shareBtn.addEventListener("click", () => {
+    state.shareUrl = makeShareUrl();
+    setStatus("Link gerado (use 'Copiar link').");
+  });
+
+  els.copyLinkBtn.addEventListener("click", async () => {
+    try {
+      if (!state.shareUrl) state.shareUrl = makeShareUrl();
+      await copyText(state.shareUrl);
+      setStatus("Link copiado.");
+    } catch {
+      setStatus("Não foi possível copiar o link.");
+    }
+  });
+
+  els.wipeBtn.addEventListener("click", () => {
+    if (!confirm("Apagar storage (settings + chat)?")) return;
+    wipeAll();
+    clearChat();
+  });
+
+  // Boot
+  els.miniInfo.textContent = OPENROUTER_URL.replace("https://openrouter.ai", "");
+  loadSettings();
+
+  if (!els.persist.checked) els.storageHint.textContent = "Histórico local desativado (modo efêmero).";
+  else els.storageHint.textContent = "Histórico salvo localmente.";
+
+  const loadedFromShare = loadFromShareUrlIfAny();
+  if (!loadedFromShare) loadChatIfAny();
+
+  if (state.messages.length === 0) {
+    state.messages.push({
+      role: "assistant",
+      content:
+`Bem-vindo à Praça de IA.
+
+- Cole sua OpenRouter API key (BYOK).
+- Dica: use model = openrouter/auto para roteamento automático.
+- Use "Gerar link" para compartilhar esta conversa.`,
+      ts: nowIso()
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
