@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Editor 3D Pro - Gerador de Objetos</title>
+  <title>Editor 3D Pro Max</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; background: #111; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -13,38 +13,38 @@
       position: fixed;
       top: 10px;
       left: 10px;
-      background: rgba(0,0,0,0.9);
-      padding: 15px;
-      border-radius: 12px;
+      background: rgba(0,0,0,0.92);
+      padding: 12px;
+      border-radius: 10px;
       color: #fff;
-      width: 300px;
+      width: 280px;
       max-height: 95vh;
       overflow-y: auto;
       border: 1px solid #333;
-      font-size: 12px;
+      font-size: 11px;
     }
     
-    #ui::-webkit-scrollbar { width: 6px; }
+    #ui::-webkit-scrollbar { width: 5px; }
     #ui::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
     
-    h2 { font-size: 15px; margin-bottom: 12px; color: #0ff; display: flex; align-items: center; gap: 8px; }
-    h3 { font-size: 12px; margin: 12px 0 8px; color: #f0f; border-top: 1px solid #333; padding-top: 10px; }
+    h2 { font-size: 14px; margin-bottom: 10px; color: #0ff; }
+    h3 { font-size: 11px; margin: 10px 0 6px; color: #f0f; border-top: 1px solid #333; padding-top: 8px; }
     
-    label { display: block; font-size: 11px; margin: 6px 0 3px; color: #aaa; }
-    
-    input[type="range"] { width: 100%; accent-color: #0ff; height: 4px; }
-    input[type="color"] { width: 40px; height: 24px; border: none; border-radius: 4px; cursor: pointer; vertical-align: middle; }
+    label { display: block; font-size: 10px; margin: 5px 0 2px; color: #aaa; }
+    input[type="range"] { width: 100%; accent-color: #0ff; height: 3px; }
+    input[type="color"] { width: 35px; height: 20px; border: none; border-radius: 3px; cursor: pointer; }
     input[type="checkbox"] { accent-color: #0ff; }
+    input[type="text"] { width: 100%; padding: 5px; background: #222; border: 1px solid #444; border-radius: 4px; color: #fff; font-size: 11px; }
     
     select, button {
       width: 100%;
-      padding: 6px 8px;
-      margin: 3px 0;
+      padding: 5px 6px;
+      margin: 2px 0;
       border: 1px solid #444;
-      border-radius: 5px;
+      border-radius: 4px;
       background: #222;
       color: #fff;
-      font-size: 11px;
+      font-size: 10px;
       cursor: pointer;
     }
     
@@ -52,37 +52,35 @@
     button:hover { opacity: 0.85; }
     button.secondary { background: #333; color: #fff; }
     button.danger { background: #a33; color: #fff; }
+    button.active { background: #0a0; color: #fff; }
     
-    .row { display: flex; gap: 8px; align-items: center; }
+    .row { display: flex; gap: 6px; align-items: center; }
     .row > * { flex: 1; }
-    .row label { flex: none; width: 50px; margin: 0; }
+    .btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+    .btn-row button { flex: 1; min-width: 60px; }
     
-    .btn-row { display: flex; gap: 5px; }
-    .btn-row button { flex: 1; }
-    
-    #objectList { margin-top: 8px; max-height: 120px; overflow-y: auto; }
+    #objectList { margin-top: 6px; max-height: 100px; overflow-y: auto; }
     
     .obj-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 5px 8px;
+      padding: 4px 6px;
       background: #222;
-      border-radius: 4px;
-      margin: 3px 0;
-      font-size: 11px;
+      border-radius: 3px;
+      margin: 2px 0;
+      font-size: 10px;
       cursor: pointer;
       border: 1px solid transparent;
     }
-    
     .obj-item:hover { background: #333; }
     .obj-item.selected { border-color: #0ff; background: #1a2a2a; }
-    .obj-item button { width: auto; padding: 2px 6px; font-size: 10px; margin-left: 5px; }
+    .obj-item.locked { opacity: 0.5; }
+    .obj-item button { width: auto; padding: 2px 5px; font-size: 9px; margin-left: 3px; }
     
-    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px; }
-    .preset-btn { padding: 5px; font-size: 10px; }
-    
-    .section { background: #1a1a1a; padding: 10px; border-radius: 8px; margin: 8px 0; }
+    .section { background: #1a1a1a; padding: 8px; border-radius: 6px; margin: 6px 0; }
+    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .preset-btn { padding: 4px; font-size: 9px; }
     
     #toast {
       position: fixed;
@@ -91,8 +89,8 @@
       transform: translateX(-50%);
       background: #0ff;
       color: #000;
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 8px 16px;
+      border-radius: 6px;
       font-weight: bold;
       display: none;
       z-index: 1000;
@@ -103,30 +101,59 @@
       top: 10px;
       right: 10px;
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-width: 400px;
     }
+    #toolbar button { width: auto; padding: 6px 10px; font-size: 11px; }
     
-    #toolbar button {
-      width: auto;
-      padding: 8px 12px;
+    #modeIndicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      color: #0ff;
+      padding: 8px 15px;
+      border-radius: 6px;
       font-size: 12px;
     }
+    
+    #helpPanel {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      background: rgba(0,0,0,0.9);
+      color: #aaa;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      display: none;
+      max-width: 200px;
+    }
+    #helpPanel.show { display: block; }
+    #helpPanel h4 { color: #0ff; margin-bottom: 5px; }
+    #helpPanel p { margin: 3px 0; }
   </style>
   <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.164.1/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/" } }
+    { "imports": { 
+      "three": "https://unpkg.com/three@0.164.1/build/three.module.js", 
+      "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/" 
+    }}
   </script>
 </head>
 <body>
   <div id="toolbar">
     <button onclick="undo()" class="secondary">↩ Undo</button>
     <button onclick="redo()" class="secondary">↪ Redo</button>
+    <button onclick="takeScreenshot()">📷 Screenshot</button>
     <button onclick="exportScene()">💾 Salvar</button>
     <button onclick="document.getElementById('importFile').click()" class="secondary">📂 Carregar</button>
+    <button onclick="toggleHelp()" class="secondary">❓ Ajuda</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importScene(event)">
   </div>
 
   <div id="ui">
-    <h2>🎨 Editor 3D Pro</h2>
+    <h2>🎨 Editor 3D Pro Max</h2>
     
     <div class="section">
       <label>Adicionar Objeto:</label>
@@ -139,31 +166,55 @@
         <option value="cylinder">Cilindro</option>
         <option value="icosahedron">Icosaedro</option>
         <option value="octahedron">Octaedro</option>
-        <option value="dodecahedron">Dodecaedro</option>
+        <option value="plane">Plano</option>
         <option value="bubble">Bolha Petróleo</option>
+        <option value="text3d">Texto 3D</option>
       </select>
+      <input type="text" id="text3dInput" placeholder="Texto 3D..." style="display:none; margin-top:4px;">
       <div class="btn-row">
         <button id="addBtn">+ Adicionar</button>
         <button id="duplicateBtn" class="secondary">⧉ Duplicar</button>
       </div>
     </div>
     
-    <h3>📦 Objetos na Cena</h3>
+    <h3>🛠️ Modo de Edição</h3>
+    <div class="btn-row">
+      <button id="modeSelect" class="active" onclick="setMode('select')">🔍 Selecionar</button>
+      <button id="modeMove" onclick="setMode('move')">✥ Mover</button>
+    </div>
+    
+    <h3>📦 Objetos</h3>
     <div id="objectList"></div>
+    <div class="btn-row" style="margin-top:5px;">
+      <button onclick="lockSelected()" class="secondary">🔒 Lock</button>
+      <button onclick="unlockSelected()" class="secondary">🔓 Unlock</button>
+      <button onclick="alignCenter()" class="secondary">⊕ Centralizar</button>
+    </div>
     
     <h3>📐 Transformações</h3>
     <div class="section">
+      <div class="row">
+        <label style="flex:none;width:70px">Snap Grid:</label>
+        <input type="checkbox" id="snapEnabled">
+        <label style="flex:none;width:40px">Size:</label>
+        <select id="snapSize" style="width:60px">
+          <option value="0.25">0.25</option>
+          <option value="0.5" selected>0.5</option>
+          <option value="1">1</option>
+        </select>
+      </div>
+      
       <label>Escala: <span id="scaleVal">1.0</span></label>
       <input type="range" id="scale" min="0.1" max="5" step="0.1" value="1">
       
       <label>Posição X: <span id="posXVal">0</span></label>
-      <input type="range" id="posX" min="-5" max="5" step="0.1" value="0">
+      <input type="range" id="posX" min="-10" max="10" step="0.1" value="0">
       
       <label>Posição Y: <span id="posYVal">0</span></label>
-      <input type="range" id="posY" min="-5" max="5" step="0.1" value="0">
+      <input type="range" id="posY" min="-10" max="10" step="0.1" value="0">
       
       <label>Posição Z: <span id="posZVal">0</span></label>
-      <input type="range" id="posZ" min="-5" max="5" step="0.1" value="0">
+      <input type="range" id="posZ" min="-10" max="10" step="0.1" value="0">
       
       <label>Rotação X: <span id="rotXVal">0</span>°</label>
       <input type="range" id="rotX" min="0" max="360" step="1" value="0">
@@ -181,15 +232,15 @@
         <label style="width:auto">Ativar:</label>
         <input type="checkbox" id="animEnabled">
       </div>
-      <label>Velocidade X: <span id="animSpeedXVal">0</span></label>
+      <label>Vel X: <span id="animSpeedXVal">0</span></label>
       <input type="range" id="animSpeedX" min="0" max="5" step="0.1" value="0">
-      <label>Velocidade Y: <span id="animSpeedYVal">1</span></label>
+      <label>Vel Y: <span id="animSpeedYVal">1</span></label>
       <input type="range" id="animSpeedY" min="0" max="5" step="0.1" value="1">
-      <label>Velocidade Z: <span id="animSpeedZVal">0</span></label>
+      <label>Vel Z: <span id="animSpeedZVal">0</span></label>
       <input type="range" id="animSpeedZ" min="0" max="5" step="0.1" value="0">
     </div>
     
-    <h3>🎨 Material - Presets</h3>
+    <h3>🎨 Presets</h3>
     <div class="preset-grid">
       <button class="preset-btn secondary" onclick="applyPreset('glass')">🫧 Vidro</button>
       <button class="preset-btn secondary" onclick="applyPreset('metal')">⚙️ Metal</button>
@@ -198,17 +249,19 @@
       <button class="preset-btn secondary" onclick="applyPreset('chrome')">🪞 Chrome</button>
       <button class="preset-btn secondary" onclick="applyPreset('petroleum')">🛢️ Petróleo</button>
       <button class="preset-btn secondary" onclick="applyPreset('rubber')">🏀 Borracha</button>
-      <button class="preset-btn secondary" onclick="applyPreset('ceramic')">🏺 Cerâmica</button>
       <button class="preset-btn secondary" onclick="applyPreset('neon')">💡 Neon</button>
+      <button class="preset-btn secondary" onclick="applyPreset('wireframe')">📐 Wire</button>
     </div>
     
-    <h3>🎨 Material - Propriedades</h3>
+    <h3>🎨 Material</h3>
     <div class="section">
       <div class="row">
         <label>Cor:</label>
         <input type="color" id="color" value="#8844aa">
         <label>Emissivo:</label>
         <input type="color" id="emissive" value="#000000">
+        <label style="width:auto">Wire:</label>
+        <input type="checkbox" id="wireframe">
       </div>
       
       <label>Metalness: <span id="metalnessVal">0.10</span></label>
@@ -217,35 +270,26 @@
       <label>Roughness: <span id="roughnessVal">0.10</span></label>
       <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.1">
       
-      <label>Transmission (vidro): <span id="transmissionVal">0.00</span></label>
+      <label>Transmission: <span id="transmissionVal">0.00</span></label>
       <input type="range" id="transmission" min="0" max="1" step="0.01" value="0">
       
-      <label>IOR (refração): <span id="iorVal">1.50</span></label>
+      <label>IOR: <span id="iorVal">1.50</span></label>
       <input type="range" id="ior" min="1" max="2.5" step="0.01" value="1.5">
       
-      <label>Thickness (espessura): <span id="thicknessVal">0.50</span></label>
+      <label>Thickness: <span id="thicknessVal">0.50</span></label>
       <input type="range" id="thickness" min="0" max="5" step="0.1" value="0.5">
       
       <label>Iridescência: <span id="iridescenceVal">0.00</span></label>
       <input type="range" id="iridescence" min="0" max="1" step="0.01" value="0">
       
-      <label>Iridescence IOR: <span id="iridescenceIORVal">1.30</span></label>
-      <input type="range" id="iridescenceIOR" min="1" max="3" step="0.1" value="1.3">
-      
       <label>Clearcoat: <span id="clearcoatVal">0.00</span></label>
       <input type="range" id="clearcoat" min="0" max="1" step="0.01" value="0">
       
-      <label>Sheen (veludo): <span id="sheenVal">0.00</span></label>
-      <input type="range" id="sheen" min="0" max="1" step="0.01" value="0">
-      
-      <label>Env Map Intensity: <span id="envMapIntensityVal">1.00</span></label>
-      <input type="range" id="envMapIntensity" min="0" max="5" step="0.1" value="1">
-      
-      <label>Emissive Intensity: <span id="emissiveIntensityVal">0.00</span></label>
+      <label>Emissive Int: <span id="emissiveIntensityVal">0.00</span></label>
       <input type="range" id="emissiveIntensity" min="0" max="5" step="0.1" value="0">
     </div>
     
-    <h3>✨ Glow (Brilho)</h3>
+    <h3>✨ Glow</h3>
     <div class="section">
       <div class="row">
         <label style="width:auto">Ativar:</label>
@@ -255,8 +299,6 @@
       </div>
       <label>Intensidade: <span id="glowIntensityVal">0.10</span></label>
       <input type="range" id="glowIntensity" min="0" max="0.5" step="0.01" value="0.1">
-      <label>Tamanho: <span id="glowSizeVal">1.08</span></label>
-      <input type="range" id="glowSize" min="1.01" max="1.3" step="0.01" value="1.08">
     </div>
     
     <h3>💡 Ambiente</h3>
@@ -264,27 +306,54 @@
       <div class="row">
         <label>Fundo:</label>
         <input type="color" id="bgColor" value="#111111">
-        <label>Luz 1:</label>
+        <label>Luz1:</label>
         <input type="color" id="light1Color" value="#00ffff">
-        <label>Luz 2:</label>
+        <label>Luz2:</label>
         <input type="color" id="light2Color" value="#ff00ff">
+      </div>
+      
+      <div class="row">
+        <label style="width:auto">Grid:</label>
+        <input type="checkbox" id="gridEnabled" checked>
+        <label style="width:auto">Sombras:</label>
+        <input type="checkbox" id="shadowsEnabled" checked>
+        <label style="width:auto">Fog:</label>
+        <input type="checkbox" id="fogEnabled">
       </div>
       
       <label>Exposição: <span id="exposureVal">1.30</span></label>
       <input type="range" id="exposure" min="0.5" max="3" step="0.05" value="1.3">
       
-      <label>Luz 1 Intensidade: <span id="light1IntensityVal">20</span></label>
+      <label>Fog Density: <span id="fogDensityVal">0.05</span></label>
+      <input type="range" id="fogDensity" min="0.01" max="0.2" step="0.01" value="0.05">
+      
+      <label>Luz1 Int: <span id="light1IntensityVal">20</span></label>
       <input type="range" id="light1Intensity" min="0" max="50" step="1" value="20">
       
-      <label>Luz 2 Intensidade: <span id="light2IntensityVal">15</span></label>
+      <label>Luz2 Int: <span id="light2IntensityVal">15</span></label>
       <input type="range" id="light2Intensity" min="0" max="50" step="1" value="15">
     </div>
     
     <h3>🗑️ Ações</h3>
     <div class="btn-row">
       <button onclick="deleteSelected()" class="danger">🗑️ Excluir</button>
-      <button onclick="clearScene()" class="danger">💥 Limpar Tudo</button>
+      <button onclick="clearScene()" class="danger">💥 Limpar</button>
     </div>
+  </div>
+  
+  <div id="modeIndicator">Modo: Selecionar</div>
+  
+  <div id="helpPanel">
+    <h4>⌨️ Atalhos</h4>
+    <p><b>Clique</b> - Selecionar objeto</p>
+    <p><b>Arrastar</b> - Mover objeto (modo Mover)</p>
+    <p><b>Delete</b> - Excluir selecionado</p>
+    <p><b>Ctrl+D</b> - Duplicar</p>
+    <p><b>Ctrl+Z</b> - Undo</p>
+    <p><b>Ctrl+Y</b> - Redo</p>
+    <p><b>G</b> - Toggle Grid</p>
+    <p><b>W</b> - Toggle Wireframe</p>
+    <p><b>L</b> - Lock objeto</p>
   </div>
   
   <div id="toast"></div>
@@ -293,35 +362,81 @@
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+    import { FontLoader } from "three/addons/loaders/FontLoader.js";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
     // Setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
 
-    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 5);
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 1000);
+    camera.position.set(3, 3, 6);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.3;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
+    // Post-processing (Bloom)
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.3, 0.4, 0.85);
+    composer.addPass(bloomPass);
+
+    // Environment
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
     
     const light1 = new THREE.PointLight(0x00ffff, 20, 50);
-    light1.position.set(3, 3, 5);
+    light1.position.set(5, 5, 5);
+    light1.castShadow = true;
+    light1.shadow.mapSize.width = 1024;
+    light1.shadow.mapSize.height = 1024;
     scene.add(light1);
     
     const light2 = new THREE.PointLight(0xff00ff, 15, 50);
-    light2.position.set(-3, -2, 4);
+    light2.position.set(-5, 3, 4);
+    light2.castShadow = true;
     scene.add(light2);
+    
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 5);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.camera.left = -10;
+    dirLight.shadow.camera.right = 10;
+    dirLight.shadow.camera.top = 10;
+    dirLight.shadow.camera.bottom = -10;
+    scene.add(dirLight);
 
+    // Grid
+    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+    scene.add(gridHelper);
+
+    // Floor for shadows
+    const floorGeom = new THREE.PlaneGeometry(20, 20);
+    const floorMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+    const floor = new THREE.Mesh(floorGeom, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.01;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
@@ -331,9 +446,29 @@
     let objectId = 0;
     let undoStack = [];
     let redoStack = [];
+    let editMode = 'select';
+    let isDragging = false;
+    let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let dragOffset = new THREE.Vector3();
+    let loadedFont = null;
+
+    // Load font for 3D text
+    const fontLoader = new FontLoader();
+    fontLoader.load('https://unpkg.com/three@0.164.1/examples/fonts/helvetiker_bold.typeface.json', (font) => {
+      loadedFont = font;
+    });
+
+    // Raycaster
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Show/hide text input
+    document.getElementById('shapeType').addEventListener('change', (e) => {
+      document.getElementById('text3dInput').style.display = e.target.value === 'text3d' ? 'block' : 'none';
+    });
 
     // Geometries
-    function createGeometry(type) {
+    function createGeometry(type, text = 'Hello') {
       const geoms = {
         sphere: () => new THREE.SphereGeometry(1, 64, 64),
         box: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),
@@ -343,8 +478,17 @@
         cylinder: () => new THREE.CylinderGeometry(0.6, 0.6, 1.5, 32),
         icosahedron: () => new THREE.IcosahedronGeometry(1, 0),
         octahedron: () => new THREE.OctahedronGeometry(1, 0),
-        dodecahedron: () => new THREE.DodecahedronGeometry(1, 0),
+        plane: () => new THREE.PlaneGeometry(2, 2),
         bubble: () => new THREE.SphereGeometry(1, 128, 128),
+        text3d: () => {
+          if (!loadedFont) return new THREE.BoxGeometry(1, 1, 1);
+          return new TextGeometry(text, {
+            font: loadedFont,
+            size: 0.5,
+            height: 0.15,
+            curveSegments: 12,
+          });
+        },
       };
       return (geoms[type] || geoms.sphere)();
     }
@@ -358,14 +502,12 @@
       });
       
       if (type === 'bubble') {
-        mat.color.set(0x8844aa);
         mat.transmission = 0.85;
         mat.transparent = true;
         mat.ior = 1.5;
         mat.thickness = 1.2;
         mat.iridescence = 1.0;
         mat.iridescenceIOR = 2.2;
-        mat.iridescenceThicknessRange = [100, 600];
         mat.clearcoat = 0.5;
         mat.envMapIntensity = 2.0;
       }
@@ -389,31 +531,7 @@
     }
 
     function saveState() {
-      const state = objects.map(obj => ({
-        type: obj.userData.type,
-        name: obj.userData.name,
-        position: obj.position.toArray(),
-        rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
-        scale: obj.scale.x,
-        material: {
-          color: '#' + obj.material.color.getHexString(),
-          emissive: '#' + obj.material.emissive.getHexString(),
-          metalness: obj.material.metalness,
-          roughness: obj.material.roughness,
-          transmission: obj.material.transmission || 0,
-          ior: obj.material.ior || 1.5,
-          thickness: obj.material.thickness || 0.5,
-          iridescence: obj.material.iridescence || 0,
-          iridescenceIOR: obj.material.iridescenceIOR || 1.3,
-          clearcoat: obj.material.clearcoat || 0,
-          sheen: obj.material.sheen || 0,
-          envMapIntensity: obj.material.envMapIntensity || 1,
-          emissiveIntensity: obj.material.emissiveIntensity || 0,
-        },
-        animation: obj.userData.animation || { enabled: false, speedX: 0, speedY: 1, speedZ: 0 },
-        glow: obj.userData.glowSettings || { enabled: false, color: '#00ffff', intensity: 0.1, size: 1.08 }
-      }));
-      undoStack.push(JSON.stringify(state));
+      undoStack.push(JSON.stringify(objects.map(serializeObject)));
       if (undoStack.length > 50) undoStack.shift();
       redoStack = [];
     }
@@ -421,16 +539,30 @@
     function addObject(type, skipState = false) {
       if (!skipState) saveState();
       
-      const geom = createGeometry(type);
+      const text = document.getElementById('text3dInput').value || 'Hello';
+      const geom = createGeometry(type, text);
       const mat = createMaterial(type);
       const mesh = new THREE.Mesh(geom, mat);
+      
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      
       mesh.userData = { 
         id: objectId++, 
         type, 
-        name: `${type}_${objectId}`,
+        name: type === 'text3d' ? `text_${text}` : `${type}_${objectId}`,
+        text: text,
+        locked: false,
         animation: { enabled: false, speedX: 0, speedY: 1, speedZ: 0 },
         glowSettings: { enabled: false, color: '#00ffff', intensity: 0.1, size: 1.08 }
       };
+      
+      if (type === 'text3d') {
+        geom.computeBoundingBox();
+        geom.center();
+      }
+      
+      mesh.position.y = 1;
       
       const glow = createGlow(mesh);
       mesh.userData.glow = glow;
@@ -443,23 +575,22 @@
     }
 
     function duplicateObject() {
-      if (!selectedObject) return;
+      if (!selectedObject || selectedObject.userData.locked) return;
       saveState();
       
       const obj = selectedObject;
       const newObj = addObject(obj.userData.type, true);
       
-      newObj.position.copy(obj.position).add(new THREE.Vector3(0.5, 0.5, 0));
+      newObj.position.copy(obj.position).add(new THREE.Vector3(0.5, 0, 0.5));
       newObj.rotation.copy(obj.rotation);
       newObj.scale.copy(obj.scale);
-      
-      newObj.material.copy(obj.material);
+      newObj.material = obj.material.clone();
       newObj.userData.animation = { ...obj.userData.animation };
       newObj.userData.glowSettings = { ...obj.userData.glowSettings };
       
       updateGlow(newObj);
       selectObject(newObj);
-      showToast('Objeto duplicado!');
+      showToast('Duplicado!');
     }
 
     function selectObject(obj) {
@@ -486,6 +617,7 @@
       const mat = obj.material;
       el('color').value = '#' + mat.color.getHexString();
       el('emissive').value = '#' + mat.emissive.getHexString();
+      el('wireframe').checked = mat.wireframe || false;
       el('metalness').value = mat.metalness;
       el('metalnessVal').textContent = mat.metalness.toFixed(2);
       el('roughness').value = mat.roughness;
@@ -498,14 +630,8 @@
       el('thicknessVal').textContent = (mat.thickness || 0.5).toFixed(2);
       el('iridescence').value = mat.iridescence || 0;
       el('iridescenceVal').textContent = (mat.iridescence || 0).toFixed(2);
-      el('iridescenceIOR').value = mat.iridescenceIOR || 1.3;
-      el('iridescenceIORVal').textContent = (mat.iridescenceIOR || 1.3).toFixed(2);
       el('clearcoat').value = mat.clearcoat || 0;
       el('clearcoatVal').textContent = (mat.clearcoat || 0).toFixed(2);
-      el('sheen').value = mat.sheen || 0;
-      el('sheenVal').textContent = (mat.sheen || 0).toFixed(2);
-      el('envMapIntensity').value = mat.envMapIntensity || 1;
-      el('envMapIntensityVal').textContent = (mat.envMapIntensity || 1).toFixed(2);
       el('emissiveIntensity').value = mat.emissiveIntensity || 0;
       el('emissiveIntensityVal').textContent = (mat.emissiveIntensity || 0).toFixed(2);
       
@@ -523,13 +649,12 @@
       el('glowColor').value = glow.color;
       el('glowIntensity').value = glow.intensity;
       el('glowIntensityVal').textContent = glow.intensity.toFixed(2);
-      el('glowSize').value = glow.size;
-      el('glowSizeVal').textContent = glow.size.toFixed(2);
       
       updateObjectList();
     }
 
     function deleteObject(obj) {
+      if (obj.userData.locked) { showToast('Objeto bloqueado!'); return; }
       saveState();
       if (obj.userData.glow) scene.remove(obj.userData.glow);
       scene.remove(obj);
@@ -542,8 +667,8 @@
     function updateObjectList() {
       const list = document.getElementById('objectList');
       list.innerHTML = objects.map(obj => `
-        <div class="obj-item ${obj === selectedObject ? 'selected' : ''}" data-id="${obj.userData.id}">
-          <span>${obj.userData.name}</span>
+        <div class="obj-item ${obj === selectedObject ? 'selected' : ''} ${obj.userData.locked ? 'locked' : ''}" data-id="${obj.userData.id}">
+          <span>${obj.userData.locked ? '🔒 ' : ''}${obj.userData.name}</span>
           <button data-delete="${obj.userData.id}">✕</button>
         </div>
       `).join('');
@@ -573,22 +698,59 @@
       glow.visible = settings.enabled;
       glow.material.color.set(settings.color);
       glow.material.opacity = settings.intensity;
-      glow.scale.setScalar(obj.scale.x * settings.size);
+      glow.scale.copy(obj.scale).multiplyScalar(settings.size);
       glow.position.copy(obj.position);
       glow.rotation.copy(obj.rotation);
     }
 
+    // Mode
+    window.setMode = (mode) => {
+      editMode = mode;
+      document.getElementById('modeSelect').className = mode === 'select' ? 'active' : 'secondary';
+      document.getElementById('modeMove').className = mode === 'move' ? 'active' : 'secondary';
+      document.getElementById('modeIndicator').textContent = `Modo: ${mode === 'select' ? 'Selecionar' : 'Mover'}`;
+      controls.enabled = mode === 'select';
+    };
+
+    // Lock/Unlock
+    window.lockSelected = () => {
+      if (selectedObject) {
+        selectedObject.userData.locked = true;
+        updateObjectList();
+        showToast('Objeto bloqueado!');
+      }
+    };
+
+    window.unlockSelected = () => {
+      if (selectedObject) {
+        selectedObject.userData.locked = false;
+        updateObjectList();
+        showToast('Objeto desbloqueado!');
+      }
+    };
+
+    // Align center
+    window.alignCenter = () => {
+      if (selectedObject && !selectedObject.userData.locked) {
+        saveState();
+        selectedObject.position.x = 0;
+        selectedObject.position.z = 0;
+        selectObject(selectedObject);
+        showToast('Centralizado!');
+      }
+    };
+
     // Presets
     const presets = {
-      glass: { color: '#ffffff', metalness: 0, roughness: 0.02, transmission: 0.95, ior: 1.5, thickness: 0.5, iridescence: 0, clearcoat: 0, sheen: 0, envMapIntensity: 2 },
-      metal: { color: '#888888', metalness: 1, roughness: 0.2, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 0, sheen: 0, envMapIntensity: 1.5 },
-      plastic: { color: '#ff4444', metalness: 0, roughness: 0.4, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 0.8, sheen: 0, envMapIntensity: 1 },
-      gold: { color: '#ffd700', metalness: 1, roughness: 0.1, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 0, sheen: 0, envMapIntensity: 2 },
-      chrome: { color: '#ffffff', metalness: 1, roughness: 0.02, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 0, sheen: 0, envMapIntensity: 3 },
-      petroleum: { color: '#8844aa', metalness: 0.1, roughness: 0.02, transmission: 0.85, ior: 1.5, thickness: 1.2, iridescence: 1, iridescenceIOR: 2.2, clearcoat: 0.5, sheen: 0, envMapIntensity: 2 },
-      rubber: { color: '#222222', metalness: 0, roughness: 0.9, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 0, sheen: 0.5, envMapIntensity: 0.5 },
-      ceramic: { color: '#f5f5f5', metalness: 0, roughness: 0.3, transmission: 0, ior: 1.5, thickness: 0, iridescence: 0, clearcoat: 1, sheen: 0, envMapIntensity: 1 },
-      neon: { color: '#00ff88', metalness: 0, roughness: 0.5, transmission: 0.3, ior: 1.5, thickness: 0.5, iridescence: 0, clearcoat: 0, sheen: 0, envMapIntensity: 1, emissive: '#00ff88', emissiveIntensity: 2 },
+      glass: { color: '#ffffff', metalness: 0, roughness: 0.02, transmission: 0.95, ior: 1.5, thickness: 0.5, iridescence: 0, clearcoat: 0, wireframe: false },
+      metal: { color: '#888888', metalness: 1, roughness: 0.2, transmission: 0, iridescence: 0, clearcoat: 0, wireframe: false },
+      plastic: { color: '#ff4444', metalness: 0, roughness: 0.4, transmission: 0, iridescence: 0, clearcoat: 0.8, wireframe: false },
+      gold: { color: '#ffd700', metalness: 1, roughness: 0.1, transmission: 0, iridescence: 0, clearcoat: 0, wireframe: false },
+      chrome: { color: '#ffffff', metalness: 1, roughness: 0.02, transmission: 0, iridescence: 0, clearcoat: 0, wireframe: false },
+      petroleum: { color: '#8844aa', metalness: 0.1, roughness: 0.02, transmission: 0.85, ior: 1.5, thickness: 1.2, iridescence: 1, clearcoat: 0.5, wireframe: false },
+      rubber: { color: '#222222', metalness: 0, roughness: 0.9, transmission: 0, iridescence: 0, clearcoat: 0, wireframe: false },
+      neon: { color: '#00ff88', metalness: 0, roughness: 0.5, transmission: 0.3, iridescence: 0, clearcoat: 0, emissive: '#00ff88', emissiveIntensity: 2, wireframe: false },
+      wireframe: { wireframe: true },
     };
 
     window.applyPreset = (name) => {
@@ -598,35 +760,26 @@
       const p = presets[name];
       const mat = selectedObject.material;
       
-      mat.color.set(p.color);
-      mat.metalness = p.metalness;
-      mat.roughness = p.roughness;
-      mat.transmission = p.transmission;
-      mat.transparent = p.transmission > 0;
-      mat.ior = p.ior;
-      mat.thickness = p.thickness;
-      mat.iridescence = p.iridescence;
-      mat.iridescenceIOR = p.iridescenceIOR || 1.3;
-      mat.clearcoat = p.clearcoat;
-      mat.sheen = p.sheen;
-      mat.envMapIntensity = p.envMapIntensity;
-      
-      if (p.emissive) {
-        mat.emissive.set(p.emissive);
-        mat.emissiveIntensity = p.emissiveIntensity || 0;
-      } else {
-        mat.emissive.set('#000000');
-        mat.emissiveIntensity = 0;
-      }
+      if (p.color) mat.color.set(p.color);
+      if (p.metalness !== undefined) mat.metalness = p.metalness;
+      if (p.roughness !== undefined) mat.roughness = p.roughness;
+      if (p.transmission !== undefined) { mat.transmission = p.transmission; mat.transparent = p.transmission > 0; }
+      if (p.ior !== undefined) mat.ior = p.ior;
+      if (p.thickness !== undefined) mat.thickness = p.thickness;
+      if (p.iridescence !== undefined) mat.iridescence = p.iridescence;
+      if (p.clearcoat !== undefined) mat.clearcoat = p.clearcoat;
+      if (p.emissive) mat.emissive.set(p.emissive);
+      if (p.emissiveIntensity !== undefined) mat.emissiveIntensity = p.emissiveIntensity;
+      if (p.wireframe !== undefined) mat.wireframe = p.wireframe;
       
       selectObject(selectedObject);
-      showToast(`Preset "${name}" aplicado!`);
+      showToast(`Preset "${name}"!`);
     };
 
     window.deleteSelected = () => { if (selectedObject) deleteObject(selectedObject); };
     
     window.clearScene = () => {
-      if (!confirm('Limpar toda a cena?')) return;
+      if (!confirm('Limpar cena?')) return;
       saveState();
       objects.forEach(obj => {
         if (obj.userData.glow) scene.remove(obj.userData.glow);
@@ -638,26 +791,13 @@
       showToast('Cena limpa!');
     };
 
-    window.undo = () => {
-      if (undoStack.length === 0) return;
-      redoStack.push(JSON.stringify(objects.map(serializeObject)));
-      const state = JSON.parse(undoStack.pop());
-      restoreState(state);
-      showToast('Undo!');
-    };
-
-    window.redo = () => {
-      if (redoStack.length === 0) return;
-      undoStack.push(JSON.stringify(objects.map(serializeObject)));
-      const state = JSON.parse(redoStack.pop());
-      restoreState(state);
-      showToast('Redo!');
-    };
-
+    // Undo/Redo
     function serializeObject(obj) {
       return {
         type: obj.userData.type,
         name: obj.userData.name,
+        text: obj.userData.text,
+        locked: obj.userData.locked,
         position: obj.position.toArray(),
         rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
         scale: obj.scale.x,
@@ -670,11 +810,9 @@
           ior: obj.material.ior || 1.5,
           thickness: obj.material.thickness || 0.5,
           iridescence: obj.material.iridescence || 0,
-          iridescenceIOR: obj.material.iridescenceIOR || 1.3,
           clearcoat: obj.material.clearcoat || 0,
-          sheen: obj.material.sheen || 0,
-          envMapIntensity: obj.material.envMapIntensity || 1,
           emissiveIntensity: obj.material.emissiveIntensity || 0,
+          wireframe: obj.material.wireframe || false,
         },
         animation: obj.userData.animation,
         glow: obj.userData.glowSettings
@@ -689,8 +827,10 @@
       objects = [];
       
       state.forEach(data => {
+        document.getElementById('text3dInput').value = data.text || 'Hello';
         const obj = addObject(data.type, true);
         obj.userData.name = data.name;
+        obj.userData.locked = data.locked || false;
         obj.position.fromArray(data.position);
         obj.rotation.set(data.rotation[0], data.rotation[1], data.rotation[2]);
         obj.scale.setScalar(data.scale);
@@ -705,11 +845,9 @@
         mat.ior = data.material.ior;
         mat.thickness = data.material.thickness;
         mat.iridescence = data.material.iridescence;
-        mat.iridescenceIOR = data.material.iridescenceIOR;
         mat.clearcoat = data.material.clearcoat;
-        mat.sheen = data.material.sheen;
-        mat.envMapIntensity = data.material.envMapIntensity;
         mat.emissiveIntensity = data.material.emissiveIntensity;
+        mat.wireframe = data.material.wireframe || false;
         
         obj.userData.animation = data.animation;
         obj.userData.glowSettings = data.glow;
@@ -718,9 +856,33 @@
       
       selectedObject = objects[0] || null;
       selectObject(selectedObject);
-      updateObjectList();
     }
 
+    window.undo = () => {
+      if (undoStack.length === 0) return;
+      redoStack.push(JSON.stringify(objects.map(serializeObject)));
+      restoreState(JSON.parse(undoStack.pop()));
+      showToast('Undo!');
+    };
+
+    window.redo = () => {
+      if (redoStack.length === 0) return;
+      undoStack.push(JSON.stringify(objects.map(serializeObject)));
+      restoreState(JSON.parse(redoStack.pop()));
+      showToast('Redo!');
+    };
+
+    // Screenshot
+    window.takeScreenshot = () => {
+      composer.render();
+      const link = document.createElement('a');
+      link.download = 'screenshot_3d.png';
+      link.href = renderer.domElement.toDataURL('image/png');
+      link.click();
+      showToast('Screenshot salvo!');
+    };
+
+    // Export/Import
     window.exportScene = () => {
       const data = {
         objects: objects.map(serializeObject),
@@ -729,17 +891,17 @@
           exposure: renderer.toneMappingExposure,
           light1: { color: '#' + light1.color.getHexString(), intensity: light1.intensity },
           light2: { color: '#' + light2.color.getHexString(), intensity: light2.intensity },
+          fog: { enabled: !!scene.fog, density: scene.fog?.density || 0.05 },
+          grid: gridHelper.visible,
         }
       };
       
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = 'scene_3d.json';
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cena_3d.json';
       a.click();
-      URL.revokeObjectURL(url);
-      showToast('Cena exportada!');
+      showToast('Exportado!');
     };
 
     window.importScene = (e) => {
@@ -752,12 +914,6 @@
           const data = JSON.parse(ev.target.result);
           saveState();
           
-          objects.forEach(obj => {
-            if (obj.userData.glow) scene.remove(obj.userData.glow);
-            scene.remove(obj);
-          });
-          objects = [];
-          
           if (data.environment) {
             scene.background.set(data.environment.background);
             renderer.toneMappingExposure = data.environment.exposure;
@@ -765,34 +921,98 @@
             light1.intensity = data.environment.light1.intensity;
             light2.color.set(data.environment.light2.color);
             light2.intensity = data.environment.light2.intensity;
+            gridHelper.visible = data.environment.grid;
             
-            document.getElementById('bgColor').value = data.environment.background;
-            document.getElementById('exposure').value = data.environment.exposure;
-            document.getElementById('exposureVal').textContent = data.environment.exposure.toFixed(2);
-            document.getElementById('light1Color').value = data.environment.light1.color;
-            document.getElementById('light1Intensity').value = data.environment.light1.intensity;
-            document.getElementById('light1IntensityVal').textContent = data.environment.light1.intensity;
-            document.getElementById('light2Color').value = data.environment.light2.color;
-            document.getElementById('light2Intensity').value = data.environment.light2.intensity;
-            document.getElementById('light2IntensityVal').textContent = data.environment.light2.intensity;
+            if (data.environment.fog?.enabled) {
+              scene.fog = new THREE.FogExp2(scene.background, data.environment.fog.density);
+            }
           }
           
           restoreState(data.objects);
-          showToast('Cena importada!');
+          showToast('Importado!');
         } catch (err) {
-          showToast('Erro ao importar!');
+          showToast('Erro!');
         }
       };
       reader.readAsText(file);
       e.target.value = '';
     };
 
+    window.toggleHelp = () => {
+      document.getElementById('helpPanel').classList.toggle('show');
+    };
+
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.textContent = msg;
       toast.style.display = 'block';
-      setTimeout(() => toast.style.display = 'none', 2000);
+      setTimeout(() => toast.style.display = 'none', 1500);
     }
+
+    // Mouse events for drag
+    function onMouseDown(e) {
+      if (e.target !== renderer.domElement) return;
+      
+      mouse.x = (e.clientX / innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(objects);
+      
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        selectObject(obj);
+        
+        if (editMode === 'move' && !obj.userData.locked) {
+          isDragging = true;
+          controls.enabled = false;
+          
+          dragPlane.setFromNormalAndCoplanarPoint(
+            camera.getWorldDirection(new THREE.Vector3()).negate(),
+            obj.position
+          );
+          
+          const intersection = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, intersection);
+          dragOffset.copy(obj.position).sub(intersection);
+        }
+      }
+    }
+
+    function onMouseMove(e) {
+      if (!isDragging || !selectedObject) return;
+      
+      mouse.x = (e.clientX / innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersection = new THREE.Vector3();
+      raycaster.ray.intersectPlane(dragPlane, intersection);
+      
+      const newPos = intersection.add(dragOffset);
+      
+      if (document.getElementById('snapEnabled').checked) {
+        const snap = parseFloat(document.getElementById('snapSize').value);
+        newPos.x = Math.round(newPos.x / snap) * snap;
+        newPos.y = Math.round(newPos.y / snap) * snap;
+        newPos.z = Math.round(newPos.z / snap) * snap;
+      }
+      
+      selectedObject.position.copy(newPos);
+      selectObject(selectedObject);
+    }
+
+    function onMouseUp() {
+      if (isDragging) {
+        isDragging = false;
+        controls.enabled = editMode === 'select';
+        saveState();
+      }
+    }
+
+    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('mouseup', onMouseUp);
 
     // UI Events
     document.getElementById('addBtn').addEventListener('click', () => {
@@ -801,88 +1021,123 @@
     
     document.getElementById('duplicateBtn').addEventListener('click', duplicateObject);
 
+    // Sliders
     const sliders = [
       'scale', 'posX', 'posY', 'posZ', 'rotX', 'rotY', 'rotZ',
       'metalness', 'roughness', 'transmission', 'ior', 'thickness',
-      'iridescence', 'iridescenceIOR', 'clearcoat', 'sheen', 'envMapIntensity', 'emissiveIntensity',
-      'animSpeedX', 'animSpeedY', 'animSpeedZ',
-      'glowIntensity', 'glowSize',
-      'exposure', 'light1Intensity', 'light2Intensity'
+      'iridescence', 'clearcoat', 'emissiveIntensity',
+      'animSpeedX', 'animSpeedY', 'animSpeedZ', 'glowIntensity',
+      'exposure', 'light1Intensity', 'light2Intensity', 'fogDensity'
     ];
 
     sliders.forEach(id => {
-      document.getElementById(id).addEventListener('input', (e) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      
+      el.addEventListener('input', (e) => {
         const v = parseFloat(e.target.value);
         const valEl = document.getElementById(id + 'Val');
-        if (valEl) valEl.textContent = ['rotX','rotY','rotZ','light1Intensity','light2Intensity'].includes(id) ? Math.round(v) : v.toFixed(id === 'scale' ? 1 : 2);
+        if (valEl) valEl.textContent = ['rotX','rotY','rotZ','light1Intensity','light2Intensity'].includes(id) ? Math.round(v) : v.toFixed(2);
         
-        if (['exposure', 'light1Intensity', 'light2Intensity'].includes(id)) {
-          if (id === 'exposure') renderer.toneMappingExposure = v;
-          else if (id === 'light1Intensity') light1.intensity = v;
-          else if (id === 'light2Intensity') light2.intensity = v;
-          return;
+        if (id === 'exposure') { renderer.toneMappingExposure = v; return; }
+        if (id === 'light1Intensity') { light1.intensity = v; return; }
+        if (id === 'light2Intensity') { light2.intensity = v; return; }
+        if (id === 'fogDensity') { if (scene.fog) scene.fog.density = v; return; }
+        
+        if (!selectedObject || selectedObject.userData.locked) return;
+        
+        const mat = selectedObject.material;
+        const anim = selectedObject.userData.animation;
+        const glow = selectedObject.userData.glowSettings;
+        
+        switch(id) {
+          case 'scale': selectedObject.scale.setScalar(v); break;
+          case 'posX': selectedObject.position.x = v; break;
+          case 'posY': selectedObject.position.y = v; break;
+          case 'posZ': selectedObject.position.z = v; break;
+          case 'rotX': selectedObject.rotation.x = THREE.MathUtils.degToRad(v); break;
+          case 'rotY': selectedObject.rotation.y = THREE.MathUtils.degToRad(v); break;
+          case 'rotZ': selectedObject.rotation.z = THREE.MathUtils.degToRad(v); break;
+          case 'metalness': mat.metalness = v; break;
+          case 'roughness': mat.roughness = v; break;
+          case 'transmission': mat.transmission = v; mat.transparent = v > 0; break;
+          case 'ior': mat.ior = v; break;
+          case 'thickness': mat.thickness = v; break;
+          case 'iridescence': mat.iridescence = v; break;
+          case 'clearcoat': mat.clearcoat = v; break;
+          case 'emissiveIntensity': mat.emissiveIntensity = v; break;
+          case 'animSpeedX': anim.speedX = v; break;
+          case 'animSpeedY': anim.speedY = v; break;
+          case 'animSpeedZ': anim.speedZ = v; break;
+          case 'glowIntensity': glow.intensity = v; updateGlow(selectedObject); break;
         }
-        
-        if (!selectedObject) return;
-        
-        if (id === 'scale') selectedObject.scale.setScalar(v);
-        else if (id === 'posX') selectedObject.position.x = v;
-        else if (id === 'posY') selectedObject.position.y = v;
-        else if (id === 'posZ') selectedObject.position.z = v;
-        else if (id === 'rotX') selectedObject.rotation.x = THREE.MathUtils.degToRad(v);
-        else if (id === 'rotY') selectedObject.rotation.y = THREE.MathUtils.degToRad(v);
-        else if (id === 'rotZ') selectedObject.rotation.z = THREE.MathUtils.degToRad(v);
-        else if (id === 'metalness') selectedObject.material.metalness = v;
-        else if (id === 'roughness') selectedObject.material.roughness = v;
-        else if (id === 'transmission') { selectedObject.material.transmission = v; selectedObject.material.transparent = v > 0; }
-        else if (id === 'ior') selectedObject.material.ior = v;
-        else if (id === 'thickness') selectedObject.material.thickness = v;
-        else if (id === 'iridescence') selectedObject.material.iridescence = v;
-        else if (id === 'iridescenceIOR') selectedObject.material.iridescenceIOR = v;
-        else if (id === 'clearcoat') selectedObject.material.clearcoat = v;
-        else if (id === 'sheen') selectedObject.material.sheen = v;
-        else if (id === 'envMapIntensity') selectedObject.material.envMapIntensity = v;
-        else if (id === 'emissiveIntensity') selectedObject.material.emissiveIntensity = v;
-        else if (id === 'animSpeedX') selectedObject.userData.animation.speedX = v;
-        else if (id === 'animSpeedY') selectedObject.userData.animation.speedY = v;
-        else if (id === 'animSpeedZ') selectedObject.userData.animation.speedZ = v;
-        else if (id === 'glowIntensity') { selectedObject.userData.glowSettings.intensity = v; updateGlow(selectedObject); }
-        else if (id === 'glowSize') { selectedObject.userData.glowSettings.size = v; updateGlow(selectedObject); }
       });
       
-      document.getElementById(id).addEventListener('mouseup', saveState);
+      el.addEventListener('mouseup', saveState);
     });
 
+    // Color inputs
     document.getElementById('color').addEventListener('input', (e) => {
-      if (selectedObject) selectedObject.material.color.set(e.target.value);
+      if (selectedObject && !selectedObject.userData.locked) selectedObject.material.color.set(e.target.value);
     });
-    document.getElementById('color').addEventListener('change', saveState);
-
     document.getElementById('emissive').addEventListener('input', (e) => {
-      if (selectedObject) selectedObject.material.emissive.set(e.target.value);
+      if (selectedObject && !selectedObject.userData.locked) selectedObject.material.emissive.set(e.target.value);
     });
-    document.getElementById('emissive').addEventListener('change', saveState);
-
-    document.getElementById('bgColor').addEventListener('input', (e) => scene.background.set(e.target.value));
+    document.getElementById('bgColor').addEventListener('input', (e) => {
+      scene.background.set(e.target.value);
+      if (scene.fog) scene.fog.color.set(e.target.value);
+    });
     document.getElementById('light1Color').addEventListener('input', (e) => light1.color.set(e.target.value));
     document.getElementById('light2Color').addEventListener('input', (e) => light2.color.set(e.target.value));
+    document.getElementById('glowColor').addEventListener('input', (e) => {
+      if (selectedObject) {
+        selectedObject.userData.glowSettings.color = e.target.value;
+        updateGlow(selectedObject);
+      }
+    });
 
+    // Checkboxes
+    document.getElementById('wireframe').addEventListener('change', (e) => {
+      if (selectedObject && !selectedObject.userData.locked) selectedObject.material.wireframe = e.target.checked;
+    });
     document.getElementById('animEnabled').addEventListener('change', (e) => {
       if (selectedObject) selectedObject.userData.animation.enabled = e.target.checked;
     });
-
     document.getElementById('glowEnabled').addEventListener('change', (e) => {
       if (selectedObject) {
         selectedObject.userData.glowSettings.enabled = e.target.checked;
         updateGlow(selectedObject);
       }
     });
-
-    document.getElementById('glowColor').addEventListener('input', (e) => {
-      if (selectedObject) {
-        selectedObject.userData.glowSettings.color = e.target.value;
-        updateGlow(selectedObject);
+    document.getElementById('gridEnabled').addEventListener('change', (e) => {
+      gridHelper.visible = e.target.checked;
+    });
+    document.getElementById('shadowsEnabled').addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      objects.forEach(obj => {
+        obj.castShadow = e.target.checked;
+        obj.receiveShadow = e.target.checked;
+      });
+    });
+    document.getElementById('fogEnabled').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        scene.fog = new THREE.FogExp2(scene.background, parseFloat(document.getElementById('fogDensity').value));
+      } else {
+        scene.fog = null;
       }
+    });
+
+    // Keyboard
+    addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      
+      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+      if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+      if (e.ctrlKey && e.key === 'd') { e.preventDefault(); duplicateObject(); }
+      if (e.key === 'Delete') deleteSelected();
+      if (e.key === 'g') document.getElementById('gridEnabled').click();
+      if (e.key === 'w') document.getElementById('wireframe').click();
+      if (e.key === 'l') lockSelected();
     });
 
     // Animation loop
@@ -892,7 +1147,7 @@
       
       objects.forEach(obj => {
         const anim = obj.userData.animation;
-        if (anim && anim.enabled) {
+        if (anim?.enabled) {
           obj.rotation.x += anim.speedX * 0.01;
           obj.rotation.y += anim.speedY * 0.01;
           obj.rotation.z += anim.speedZ * 0.01;
@@ -904,7 +1159,7 @@
         }
       });
       
-      renderer.render(scene, camera);
+      composer.render();
     }
     animate();
 
@@ -912,17 +1167,10 @@
       camera.aspect = innerWidth / innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      composer.setSize(innerWidth, innerHeight);
     });
 
-    // Keyboard shortcuts
-    addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
-      if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
-      if (e.key === 'Delete' && selectedObject) deleteSelected();
-      if (e.ctrlKey && e.key === 'd') { e.preventDefault(); duplicateObject(); }
-    });
-
-    // Start with a bubble
+    // Start
     addObject('bubble');
   </script>
 </body>
