@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Editor 3D A-Frame VR</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.9);
+      padding: 12px;
+      border-radius: 10px;
+      color: #fff;
+      width: 260px;
+      max-height: 95vh;
+      overflow-y: auto;
+      font-family: system-ui, sans-serif;
+      font-size: 11px;
+      z-index: 9999;
+      border: 1px solid #333;
+    }
+    
+    #ui::-webkit-scrollbar { width: 5px; }
+    #ui::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    
+    h2 { font-size: 14px; margin-bottom: 10px; color: #0ff; }
+    h3 { font-size: 11px; margin: 10px 0 6px; color: #f0f; border-top: 1px solid #333; padding-top: 8px; }
+    
+    label { display: block; font-size: 10px; margin: 5px 0 2px; color: #aaa; }
+    input[type="range"] { width: 100%; accent-color: #0ff; }
+    input[type="color"] { width: 35px; height: 20px; border: none; border-radius: 3px; cursor: pointer; }
+    input[type="checkbox"] { accent-color: #0ff; }
+    
+    select, button {
+      width: 100%;
+      padding: 6px;
+      margin: 2px 0;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #222;
+      color: #fff;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    
+    button { background: linear-gradient(135deg, #0ff, #f0f); color: #000; font-weight: bold; }
+    button:hover { opacity: 0.85; }
+    button.secondary { background: #333; color: #fff; }
+    button.danger { background: #a33; color: #fff; }
+    
+    .row { display: flex; gap: 6px; align-items: center; }
+    .btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+    .btn-row button { flex: 1; min-width: 70px; }
+    
+    .section { background: #1a1a1a; padding: 8px; border-radius: 6px; margin: 6px 0; }
+    
+    #objectList { max-height: 120px; overflow-y: auto; margin-top: 6px; }
+    .obj-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      background: #222;
+      border-radius: 3px;
+      margin: 2px 0;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .obj-item:hover { background: #333; }
+    .obj-item.selected { border-color: #0ff; background: #1a2a2a; }
+    .obj-item button { width: auto; padding: 2px 6px; }
+    
+    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .preset-btn { padding: 4px; font-size: 9px; }
+    
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0ff;
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      display: none;
+      z-index: 10000;
+    }
+    
+    #vrBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      font-size: 14px;
+      z-index: 9999;
+    }
+    
+    #toolbar {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 6px;
+      z-index: 9999;
+    }
+    #toolbar button { width: auto; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="exportScene()" class="secondary">💾 Salvar</button>
+    <button onclick="document.getElementById('importFile').click()" class="secondary">📂 Carregar</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importScene(event)">
+  </div>
+
+  <div id="ui">
+    <h2>🥽 Editor 3D A-Frame VR</h2>
+    
+    <div class="section">
+      <label>Adicionar Objeto:</label>
+      <select id="shapeType">
+        <option value="sphere">Esfera</option>
+        <option value="box">Cubo</option>
+        <option value="torus">Torus</option>
+        <option value="cone">Cone</option>
+        <option value="cylinder">Cilindro</option>
+        <option value="dodecahedron">Dodecaedro</option>
+        <option value="octahedron">Octaedro</option>
+        <option value="tetrahedron">Tetraedro</option>
+        <option value="ring">Anel</option>
+        <option value="plane">Plano</option>
+        <option value="circle">Círculo</option>
+        <option value="triangle">Triângulo</option>
+      </select>
+      <div class="btn-row">
+        <button onclick="addObject()">+ Adicionar</button>
+        <button onclick="duplicateSelected()" class="secondary">⧉ Duplicar</button>
+      </div>
+    </div>
+    
+    <h3>📦 Objetos</h3>
+    <div id="objectList"></div>
+    
+    <h3>📐 Transformações</h3>
+    <div class="section">
+      <label>Escala: <span id="scaleVal">1.0</span></label>
+      <input type="range" id="scale" min="0.1" max="5" step="0.1" value="1" oninput="updateTransform()">
+      
+      <label>Posição X: <span id="posXVal">0</span></label>
+      <input type="range" id="posX" min="-10" max="10" step="0.1" value="0" oninput="updateTransform()">
+      
+      <label>Posição Y: <span id="posYVal">1</span></label>
+      <input type="range" id="posY" min="0" max="10" step="0.1" value="1" oninput="updateTransform()">
+      
+      <label>Posição Z: <span id="posZVal">-3</span></label>
+      <input type="range" id="posZ" min="-15" max="5" step="0.1" value="-3" oninput="updateTransform()">
+      
+      <label>Rotação X: <span id="rotXVal">0</span>°</label>
+      <input type="range" id="rotX" min="0" max="360" step="1" value="0" oninput="updateTransform()">
+      
+      <label>Rotação Y: <span id="rotYVal">0</span>°</label>
+      <input type="range" id="rotY" min="0" max="360" step="1" value="0" oninput="updateTransform()">
+      
+      <label>Rotação Z: <span id="rotZVal">0</span>°</label>
+      <input type="range" id="rotZ" min="0" max="360" step="1" value="0" oninput="updateTransform()">
+    </div>
+    
+    <h3>🎬 Animação</h3>
+    <div class="section">
+      <div class="row">
+        <label style="width:auto">Rotação Auto:</label>
+        <input type="checkbox" id="animEnabled" onchange="updateAnimation()">
+      </div>
+      <label>Velocidade: <span id="animSpeedVal">2000</span>ms</label>
+      <input type="range" id="animSpeed" min="500" max="10000" step="100" value="2000" oninput="updateAnimation()">
+      
+      <div class="row">
+        <label><input type="checkbox" id="animX" onchange="updateAnimation()"> X</label>
+        <label><input type="checkbox" id="animY" checked onchange="updateAnimation()"> Y</label>
+        <label><input type="checkbox" id="animZ" onchange="updateAnimation()"> Z</label>
+      </div>
+    </div>
+    
+    <h3>🎨 Presets</h3>
+    <div class="preset-grid">
+      <button class="preset-btn secondary" onclick="applyPreset('glass')">🫧 Vidro</button>
+      <button class="preset-btn secondary" onclick="applyPreset('metal')">⚙️ Metal</button>
+      <button class="preset-btn secondary" onclick="applyPreset('plastic')">🎯 Plástico</button>
+      <button class="preset-btn secondary" onclick="applyPreset('gold')">🥇 Ouro</button>
+      <button class="preset-btn secondary" onclick="applyPreset('neon')">💡 Neon</button>
+      <button class="preset-btn secondary" onclick="applyPreset('glow')">✨ Glow</button>
+    </div>
+    
+    <h3>🎨 Material</h3>
+    <div class="section">
+      <div class="row">
+        <label>Cor:</label>
+        <input type="color" id="color" value="#4CC3D9" onchange="updateMaterial()">
+        <label>Emissivo:</label>
+        <input type="color" id="emissive" value="#000000" onchange="updateMaterial()">
+      </div>
+      
+      <label>Metalness: <span id="metalnessVal">0.00</span></label>
+      <input type="range" id="metalness" min="0" max="1" step="0.01" value="0" oninput="updateMaterial()">
+      
+      <label>Roughness: <span id="roughnessVal">0.50</span></label>
+      <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.5" oninput="updateMaterial()">
+      
+      <label>Opacidade: <span id="opacityVal">1.00</span></label>
+      <input type="range" id="opacity" min="0" max="1" step="0.01" value="1" oninput="updateMaterial()">
+      
+      <label>Emissive Int: <span id="emissiveIntVal">0.00</span></label>
+      <input type="range" id="emissiveInt" min="0" max="3" step="0.1" value="0" oninput="updateMaterial()">
+      
+      <div class="row">
+        <label><input type="checkbox" id="wireframe" onchange="updateMaterial()"> Wireframe</label>
+        <label><input type="checkbox" id="transparent" onchange="updateMaterial()"> Transparente</label>
+      </div>
+    </div>
+    
+    <h3>🌍 Ambiente</h3>
+    <div class="section">
+      <label>Preset:</label>
+      <select id="envPreset" onchange="updateEnvironment()">
+        <option value="none">Nenhum</option>
+        <option value="default">Default</option>
+        <option value="forest">Floresta</option>
+        <option value="goaland">Goaland</option>
+        <option value="yavapai">Yavapai</option>
+        <option value="goldmine">Goldmine</option>
+        <option value="threetowers">Three Towers</option>
+        <option value="poison">Poison</option>
+        <option value="arches">Arches</option>
+        <option value="tron">Tron</option>
+        <option value="japan">Japan</option>
+        <option value="dream">Dream</option>
+        <option value="volcano">Volcano</option>
+        <option value="starry" selected>Starry</option>
+        <option value="osiris">Osiris</option>
+      </select>
+      
+      <div class="row">
+        <label>Luz Amb:</label>
+        <input type="color" id="ambientColor" value="#444444" onchange="updateLights()">
+        <label>Luz Dir:</label>
+        <input type="color" id="directionalColor" value="#ffffff" onchange="updateLights()">
+      </div>
+      
+      <label>Intensidade Luz: <span id="lightIntVal">1.0</span></label>
+      <input type="range" id="lightInt" min="0" max="3" step="0.1" value="1" oninput="updateLights()">
+      
+      <div class="row">
+        <label><input type="checkbox" id="fogEnabled" onchange="updateFog()"> Fog</label>
+        <label><input type="checkbox" id="gridEnabled" checked onchange="updateGrid()"> Grid</label>
+      </div>
+    </div>
+    
+    <h3>🗑️ Ações</h3>
+    <div class="btn-row">
+      <button onclick="deleteSelected()" class="danger">🗑️ Excluir</button>
+      <button onclick="clearScene()" class="danger">💥 Limpar</button>
+    </div>
+  </div>
+  
+  <button id="vrBtn" onclick="enterVR()">🥽 Entrar VR</button>
+  <div id="toast"></div>
+
+  <a-scene id="scene" vr-mode-ui="enabled: true" embedded>
+    <!-- Camera -->
+    <a-entity id="rig" position="0 1.6 4">
+      <a-camera look-controls wasd-controls>
+        <a-cursor color="#0ff" fuse="false" raycaster="objects: .clickable"></a-cursor>
+      </a-camera>
+    </a-entity>
+    
+    <!-- Lights -->
+    <a-light id="ambientLight" type="ambient" color="#444"></a-light>
+    <a-light id="directionalLight" type="directional" color="#fff" intensity="1" position="1 2 1"></a-light>
+    <a-light type="point" color="#0ff" intensity="0.5" position="3 3 3"></a-light>
+    <a-light type="point" color="#f0f" intensity="0.5" position="-3 3 -3"></a-light>
+    
+    <!-- Environment -->
+    <a-entity id="environment" environment="preset: starry; groundColor: #111; grid: cross; gridColor: #333"></a-entity>
+    
+    <!-- Grid -->
+    <a-entity id="grid" position="0 0.01 0">
+      <a-plane rotation="-90 0 0" width="20" height="20" color="#222" opacity="0.5" material="side: double"></a-plane>
+    </a-entity>
+    
+    <!-- Objects Container -->
+    <a-entity id="objectsContainer"></a-entity>
+    
+    <!-- Sky fallback -->
+    <a-sky id="sky" color="#111"></a-sky>
+  </a-scene>
+
+  <script>
+    // State
+    let objects = [];
+    let selectedObject = null;
+    let objectId = 0;
+    
+    const container = document.getElementById('objectsContainer');
+    
+    // Add object
+    function addObject(type = null) {
+      type = type || document.getElementById('shapeType').value;
+      
+      const el = document.createElement('a-entity');
+      const id = `obj_${objectId++}`;
+      el.setAttribute('id', id);
+      el.setAttribute('class', 'clickable');
+      
+      // Geometry
+      let geomAttr = `primitive: ${type}`;
+      if (type === 'sphere') geomAttr += '; radius: 0.5; segmentsWidth: 32; segmentsHeight: 32';
+      else if (type === 'box') geomAttr += '; width: 1; height: 1; depth: 1';
+      else if (type === 'torus') geomAttr += '; radius: 0.5; radiusTubular: 0.15; segmentsRadial: 32; segmentsTubular: 48';
+      else if (type === 'cone') geomAttr += '; radiusBottom: 0.5; radiusTop: 0; height: 1';
+      else if (type === 'cylinder') geomAttr += '; radius: 0.4; height: 1';
+      else if (type === 'plane') geomAttr += '; width: 2; height: 2';
+      else if (type === 'ring') geomAttr += '; radiusInner: 0.3; radiusOuter: 0.6';
+      else if (type === 'circle') geomAttr += '; radius: 0.5';
+      
+      el.setAttribute('geometry', geomAttr);
+      el.setAttribute('material', 'color: #4CC3D9; metalness: 0; roughness: 0.5; shader: standard');
+      el.setAttribute('position', '0 1 -3');
+      el.setAttribute('shadow', 'cast: true; receive: true');
+      
+      // Store data
+      el.userData = {
+        id: id,
+        type: type,
+        name: `${type}_${objectId}`,
+        animation: { enabled: false, speed: 2000, x: false, y: true, z: false }
+      };
+      
+      // Click handler
+      el.addEventListener('click', () => selectObject(el));
+      
+      container.appendChild(el);
+      objects.push(el);
+      selectObject(el);
+      updateObjectList();
+      showToast(`${type} adicionado!`);
+      
+      return el;
+    }
+    
+    // Select object
+    function selectObject(el) {
+      // Remove highlight from previous
+      if (selectedObject) {
+        const prevMat = selectedObject.getAttribute('material');
+        selectedObject.setAttribute('material', 'emissive', '#000');
+      }
+      
+      selectedObject = el;
+      if (!el) { updateObjectList(); return; }
+      
+      // Highlight selected
+      el.setAttribute('material', 'emissive', '#222');
+      
+      // Update UI
+      const pos = el.getAttribute('position');
+      const rot = el.getAttribute('rotation') || {x:0,y:0,z:0};
+      const scale = el.getAttribute('scale') || {x:1,y:1,z:1};
+      const mat = el.getAttribute('material');
+      
+      document.getElementById('scale').value = scale.x;
+      document.getElementById('scaleVal').textContent = scale.x.toFixed(1);
+      document.getElementById('posX').value = pos.x;
+      document.getElementById('posXVal').textContent = pos.x.toFixed(1);
+      document.getElementById('posY').value = pos.y;
+      document.getElementById('posYVal').textContent = pos.y.toFixed(1);
+      document.getElementById('posZ').value = pos.z;
+      document.getElementById('posZVal').textContent = pos.z.toFixed(1);
+      document.getElementById('rotX').value = rot.x || 0;
+      document.getElementById('rotXVal').textContent = Math.round(rot.x || 0);
+      document.getElementById('rotY').value = rot.y || 0;
+      document.getElementById('rotYVal').textContent = Math.round(rot.y || 0);
+      document.getElementById('rotZ').value = rot.z || 0;
+      document.getElementById('rotZVal').textContent = Math.round(rot.z || 0);
+      
+      document.getElementById('color').value = mat.color || '#4CC3D9';
+      document.getElementById('emissive').value = mat.emissive || '#000000';
+      document.getElementById('metalness').value = mat.metalness || 0;
+      document.getElementById('metalnessVal').textContent = (mat.metalness || 0).toFixed(2);
+      document.getElementById('roughness').value = mat.roughness || 0.5;
+      document.getElementById('roughnessVal').textContent = (mat.roughness || 0.5).toFixed(2);
+      document.getElementById('opacity').value = mat.opacity !== undefined ? mat.opacity : 1;
+      document.getElementById('opacityVal').textContent = (mat.opacity !== undefined ? mat.opacity : 1).toFixed(2);
+      document.getElementById('wireframe').checked = mat.wireframe || false;
+      document.getElementById('transparent').checked = mat.transparent || false;
+      
+      const anim = el.userData?.animation || { enabled: false, speed: 2000, x: false, y: true, z: false };
+      document.getElementById('animEnabled').checked = anim.enabled;
+      document.getElementById('animSpeed').value = anim.speed;
+      document.getElementById('animSpeedVal').textContent = anim.speed;
+      document.getElementById('animX').checked = anim.x;
+      document.getElementById('animY').checked = anim.y;
+      document.getElementById('animZ').checked = anim.z;
+      
+      updateObjectList();
+    }
+    
+    // Update transform
+    function updateTransform() {
+      if (!selectedObject) return;
+      
+      const s = parseFloat(document.getElementById('scale').value);
+      const px = parseFloat(document.getElementById('posX').value);
+      const py = parseFloat(document.getElementById('posY').value);
+      const pz = parseFloat(document.getElementById('posZ').value);
+      const rx = parseFloat(document.getElementById('rotX').value);
+      const ry = parseFloat(document.getElementById('rotY').value);
+      const rz = parseFloat(document.getElementById('rotZ').value);
+      
+      document.getElementById('scaleVal').textContent = s.toFixed(1);
+      document.getElementById('posXVal').textContent = px.toFixed(1);
+      document.getElementById('posYVal').textContent = py.toFixed(1);
+      document.getElementById('posZVal').textContent = pz.toFixed(1);
+      document.getElementById('rotXVal').textContent = Math.round(rx);
+      document.getElementById('rotYVal').textContent = Math.round(ry);
+      document.getElementById('rotZVal').textContent = Math.round(rz);
+      
+      selectedObject.setAttribute('scale', `${s} ${s} ${s}`);
+      selectedObject.setAttribute('position', `${px} ${py} ${pz}`);
+      selectedObject.setAttribute('rotation', `${rx} ${ry} ${rz}`);
+    }
+    
+    // Update material
+    function updateMaterial() {
+      if (!selectedObject) return;
+      
+      const color = document.getElementById('color').value;
+      const emissive = document.getElementById('emissive').value;
+      const metalness = parseFloat(document.getElementById('metalness').value);
+      const roughness = parseFloat(document.getElementById('roughness').value);
+      const opacity = parseFloat(document.getElementById('opacity').value);
+      const emissiveInt = parseFloat(document.getElementById('emissiveInt').value);
+      const wireframe = document.getElementById('wireframe').checked;
+      const transparent = document.getElementById('transparent').checked;
+      
+      document.getElementById('metalnessVal').textContent = metalness.toFixed(2);
+      document.getElementById('roughnessVal').textContent = roughness.toFixed(2);
+      document.getElementById('opacityVal').textContent = opacity.toFixed(2);
+      document.getElementById('emissiveIntVal').textContent = emissiveInt.toFixed(2);
+      
+      selectedObject.setAttribute('material', {
+        color: color,
+        emissive: emissive,
+        emissiveIntensity: emissiveInt,
+        metalness: metalness,
+        roughness: roughness,
+        opacity: opacity,
+        transparent: transparent || opacity < 1,
+        wireframe: wireframe,
+        shader: 'standard'
+      });
+    }
+    
+    // Update animation
+    function updateAnimation() {
+      if (!selectedObject) return;
+      
+      const enabled = document.getElementById('animEnabled').checked;
+      const speed = parseInt(document.getElementById('animSpeed').value);
+      const x = document.getElementById('animX').checked;
+      const y = document.getElementById('animY').checked;
+      const z = document.getElementById('animZ').checked;
+      
+      document.getElementById('animSpeedVal').textContent = speed;
+      
+      selectedObject.userData.animation = { enabled, speed, x, y, z };
+      
+      // Remove existing animation
+      selectedObject.removeAttribute('animation__rotx');
+      selectedObject.removeAttribute('animation__roty');
+      selectedObject.removeAttribute('animation__rotz');
+      
+      if (enabled) {
+        const rot = selectedObject.getAttribute('rotation') || {x:0,y:0,z:0};
+        
+        if (x) {
+          selectedObject.setAttribute('animation__rotx', {
+            property: 'rotation.x',
+            from: rot.x,
+            to: rot.x + 360,
+            dur: speed,
+            loop: true,
+            easing: 'linear'
+          });
+        }
+        if (y) {
+          selectedObject.setAttribute('animation__roty', {
+            property: 'rotation.y',
+            from: rot.y,
+            to: rot.y + 360,
+            dur: speed,
+            loop: true,
+            easing: 'linear'
+          });
+        }
+        if (z) {
+          selectedObject.setAttribute('animation__rotz', {
+            property: 'rotation.z',
+            from: rot.z,
+            to: rot.z + 360,
+            dur: speed,
+            loop: true,
+            easing: 'linear'
+          });
+        }
+      }
+    }
+    
+    // Presets
+    const presets = {
+      glass: { color: '#ffffff', metalness: 0, roughness: 0, opacity: 0.4, transparent: true, emissive: '#000000', emissiveInt: 0 },
+      metal: { color: '#888888', metalness: 1, roughness: 0.2, opacity: 1, transparent: false, emissive: '#000000', emissiveInt: 0 },
+      plastic: { color: '#ff4444', metalness: 0, roughness: 0.4, opacity: 1, transparent: false, emissive: '#000000', emissiveInt: 0 },
+      gold: { color: '#ffd700', metalness: 1, roughness: 0.1, opacity: 1, transparent: false, emissive: '#000000', emissiveInt: 0 },
+      neon: { color: '#00ff88', metalness: 0, roughness: 0.5, opacity: 0.9, transparent: true, emissive: '#00ff88', emissiveInt: 2 },
+      glow: { color: '#ff00ff', metalness: 0, roughness: 0.3, opacity: 0.8, transparent: true, emissive: '#ff00ff', emissiveInt: 1.5 }
+    };
+    
+    function applyPreset(name) {
+      if (!selectedObject) return;
+      const p = presets[name];
+      
+      document.getElementById('color').value = p.color;
+      document.getElementById('emissive').value = p.emissive;
+      document.getElementById('metalness').value = p.metalness;
+      document.getElementById('roughness').value = p.roughness;
+      document.getElementById('opacity').value = p.opacity;
+      document.getElementById('emissiveInt').value = p.emissiveInt;
+      document.getElementById('transparent').checked = p.transparent;
+      
+      updateMaterial();
+      showToast(`Preset "${name}"!`);
+    }
+    
+    // Environment
+    function updateEnvironment() {
+      const preset = document.getElementById('envPreset').value;
+      const env = document.getElementById('environment');
+      
+      if (preset === 'none') {
+        env.removeAttribute('environment');
+        document.getElementById('sky').setAttribute('color', '#111');
+      } else {
+        env.setAttribute('environment', `preset: ${preset}; groundColor: #111; grid: cross; gridColor: #333`);
+      }
+    }
+    
+    // Lights
+    function updateLights() {
+      const ambColor = document.getElementById('ambientColor').value;
+      const dirColor = document.getElementById('directionalColor').value;
+      const intensity = parseFloat(document.getElementById('lightInt').value);
+      
+      document.getElementById('lightIntVal').textContent = intensity.toFixed(1);
+      
+      document.getElementById('ambientLight').setAttribute('color', ambColor);
+      document.getElementById('directionalLight').setAttribute('color', dirColor);
+      document.getElementById('directionalLight').setAttribute('intensity', intensity);
+    }
+    
+    // Fog
+    function updateFog() {
+      const scene = document.getElementById('scene');
+      if (document.getElementById('fogEnabled').checked) {
+        scene.setAttribute('fog', 'type: exponential; color: #111; density: 0.1');
+      } else {
+        scene.removeAttribute('fog');
+      }
+    }
+    
+    // Grid
+    function updateGrid() {
+      document.getElementById('grid').setAttribute('visible', document.getElementById('gridEnabled').checked);
+    }
+    
+    // Object list
+    function updateObjectList() {
+      const list = document.getElementById('objectList');
+      list.innerHTML = objects.map(obj => `
+        <div class="obj-item ${obj === selectedObject ? 'selected' : ''}" data-id="${obj.userData.id}">
+          <span>${obj.userData.name}</span>
+          <button onclick="event.stopPropagation(); deleteObject('${obj.userData.id}')" class="danger">✕</button>
+        </div>
+      `).join('');
+      
+      list.querySelectorAll('.obj-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const obj = objects.find(o => o.userData.id === el.dataset.id);
+          selectObject(obj);
+        });
+      });
+    }
+    
+    // Delete
+    function deleteObject(id) {
+      const obj = objects.find(o => o.userData.id === id);
+      if (!obj) return;
+      
+      obj.parentNode.removeChild(obj);
+      objects = objects.filter(o => o !== obj);
+      
+      if (selectedObject === obj) {
+        selectedObject = objects[0] || null;
+        selectObject(selectedObject);
+      }
+      updateObjectList();
+      showToast('Excluído!');
+    }
+    
+    function deleteSelected() {
+      if (selectedObject) deleteObject(selectedObject.userData.id);
+    }
+    
+    // Duplicate
+    function duplicateSelected() {
+      if (!selectedObject) return;
+      
+      const newObj = addObject(selectedObject.userData.type);
+      const pos = selectedObject.getAttribute('position');
+      const rot = selectedObject.getAttribute('rotation');
+      const scale = selectedObject.getAttribute('scale');
+      const mat = selectedObject.getAttribute('material');
+      
+      newObj.setAttribute('position', `${pos.x + 0.5} ${pos.y} ${pos.z + 0.5}`);
+      if (rot) newObj.setAttribute('rotation', rot);
+      if (scale) newObj.setAttribute('scale', scale);
+      newObj.setAttribute('material', mat);
+      
+      selectObject(newObj);
+      showToast('Duplicado!');
+    }
+    
+    // Clear
+    function clearScene() {
+      if (!confirm('Limpar cena?')) return;
+      objects.forEach(obj => obj.parentNode.removeChild(obj));
+      objects = [];
+      selectedObject = null;
+      updateObjectList();
+      showToast('Cena limpa!');
+    }
+    
+    // Export/Import
+    function exportScene() {
+      const data = {
+        objects: objects.map(obj => ({
+          type: obj.userData.type,
+          name: obj.userData.name,
+          position: obj.getAttribute('position'),
+          rotation: obj.getAttribute('rotation'),
+          scale: obj.getAttribute('scale'),
+          material: obj.getAttribute('material'),
+          animation: obj.userData.animation
+        })),
+        environment: document.getElementById('envPreset').value
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cena_aframe.json';
+      a.click();
+      showToast('Exportado!');
+    }
+    
+    function importScene(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          
+          // Clear
+          objects.forEach(obj => obj.parentNode.removeChild(obj));
+          objects = [];
+          
+          // Restore
+          data.objects.forEach(d => {
+            const obj = addObject(d.type);
+            obj.userData.name = d.name;
+            obj.setAttribute('position', d.position);
+            if (d.rotation) obj.setAttribute('rotation', d.rotation);
+            if (d.scale) obj.setAttribute('scale', d.scale);
+            obj.setAttribute('material', d.material);
+            obj.userData.animation = d.animation;
+          });
+          
+          document.getElementById('envPreset').value = data.environment || 'starry';
+          updateEnvironment();
+          
+          selectedObject = objects[0] || null;
+          selectObject(selectedObject);
+          showToast('Importado!');
+        } catch (err) {
+          showToast('Erro!');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+    
+    // VR
+    function enterVR() {
+      document.getElementById('scene').enterVR();
+    }
+    
+    // Toast
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 1500);
+    }
+    
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'Delete') deleteSelected();
+      if (e.ctrlKey && e.key === 'd') { e.preventDefault(); duplicateSelected(); }
+    });
+    
+    // Init
+    document.getElementById('scene').addEventListener('loaded', () => {
+      addObject('sphere');
+    });
+  </script>
+</body>
+</html>
