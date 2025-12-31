@@ -2,128 +2,43 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Editor 3D A-Frame VR</title>
+  <title>Editor 3D VR</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
     #ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.9);
-      padding: 12px;
-      border-radius: 10px;
-      color: #fff;
-      width: 250px;
-      max-height: 95vh;
-      overflow-y: auto;
-      font-family: system-ui, sans-serif;
-      font-size: 11px;
-      z-index: 9999;
+      position: fixed; top: 10px; left: 10px;
+      background: rgba(0,0,0,0.9); padding: 12px; border-radius: 10px;
+      color: #fff; width: 240px; max-height: 95vh; overflow-y: auto;
+      font-family: system-ui; font-size: 11px; z-index: 9999;
     }
-    
-    h2 { font-size: 14px; margin-bottom: 10px; color: #0ff; text-align: center; }
-    h3 { font-size: 11px; margin: 10px 0 6px; color: #f0f; border-top: 1px solid #333; padding-top: 8px; }
-    
-    label { display: block; font-size: 10px; margin: 5px 0 2px; color: #aaa; }
-    input[type="range"] { width: 100%; accent-color: #0ff; }
-    input[type="color"] { width: 35px; height: 20px; border: none; border-radius: 3px; }
-    
-    select, button {
-      width: 100%;
-      padding: 6px;
-      margin: 2px 0;
-      border: 1px solid #444;
-      border-radius: 4px;
-      background: #222;
-      color: #fff;
-      font-size: 10px;
-      cursor: pointer;
-    }
-    
+    h2 { font-size: 14px; color: #0ff; text-align: center; margin-bottom: 8px; }
+    h3 { font-size: 11px; color: #f0f; margin: 10px 0 5px; border-top: 1px solid #333; padding-top: 8px; }
+    label { display: block; font-size: 10px; margin: 4px 0 2px; color: #aaa; }
+    input[type="range"] { width: 100%; }
+    input[type="color"] { width: 30px; height: 20px; border: none; }
+    select, button { width: 100%; padding: 5px; margin: 2px 0; border: 1px solid #444; border-radius: 4px; background: #222; color: #fff; font-size: 10px; cursor: pointer; }
     button { background: linear-gradient(135deg, #0ff, #f0f); color: #000; font-weight: bold; }
-    button:hover { opacity: 0.85; }
     button.secondary { background: #333; color: #fff; }
     button.danger { background: #a33; color: #fff; }
-    
-    .row { display: flex; gap: 6px; align-items: center; }
+    .row { display: flex; gap: 5px; align-items: center; }
     .btn-row { display: flex; gap: 4px; }
     .btn-row button { flex: 1; }
-    
-    .section { background: #1a1a1a; padding: 8px; border-radius: 6px; margin: 6px 0; }
-    
-    #objectList { max-height: 80px; overflow-y: auto; margin-top: 6px; }
-    .obj-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 4px 6px;
-      background: #222;
-      border-radius: 3px;
-      margin: 2px 0;
-      cursor: pointer;
-    }
-    .obj-item:hover { background: #333; }
+    .section { background: #1a1a1a; padding: 8px; border-radius: 6px; margin: 5px 0; }
+    #objectList { max-height: 70px; overflow-y: auto; }
+    .obj-item { display: flex; justify-content: space-between; padding: 3px 5px; background: #222; border-radius: 3px; margin: 2px 0; cursor: pointer; }
     .obj-item.selected { border: 1px solid #0ff; }
-    .obj-item button { width: auto; padding: 2px 6px; }
-    
+    .obj-item button { width: auto; padding: 2px 5px; }
     .mode-btns { display: flex; gap: 4px; margin-bottom: 8px; }
     .mode-btns button { flex: 1; }
     .mode-btns button.active { background: #0ff; color: #000; }
-    
-    .axis-btns { display: flex; gap: 4px; margin: 4px 0; }
-    .axis-btns button { flex: 1; font-size: 9px; padding: 4px; }
-    .axis-btns button.active { opacity: 1; }
-    .axis-btns button:not(.active) { opacity: 0.5; }
-    .axis-x { background: #e74c3c !important; color: #fff !important; }
-    .axis-y { background: #2ecc71 !important; color: #fff !important; }
-    .axis-z { background: #3498db !important; color: #fff !important; }
-    
-    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-    .preset-btn { padding: 4px; font-size: 9px; }
-    
-    #toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #0ff;
-      color: #000;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: bold;
-      display: none;
-      z-index: 10000;
-    }
-    
-    #statusBar {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(0,0,0,0.8);
-      padding: 6px 12px;
-      border-radius: 6px;
-      color: #0ff;
-      font-family: monospace;
-      font-size: 11px;
-      z-index: 9999;
-    }
-    
-    #help {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.8);
-      padding: 8px 12px;
-      border-radius: 6px;
-      color: #888;
-      font-size: 10px;
-      z-index: 9999;
-    }
-    
-    .cursor-move { cursor: grab !important; }
-    .cursor-grabbing { cursor: grabbing !important; }
+    .axis-btns { display: flex; gap: 4px; margin: 5px 0; }
+    .axis-btns button { flex: 1; padding: 4px; }
+    .axis-btns button.active-x { background: #e74c3c; color: #fff; }
+    .axis-btns button.active-y { background: #2ecc71; color: #fff; }
+    .axis-btns button.active-z { background: #3498db; color: #fff; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0ff; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: bold; display: none; z-index: 10000; }
+    #statusBar { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 6px; color: #0ff; font-family: monospace; font-size: 11px; z-index: 9999; }
   </style>
 </head>
 <body>
@@ -135,15 +50,13 @@
       <button id="modeMove" onclick="setMode('move')">✋ Mover</button>
     </div>
     
-    <div id="axisControls" style="display:none;">
-      <label>Eixo de movimento:</label>
-      <div class="axis-btns">
-        <button class="axis-x active" onclick="setAxis('x')">X</button>
-        <button class="axis-y" onclick="setAxis('y')">Y</button>
-        <button class="axis-z active" onclick="setAxis('z')">Z</button>
-      </div>
-      <label><input type="checkbox" id="snapEnabled"> Snap to Grid (0.5)</label>
+    <label>Eixo de movimento:</label>
+    <div class="axis-btns">
+      <button id="axisX" class="active-x" onclick="setAxis('x')">X</button>
+      <button id="axisY" onclick="setAxis('y')">Y</button>
+      <button id="axisZ" onclick="setAxis('z')">Z</button>
     </div>
+    <label><input type="checkbox" id="snapEnabled"> Snap to Grid (0.5)</label>
     
     <div class="section">
       <label>Adicionar:</label>
@@ -153,9 +66,6 @@
         <option value="torus">Torus</option>
         <option value="cone">Cone</option>
         <option value="cylinder">Cilindro</option>
-        <option value="dodecahedron">Dodecaedro</option>
-        <option value="octahedron">Octaedro</option>
-        <option value="ring">Anel</option>
       </select>
       <button onclick="addObject()">+ Adicionar</button>
     </div>
@@ -171,15 +81,12 @@
     <div class="section">
       <label>Escala: <span id="scaleVal">1.0</span></label>
       <input type="range" id="scale" min="0.1" max="5" step="0.1" value="1" oninput="updateTransform()">
-      
       <label style="color:#e74c3c">Pos X: <span id="posXVal">0</span></label>
       <input type="range" id="posX" min="-10" max="10" step="0.1" value="0" oninput="updateTransform()">
-      
       <label style="color:#2ecc71">Pos Y: <span id="posYVal">1</span></label>
       <input type="range" id="posY" min="0" max="10" step="0.1" value="1" oninput="updateTransform()">
-      
-      <label style="color:#3498db">Pos Z: <span id="posZVal">-3</span></label>
-      <input type="range" id="posZ" min="-15" max="5" step="0.1" value="-3" oninput="updateTransform()">
+      <label style="color:#3498db">Pos Z: <span id="posZVal">0</span></label>
+      <input type="range" id="posZ" min="-15" max="5" step="0.1" value="0" oninput="updateTransform()">
     </div>
     
     <h3>🎬 Animação</h3>
@@ -190,13 +97,15 @@
     </div>
     
     <h3>🎨 Presets</h3>
-    <div class="preset-grid">
-      <button class="preset-btn secondary" onclick="applyPreset('glass')">Vidro</button>
-      <button class="preset-btn secondary" onclick="applyPreset('metal')">Metal</button>
-      <button class="preset-btn secondary" onclick="applyPreset('gold')">Ouro</button>
-      <button class="preset-btn secondary" onclick="applyPreset('neon')">Neon</button>
-      <button class="preset-btn secondary" onclick="applyPreset('glow')">Glow</button>
-      <button class="preset-btn secondary" onclick="applyPreset('chrome')">Chrome</button>
+    <div class="btn-row">
+      <button class="secondary" onclick="applyPreset('glass')">Vidro</button>
+      <button class="secondary" onclick="applyPreset('metal')">Metal</button>
+      <button class="secondary" onclick="applyPreset('gold')">Ouro</button>
+    </div>
+    <div class="btn-row">
+      <button class="secondary" onclick="applyPreset('neon')">Neon</button>
+      <button class="secondary" onclick="applyPreset('glow')">Glow</button>
+      <button class="secondary" onclick="applyPreset('chrome')">Chrome</button>
     </div>
     
     <h3>🎨 Material</h3>
@@ -207,27 +116,10 @@
         <label>Emissivo:</label>
         <input type="color" id="emissive" value="#000000" onchange="updateMaterial()">
       </div>
-      
       <label>Metalness: <span id="metalnessVal">0.00</span></label>
       <input type="range" id="metalness" min="0" max="1" step="0.01" value="0" oninput="updateMaterial()">
-      
       <label>Roughness: <span id="roughnessVal">0.50</span></label>
       <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.5" oninput="updateMaterial()">
-      
-      <label>Opacidade: <span id="opacityVal">1.00</span></label>
-      <input type="range" id="opacity" min="0" max="1" step="0.01" value="1" oninput="updateMaterial()">
-    </div>
-    
-    <h3>🌍 Ambiente</h3>
-    <div class="section">
-      <div class="row">
-        <label>Céu:</label>
-        <input type="color" id="skyColor" value="#1a1a2e" onchange="updateEnv()">
-        <label>Chão:</label>
-        <input type="color" id="groundColor" value="#222222" onchange="updateEnv()">
-      </div>
-      <label><input type="checkbox" id="gridEnabled" checked onchange="updateEnv()"> Grid</label>
-      <label><input type="checkbox" id="gizmoEnabled" checked onchange="updateGizmo()"> Mostrar Gizmo</label>
     </div>
     
     <h3>💾 Cena</h3>
@@ -238,56 +130,31 @@
     </div>
   </div>
   
-  <div id="statusBar">
-    <span id="modeDisplay">Modo: Selecionar</span> | <span id="selectedInfo">Nenhum</span> | <span id="dragAxis">XZ</span>
-  </div>
-  
-  <div id="help">
-    WASD: mover | Mouse: olhar | Clique: selecionar<br>
-    M: modo | Del: excluir | Shift+arrastar: eixo Y<br>
-    X/Y/Z: ativar eixo | G: snap grid
-  </div>
-  
+  <div id="statusBar">Modo: Selecionar | Eixo: X | Objeto: Nenhum</div>
   <div id="toast"></div>
 
   <a-scene id="scene" vr-mode-ui="enabled: true">
-    
-    <a-entity id="rig" position="0 1.6 5">
-      <a-camera 
-        id="camera" 
-        look-controls="pointerLockEnabled: false"
-        wasd-controls="acceleration: 30"
-        cursor="rayOrigin: mouse; fuse: false"
-        raycaster="objects: .clickable">
-      </a-camera>
+    <a-entity id="rig" position="0 1.6 8">
+      <a-camera id="camera" look-controls wasd-controls="acceleration: 30"></a-camera>
     </a-entity>
     
     <a-light type="ambient" color="#666" intensity="0.5"></a-light>
     <a-light type="directional" color="#fff" intensity="0.8" position="2 4 2"></a-light>
-    <a-light type="point" color="#0ff" intensity="0.4" position="3 2 3"></a-light>
-    <a-light type="point" color="#f0f" intensity="0.4" position="-3 2 -3"></a-light>
+    <a-light type="point" color="#0ff" intensity="0.5" position="4 3 4"></a-light>
+    <a-light type="point" color="#f0f" intensity="0.5" position="-4 3 -4"></a-light>
     
-    <a-sky id="sky" color="#1a1a2e"></a-sky>
-    <a-entity id="stars"></a-entity>
-    <a-plane id="ground" class="clickable" rotation="-90 0 0" width="50" height="50" color="#222" material="side: double"></a-plane>
+    <a-sky color="#1a1a2e"></a-sky>
+    <a-plane id="ground" rotation="-90 0 0" width="30" height="30" color="#222"></a-plane>
     <a-entity id="grid" position="0 0.01 0"></a-entity>
     
-    <!-- Gizmo -->
     <a-entity id="gizmo" visible="false">
-      <!-- X axis - Red -->
       <a-cylinder position="0.6 0 0" rotation="0 0 90" radius="0.02" height="1.2" color="#e74c3c" material="shader:flat"></a-cylinder>
-      <a-cone position="1.2 0 0" rotation="0 0 -90" radius-bottom="0.06" height="0.15" color="#e74c3c" material="shader:flat"></a-cone>
-      <!-- Y axis - Green -->
+      <a-cone position="1.25 0 0" rotation="0 0 -90" radius-bottom="0.06" height="0.15" color="#e74c3c" material="shader:flat"></a-cone>
       <a-cylinder position="0 0.6 0" radius="0.02" height="1.2" color="#2ecc71" material="shader:flat"></a-cylinder>
-      <a-cone position="0 1.2 0" radius-bottom="0.06" height="0.15" color="#2ecc71" material="shader:flat"></a-cone>
-      <!-- Z axis - Blue -->
+      <a-cone position="0 1.25 0" radius-bottom="0.06" height="0.15" color="#2ecc71" material="shader:flat"></a-cone>
       <a-cylinder position="0 0 0.6" rotation="90 0 0" radius="0.02" height="1.2" color="#3498db" material="shader:flat"></a-cylinder>
-      <a-cone position="0 0 1.2" rotation="-90 0 0" radius-bottom="0.06" height="0.15" color="#3498db" material="shader:flat"></a-cone>
-    </a-entity>
-    
-    <!-- Selection outline -->
-    <a-entity id="selectionOutline" visible="false">
-      <a-sphere radius="0.55" material="shader:flat; color:#0ff; opacity:0.15; side:back; transparent:true"></a-sphere>
+      <a-cone position="0 0 1.25" rotation="-90 0 0" radius-bottom="0.06" height="0.15" color="#3498db" material="shader:flat"></a-cone>
+      <a-sphere radius="0.06" color="#fff" material="shader:flat"></a-sphere>
     </a-entity>
     
     <a-entity id="objectsContainer"></a-entity>
@@ -298,162 +165,46 @@
     let selectedObject = null;
     let objectId = 0;
     let currentMode = 'select';
+    let currentAxis = 'x';
     let isDragging = false;
-    let activeAxes = { x: true, y: false, z: true };
-    let snapEnabled = false;
-    let dragStartY = 0;
-    let dragStartPos = null;
+    let dragStart = { x: 0, y: 0 };
+    let objStartPos = null;
     
     const container = document.getElementById('objectsContainer');
-    const sceneEl = document.getElementById('scene');
     const gizmo = document.getElementById('gizmo');
-    const selectionOutline = document.getElementById('selectionOutline');
-    
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const verticalPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const camera = document.getElementById('camera');
     
     function setMode(mode) {
       currentMode = mode;
       document.getElementById('modeSelect').classList.toggle('active', mode === 'select');
       document.getElementById('modeMove').classList.toggle('active', mode === 'move');
-      document.getElementById('modeDisplay').textContent = `Modo: ${mode === 'select' ? 'Selecionar' : 'Mover'}`;
-      document.getElementById('axisControls').style.display = mode === 'move' ? 'block' : 'none';
       
-      if (mode === 'move') {
-        sceneEl.canvas.classList.add('cursor-move');
-      } else {
-        sceneEl.canvas.classList.remove('cursor-move');
-      }
-      showToast(mode === 'select' ? '🎯 Selecionar' : '✋ Mover (Shift=Y)');
+      // Desabilita look-controls no modo mover para não conflitar
+      camera.setAttribute('look-controls', 'enabled', mode === 'select');
+      
+      updateStatus();
     }
     
     function setAxis(axis) {
-      activeAxes[axis] = !activeAxes[axis];
-      document.querySelectorAll('.axis-btns button').forEach(btn => {
-        const a = btn.textContent.toLowerCase();
-        btn.classList.toggle('active', activeAxes[a]);
-      });
-      updateAxisDisplay();
+      currentAxis = axis;
+      document.getElementById('axisX').className = axis === 'x' ? 'active-x' : '';
+      document.getElementById('axisY').className = axis === 'y' ? 'active-y' : '';
+      document.getElementById('axisZ').className = axis === 'z' ? 'active-z' : '';
+      updateStatus();
     }
     
-    function updateAxisDisplay() {
-      let axes = '';
-      if (activeAxes.x) axes += 'X';
-      if (activeAxes.y) axes += 'Y';
-      if (activeAxes.z) axes += 'Z';
-      document.getElementById('dragAxis').textContent = axes || '-';
+    function updateStatus() {
+      const name = selectedObject ? selectedObject.userData.name : 'Nenhum';
+      document.getElementById('statusBar').textContent = 
+        `Modo: ${currentMode === 'select' ? 'Selecionar' : 'Mover'} | Eixo: ${currentAxis.toUpperCase()} | Objeto: ${name}`;
     }
     
     function snap(val) {
-      return snapEnabled ? Math.round(val * 2) / 2 : val;
+      return document.getElementById('snapEnabled').checked ? Math.round(val * 2) / 2 : val;
     }
-    
-    function getGroundPoint(event) {
-      const canvas = sceneEl.canvas;
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      
-      const camera = document.getElementById('camera').getObject3D('camera');
-      if (!camera) return null;
-      
-      raycaster.setFromCamera(mouse, camera);
-      const point = new THREE.Vector3();
-      raycaster.ray.intersectPlane(groundPlane, point);
-      return point;
-    }
-    
-    function getClickedObject(event) {
-      const canvas = sceneEl.canvas;
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      
-      const camera = document.getElementById('camera').getObject3D('camera');
-      if (!camera) return null;
-      
-      raycaster.setFromCamera(mouse, camera);
-      
-      const meshes = [];
-      objects.forEach(obj => {
-        const mesh = obj.getObject3D('mesh');
-        if (mesh) meshes.push(mesh);
-      });
-      
-      const hits = raycaster.intersectObjects(meshes, true);
-      if (hits.length > 0) {
-        let obj3d = hits[0].object;
-        while (obj3d && !obj3d.el) obj3d = obj3d.parent;
-        if (obj3d?.el) return objects.find(o => o === obj3d.el);
-      }
-      return null;
-    }
-    
-    sceneEl.addEventListener('loaded', () => {
-      const canvas = sceneEl.canvas;
-      
-      canvas.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
-        
-        const clicked = getClickedObject(e);
-        if (clicked) {
-          selectObject(clicked);
-          if (currentMode === 'move') {
-            isDragging = true;
-            dragStartY = e.clientY;
-            dragStartPos = {...selectedObject.getAttribute('position')};
-            const pos = selectedObject.getAttribute('position');
-            groundPlane.constant = -pos.y;
-            canvas.classList.add('cursor-grabbing');
-            canvas.classList.remove('cursor-move');
-          }
-        }
-      });
-      
-      canvas.addEventListener('mousemove', (e) => {
-        if (!isDragging || !selectedObject) return;
-        
-        const pos = selectedObject.getAttribute('position');
-        let newX = pos.x, newY = pos.y, newZ = pos.z;
-        
-        // Shift = move Y axis based on mouse Y movement
-        if (e.shiftKey || activeAxes.y) {
-          const deltaY = (dragStartY - e.clientY) * 0.02;
-          newY = snap(dragStartPos.y + deltaY);
-          newY = Math.max(0.1, newY); // Don't go below ground
-        }
-        
-        // XZ movement
-        if (activeAxes.x || activeAxes.z) {
-          const point = getGroundPoint(e);
-          if (point) {
-            if (activeAxes.x) newX = snap(point.x);
-            if (activeAxes.z) newZ = snap(point.z);
-          }
-        }
-        
-        selectedObject.setAttribute('position', { x: newX, y: newY, z: newZ });
-        updateGizmoPosition();
-        updateOutlinePosition();
-        updateTransformUI();
-      });
-      
-      canvas.addEventListener('mouseup', () => {
-        if (isDragging) {
-          isDragging = false;
-          sceneEl.canvas.classList.remove('cursor-grabbing');
-          if (currentMode === 'move') {
-            sceneEl.canvas.classList.add('cursor-move');
-          }
-        }
-      });
-    });
     
     function createGrid() {
       const grid = document.getElementById('grid');
-      grid.innerHTML = '';
       for (let i = -10; i <= 10; i++) {
         const lx = document.createElement('a-entity');
         lx.setAttribute('line', `start: -10 0 ${i}; end: 10 0 ${i}; color: #444`);
@@ -464,19 +215,8 @@
       }
     }
     
-    function createStars() {
-      const stars = document.getElementById('stars');
-      stars.innerHTML = '';
-      for (let i = 0; i < 150; i++) {
-        const s = document.createElement('a-sphere');
-        s.setAttribute('position', `${(Math.random()-0.5)*80} ${Math.random()*40+10} ${(Math.random()-0.5)*80}`);
-        s.setAttribute('radius', Math.random() * 0.08 + 0.02);
-        s.setAttribute('material', 'shader: flat; color: #fff');
-        stars.appendChild(s);
-      }
-    }
-    
-    function createObjectEl(type) {
+    function addObject(type = null) {
+      type = type || document.getElementById('shapeType').value;
       const el = document.createElement('a-entity');
       el.setAttribute('id', `obj_${objectId}`);
       el.setAttribute('class', 'clickable');
@@ -487,20 +227,14 @@
       else if (type === 'torus') geom += '; radius: 0.5; radiusTubular: 0.15';
       else if (type === 'cone') geom += '; radiusBottom: 0.5; radiusTop: 0; height: 1';
       else if (type === 'cylinder') geom += '; radius: 0.4; height: 1';
-      else if (type === 'ring') geom += '; radiusInner: 0.3; radiusOuter: 0.6';
       
       el.setAttribute('geometry', geom);
-      el.setAttribute('material', 'color: #4CC3D9; metalness: 0; roughness: 0.5; shader: standard');
+      el.setAttribute('material', 'color: #4CC3D9; metalness: 0; roughness: 0.5');
+      el.setAttribute('position', '0 1 0');
       
       el.userData = { id: `obj_${objectId}`, type, name: `${type}_${objectId}`, animation: { enabled: false, speed: 2000 } };
       objectId++;
-      return el;
-    }
-    
-    function addObject(type = null) {
-      type = type || document.getElementById('shapeType').value;
-      const el = createObjectEl(type);
-      el.setAttribute('position', '0 1 -3');
+      
       container.appendChild(el);
       objects.push(el);
       selectObject(el);
@@ -511,46 +245,23 @@
     
     function selectObject(el) {
       selectedObject = el;
-      if (el) {
-        updateTransformUI();
-        updateMaterialUI();
-        updateAnimationUI();
-        updateGizmoPosition();
-        updateOutlinePosition();
-        gizmo.setAttribute('visible', document.getElementById('gizmoEnabled').checked);
-        selectionOutline.setAttribute('visible', true);
-      } else {
-        gizmo.setAttribute('visible', false);
-        selectionOutline.setAttribute('visible', false);
-      }
+      gizmo.setAttribute('visible', !!el);
+      if (el) { updateGizmo(); updateUI(); }
       updateObjectList();
-      document.getElementById('selectedInfo').textContent = el ? el.userData.name : 'Nenhum';
+      updateStatus();
     }
     
-    function updateGizmoPosition() {
+    function updateGizmo() {
       if (!selectedObject) return;
       const pos = selectedObject.getAttribute('position');
       gizmo.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
     }
     
-    function updateOutlinePosition() {
+    function updateUI() {
       if (!selectedObject) return;
       const pos = selectedObject.getAttribute('position');
       const scale = selectedObject.getAttribute('scale') || {x:1,y:1,z:1};
-      selectionOutline.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-      selectionOutline.setAttribute('scale', `${scale.x * 1.1} ${scale.y * 1.1} ${scale.z * 1.1}`);
-    }
-    
-    function updateGizmo() {
-      if (selectedObject) {
-        gizmo.setAttribute('visible', document.getElementById('gizmoEnabled').checked);
-      }
-    }
-    
-    function updateTransformUI() {
-      if (!selectedObject) return;
-      const pos = selectedObject.getAttribute('position');
-      const scale = selectedObject.getAttribute('scale') || {x:1,y:1,z:1};
+      const mat = selectedObject.getAttribute('material') || {};
       
       document.getElementById('scale').value = scale.x;
       document.getElementById('scaleVal').textContent = scale.x.toFixed(1);
@@ -560,22 +271,12 @@
       document.getElementById('posYVal').textContent = pos.y.toFixed(1);
       document.getElementById('posZ').value = pos.z;
       document.getElementById('posZVal').textContent = pos.z.toFixed(1);
-    }
-    
-    function updateMaterialUI() {
-      if (!selectedObject) return;
-      const mat = selectedObject.getAttribute('material') || {};
       document.getElementById('color').value = mat.color || '#4CC3D9';
       document.getElementById('metalness').value = mat.metalness || 0;
       document.getElementById('metalnessVal').textContent = (mat.metalness || 0).toFixed(2);
       document.getElementById('roughness').value = mat.roughness ?? 0.5;
       document.getElementById('roughnessVal').textContent = (mat.roughness ?? 0.5).toFixed(2);
-      document.getElementById('opacity').value = mat.opacity ?? 1;
-      document.getElementById('opacityVal').textContent = (mat.opacity ?? 1).toFixed(2);
-    }
-    
-    function updateAnimationUI() {
-      if (!selectedObject) return;
+      
       const anim = selectedObject.userData?.animation || { enabled: false, speed: 2000 };
       document.getElementById('animEnabled').checked = anim.enabled;
       document.getElementById('animSpeed').value = anim.speed;
@@ -596,8 +297,7 @@
       
       selectedObject.setAttribute('scale', `${s} ${s} ${s}`);
       selectedObject.setAttribute('position', `${px} ${py} ${pz}`);
-      updateGizmoPosition();
-      updateOutlinePosition();
+      updateGizmo();
     }
     
     function updateMaterial() {
@@ -606,17 +306,11 @@
       const emissive = document.getElementById('emissive').value;
       const metalness = parseFloat(document.getElementById('metalness').value);
       const roughness = parseFloat(document.getElementById('roughness').value);
-      const opacity = parseFloat(document.getElementById('opacity').value);
       
       document.getElementById('metalnessVal').textContent = metalness.toFixed(2);
       document.getElementById('roughnessVal').textContent = roughness.toFixed(2);
-      document.getElementById('opacityVal').textContent = opacity.toFixed(2);
       
-      selectedObject.setAttribute('material', {
-        color, emissive, metalness, roughness, opacity,
-        transparent: opacity < 1,
-        shader: 'standard'
-      });
+      selectedObject.setAttribute('material', { color, emissive, metalness, roughness });
     }
     
     function updateAnimation() {
@@ -630,22 +324,18 @@
       
       if (enabled) {
         selectedObject.setAttribute('animation__rot', {
-          property: 'rotation',
-          to: '0 360 0',
-          dur: speed,
-          loop: true,
-          easing: 'linear'
+          property: 'rotation', to: '0 360 0', dur: speed, loop: true, easing: 'linear'
         });
       }
     }
     
     const presets = {
-      glass: { color: '#ffffff', metalness: 0, roughness: 0, opacity: 0.4 },
-      metal: { color: '#888888', metalness: 1, roughness: 0.2, opacity: 1 },
-      gold: { color: '#ffd700', metalness: 1, roughness: 0.1, opacity: 1 },
-      chrome: { color: '#cccccc', metalness: 1, roughness: 0.05, opacity: 1 },
-      neon: { color: '#00ff88', metalness: 0, roughness: 0.5, opacity: 0.9 },
-      glow: { color: '#ff00ff', metalness: 0, roughness: 0.3, opacity: 0.8 }
+      glass: { color: '#ffffff', metalness: 0, roughness: 0 },
+      metal: { color: '#888888', metalness: 1, roughness: 0.2 },
+      gold: { color: '#ffd700', metalness: 1, roughness: 0.1 },
+      chrome: { color: '#cccccc', metalness: 1, roughness: 0.05 },
+      neon: { color: '#00ff88', metalness: 0, roughness: 0.5 },
+      glow: { color: '#ff00ff', metalness: 0, roughness: 0.3 }
     };
     
     function applyPreset(name) {
@@ -654,20 +344,12 @@
       document.getElementById('color').value = p.color;
       document.getElementById('metalness').value = p.metalness;
       document.getElementById('roughness').value = p.roughness;
-      document.getElementById('opacity').value = p.opacity;
       updateMaterial();
       showToast(`Preset: ${name}`);
     }
     
-    function updateEnv() {
-      document.getElementById('sky').setAttribute('color', document.getElementById('skyColor').value);
-      document.getElementById('ground').setAttribute('color', document.getElementById('groundColor').value);
-      document.getElementById('grid').setAttribute('visible', document.getElementById('gridEnabled').checked);
-    }
-    
     function updateObjectList() {
-      const list = document.getElementById('objectList');
-      list.innerHTML = objects.map(obj => `
+      document.getElementById('objectList').innerHTML = objects.map(obj => `
         <div class="obj-item ${obj === selectedObject ? 'selected' : ''}" onclick="selectObject(objects.find(o=>o.userData.id==='${obj.userData.id}'))">
           <span>${obj.userData.name}</span>
           <button onclick="event.stopPropagation(); deleteObject('${obj.userData.id}')" class="danger">✕</button>
@@ -680,17 +362,12 @@
       if (!obj) return;
       obj.parentNode.removeChild(obj);
       objects = objects.filter(o => o !== obj);
-      if (selectedObject === obj) {
-        selectedObject = objects[0] || null;
-        selectObject(selectedObject);
-      }
+      if (selectedObject === obj) selectObject(objects[0] || null);
       updateObjectList();
       showToast('Excluído!');
     }
     
-    function deleteSelected() {
-      if (selectedObject) deleteObject(selectedObject.userData.id);
-    }
+    function deleteSelected() { if (selectedObject) deleteObject(selectedObject.userData.id); }
     
     function duplicateSelected() {
       if (!selectedObject) return;
@@ -705,27 +382,21 @@
     }
     
     function exportScene() {
-      const data = {
-        objects: objects.map(obj => ({
-          type: obj.userData.type,
-          name: obj.userData.name,
-          position: obj.getAttribute('position'),
-          scale: obj.getAttribute('scale'),
-          material: obj.getAttribute('material'),
-          animation: obj.userData.animation
-        }))
-      };
+      const data = { objects: objects.map(obj => ({
+        type: obj.userData.type, name: obj.userData.name,
+        position: obj.getAttribute('position'),
+        scale: obj.getAttribute('scale'),
+        material: obj.getAttribute('material'),
+        animation: obj.userData.animation
+      }))};
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `cena_${Date.now()}.json`;
-      a.click();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `cena_${Date.now()}.json`; a.click();
       showToast('Salvo!');
     }
     
     function importScene(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
@@ -750,12 +421,49 @@
     
     function showToast(msg) {
       const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.style.display = 'block';
+      toast.textContent = msg; toast.style.display = 'block';
       setTimeout(() => toast.style.display = 'none', 1500);
     }
     
-    // Keyboard
+    // Mouse - arrasto de objetos no modo Mover
+    document.addEventListener('mousedown', (e) => {
+      if (e.target.closest('#ui')) return;
+      if (currentMode === 'move' && selectedObject && e.button === 0) {
+        isDragging = true;
+        dragStart = { x: e.clientX, y: e.clientY };
+        objStartPos = { ...selectedObject.getAttribute('position') };
+      }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging || !selectedObject || !objStartPos) return;
+      
+      const dx = (e.clientX - dragStart.x) * 0.02;
+      const dy = (dragStart.y - e.clientY) * 0.02;
+      
+      const pos = { ...objStartPos };
+      if (currentAxis === 'x') pos.x = snap(objStartPos.x + dx);
+      else if (currentAxis === 'y') pos.y = snap(Math.max(0.1, objStartPos.y + dy));
+      else if (currentAxis === 'z') pos.z = snap(objStartPos.z - dy);
+      
+      selectedObject.setAttribute('position', pos);
+      updateGizmo();
+      updateUI();
+    });
+    
+    document.addEventListener('mouseup', () => { isDragging = false; objStartPos = null; });
+    
+    // Click para selecionar
+    document.querySelector('a-scene').addEventListener('click', (e) => {
+      if (e.target.closest('#ui') || currentMode !== 'select') return;
+      const el = e.target.closest('[id^="obj_"]');
+      if (el) {
+        const obj = objects.find(o => o.id === el.id);
+        if (obj) selectObject(obj);
+      }
+    });
+    
+    // Teclado
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT') return;
       if (e.key === 'Delete') deleteSelected();
@@ -764,23 +472,12 @@
       if (e.key === 'x') setAxis('x');
       if (e.key === 'y') setAxis('y');
       if (e.key === 'z') setAxis('z');
-      if (e.key === 'g') {
-        snapEnabled = !snapEnabled;
-        document.getElementById('snapEnabled').checked = snapEnabled;
-        showToast(snapEnabled ? 'Snap ON' : 'Snap OFF');
-      }
-    });
-    
-    document.getElementById('snapEnabled').addEventListener('change', (e) => {
-      snapEnabled = e.target.checked;
     });
     
     // Init
-    sceneEl.addEventListener('loaded', () => {
+    document.querySelector('a-scene').addEventListener('loaded', () => {
       createGrid();
-      createStars();
       addObject('sphere');
-      updateAxisDisplay();
     });
   </script>
 </body>
