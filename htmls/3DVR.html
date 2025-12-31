@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <title>Editor 3D A-Frame VR</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -92,15 +91,6 @@
       z-index: 10000;
     }
     
-    #vrBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      font-size: 14px;
-      z-index: 9999;
-    }
-    
     #toolbar {
       position: fixed;
       top: 10px;
@@ -135,8 +125,6 @@
         <option value="tetrahedron">Tetraedro</option>
         <option value="ring">Anel</option>
         <option value="plane">Plano</option>
-        <option value="circle">Círculo</option>
-        <option value="triangle">Triângulo</option>
       </select>
       <div class="btn-row">
         <button onclick="addObject()">+ Adicionar</button>
@@ -226,24 +214,12 @@
     
     <h3>🌍 Ambiente</h3>
     <div class="section">
-      <label>Preset:</label>
-      <select id="envPreset" onchange="updateEnvironment()">
-        <option value="none">Nenhum</option>
-        <option value="default">Default</option>
-        <option value="forest">Floresta</option>
-        <option value="goaland">Goaland</option>
-        <option value="yavapai">Yavapai</option>
-        <option value="goldmine">Goldmine</option>
-        <option value="threetowers">Three Towers</option>
-        <option value="poison">Poison</option>
-        <option value="arches">Arches</option>
-        <option value="tron">Tron</option>
-        <option value="japan">Japan</option>
-        <option value="dream">Dream</option>
-        <option value="volcano">Volcano</option>
-        <option value="starry" selected>Starry</option>
-        <option value="osiris">Osiris</option>
-      </select>
+      <div class="row">
+        <label>Céu:</label>
+        <input type="color" id="skyColor" value="#1a1a2e" onchange="updateSky()">
+        <label>Chão:</label>
+        <input type="color" id="groundColor" value="#222222" onchange="updateGround()">
+      </div>
       
       <div class="row">
         <label>Luz Amb:</label>
@@ -256,8 +232,8 @@
       <input type="range" id="lightInt" min="0" max="3" step="0.1" value="1" oninput="updateLights()">
       
       <div class="row">
-        <label><input type="checkbox" id="fogEnabled" onchange="updateFog()"> Fog</label>
         <label><input type="checkbox" id="gridEnabled" checked onchange="updateGrid()"> Grid</label>
+        <label><input type="checkbox" id="starsEnabled" checked onchange="updateStars()"> Estrelas</label>
       </div>
     </div>
     
@@ -268,10 +244,9 @@
     </div>
   </div>
   
-  <button id="vrBtn" onclick="enterVR()">🥽 Entrar VR</button>
   <div id="toast"></div>
 
-  <a-scene id="scene" vr-mode-ui="enabled: true" embedded>
+  <a-scene id="scene" vr-mode-ui="enabled: true">
     <!-- Camera -->
     <a-entity id="rig" position="0 1.6 4">
       <a-camera look-controls wasd-controls>
@@ -280,24 +255,25 @@
     </a-entity>
     
     <!-- Lights -->
-    <a-light id="ambientLight" type="ambient" color="#444"></a-light>
-    <a-light id="directionalLight" type="directional" color="#fff" intensity="1" position="1 2 1"></a-light>
-    <a-light type="point" color="#0ff" intensity="0.5" position="3 3 3"></a-light>
-    <a-light type="point" color="#f0f" intensity="0.5" position="-3 3 -3"></a-light>
+    <a-light id="ambientLight" type="ambient" color="#444" intensity="0.5"></a-light>
+    <a-light id="directionalLight" type="directional" color="#fff" intensity="1" position="1 2 1" castShadow="true"></a-light>
+    <a-light type="point" color="#0ff" intensity="0.8" position="3 3 3"></a-light>
+    <a-light type="point" color="#f0f" intensity="0.8" position="-3 3 -3"></a-light>
     
-    <!-- Environment -->
-    <a-entity id="environment" environment="preset: starry; groundColor: #111; grid: cross; gridColor: #333"></a-entity>
+    <!-- Sky -->
+    <a-sky id="sky" color="#1a1a2e"></a-sky>
+    
+    <!-- Stars -->
+    <a-entity id="stars"></a-entity>
+    
+    <!-- Ground -->
+    <a-plane id="ground" rotation="-90 0 0" width="50" height="50" color="#222" material="side: double"></a-plane>
     
     <!-- Grid -->
-    <a-entity id="grid" position="0 0.01 0">
-      <a-plane rotation="-90 0 0" width="20" height="20" color="#222" opacity="0.5" material="side: double"></a-plane>
-    </a-entity>
+    <a-entity id="grid" position="0 0.01 0"></a-entity>
     
     <!-- Objects Container -->
     <a-entity id="objectsContainer"></a-entity>
-    
-    <!-- Sky fallback -->
-    <a-sky id="sky" color="#111"></a-sky>
   </a-scene>
 
   <script>
@@ -307,6 +283,42 @@
     let objectId = 0;
     
     const container = document.getElementById('objectsContainer');
+    
+    // Create grid
+    function createGrid() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      
+      for (let i = -10; i <= 10; i++) {
+        // X lines
+        const lineX = document.createElement('a-entity');
+        lineX.setAttribute('line', `start: -10 0 ${i}; end: 10 0 ${i}; color: #444`);
+        grid.appendChild(lineX);
+        
+        // Z lines
+        const lineZ = document.createElement('a-entity');
+        lineZ.setAttribute('line', `start: ${i} 0 -10; end: ${i} 0 10; color: #444`);
+        grid.appendChild(lineZ);
+      }
+    }
+    
+    // Create stars
+    function createStars() {
+      const stars = document.getElementById('stars');
+      stars.innerHTML = '';
+      
+      for (let i = 0; i < 200; i++) {
+        const star = document.createElement('a-sphere');
+        const x = (Math.random() - 0.5) * 100;
+        const y = Math.random() * 50 + 10;
+        const z = (Math.random() - 0.5) * 100;
+        star.setAttribute('position', `${x} ${y} ${z}`);
+        star.setAttribute('radius', Math.random() * 0.1 + 0.02);
+        star.setAttribute('color', '#fff');
+        star.setAttribute('material', 'shader: flat');
+        stars.appendChild(star);
+      }
+    }
     
     // Add object
     function addObject(type = null) {
@@ -326,12 +338,10 @@
       else if (type === 'cylinder') geomAttr += '; radius: 0.4; height: 1';
       else if (type === 'plane') geomAttr += '; width: 2; height: 2';
       else if (type === 'ring') geomAttr += '; radiusInner: 0.3; radiusOuter: 0.6';
-      else if (type === 'circle') geomAttr += '; radius: 0.5';
       
       el.setAttribute('geometry', geomAttr);
       el.setAttribute('material', 'color: #4CC3D9; metalness: 0; roughness: 0.5; shader: standard');
       el.setAttribute('position', '0 1 -3');
-      el.setAttribute('shadow', 'cast: true; receive: true');
       
       // Store data
       el.userData = {
@@ -355,19 +365,15 @@
     
     // Select object
     function selectObject(el) {
-      // Remove highlight from previous
       if (selectedObject) {
-        const prevMat = selectedObject.getAttribute('material');
         selectedObject.setAttribute('material', 'emissive', '#000');
       }
       
       selectedObject = el;
       if (!el) { updateObjectList(); return; }
       
-      // Highlight selected
       el.setAttribute('material', 'emissive', '#222');
       
-      // Update UI
       const pos = el.getAttribute('position');
       const rot = el.getAttribute('rotation') || {x:0,y:0,z:0};
       const scale = el.getAttribute('scale') || {x:1,y:1,z:1};
@@ -389,7 +395,6 @@
       document.getElementById('rotZVal').textContent = Math.round(rot.z || 0);
       
       document.getElementById('color').value = mat.color || '#4CC3D9';
-      document.getElementById('emissive').value = mat.emissive || '#000000';
       document.getElementById('metalness').value = mat.metalness || 0;
       document.getElementById('metalnessVal').textContent = (mat.metalness || 0).toFixed(2);
       document.getElementById('roughness').value = mat.roughness || 0.5;
@@ -480,7 +485,6 @@
       
       selectedObject.userData.animation = { enabled, speed, x, y, z };
       
-      // Remove existing animation
       selectedObject.removeAttribute('animation__rotx');
       selectedObject.removeAttribute('animation__roty');
       selectedObject.removeAttribute('animation__rotz');
@@ -548,19 +552,14 @@
     }
     
     // Environment
-    function updateEnvironment() {
-      const preset = document.getElementById('envPreset').value;
-      const env = document.getElementById('environment');
-      
-      if (preset === 'none') {
-        env.removeAttribute('environment');
-        document.getElementById('sky').setAttribute('color', '#111');
-      } else {
-        env.setAttribute('environment', `preset: ${preset}; groundColor: #111; grid: cross; gridColor: #333`);
-      }
+    function updateSky() {
+      document.getElementById('sky').setAttribute('color', document.getElementById('skyColor').value);
     }
     
-    // Lights
+    function updateGround() {
+      document.getElementById('ground').setAttribute('color', document.getElementById('groundColor').value);
+    }
+    
     function updateLights() {
       const ambColor = document.getElementById('ambientColor').value;
       const dirColor = document.getElementById('directionalColor').value;
@@ -573,19 +572,12 @@
       document.getElementById('directionalLight').setAttribute('intensity', intensity);
     }
     
-    // Fog
-    function updateFog() {
-      const scene = document.getElementById('scene');
-      if (document.getElementById('fogEnabled').checked) {
-        scene.setAttribute('fog', 'type: exponential; color: #111; density: 0.1');
-      } else {
-        scene.removeAttribute('fog');
-      }
-    }
-    
-    // Grid
     function updateGrid() {
       document.getElementById('grid').setAttribute('visible', document.getElementById('gridEnabled').checked);
+    }
+    
+    function updateStars() {
+      document.getElementById('stars').setAttribute('visible', document.getElementById('starsEnabled').checked);
     }
     
     // Object list
@@ -666,8 +658,7 @@
           scale: obj.getAttribute('scale'),
           material: obj.getAttribute('material'),
           animation: obj.userData.animation
-        })),
-        environment: document.getElementById('envPreset').value
+        }))
       };
       
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -687,11 +678,9 @@
         try {
           const data = JSON.parse(ev.target.result);
           
-          // Clear
           objects.forEach(obj => obj.parentNode.removeChild(obj));
           objects = [];
           
-          // Restore
           data.objects.forEach(d => {
             const obj = addObject(d.type);
             obj.userData.name = d.name;
@@ -702,9 +691,6 @@
             obj.userData.animation = d.animation;
           });
           
-          document.getElementById('envPreset').value = data.environment || 'starry';
-          updateEnvironment();
-          
           selectedObject = objects[0] || null;
           selectObject(selectedObject);
           showToast('Importado!');
@@ -714,11 +700,6 @@
       };
       reader.readAsText(file);
       e.target.value = '';
-    }
-    
-    // VR
-    function enterVR() {
-      document.getElementById('scene').enterVR();
     }
     
     // Toast
@@ -738,6 +719,8 @@
     
     // Init
     document.getElementById('scene').addEventListener('loaded', () => {
+      createGrid();
+      createStars();
       addObject('sphere');
     });
   </script>
