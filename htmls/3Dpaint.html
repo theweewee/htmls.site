@@ -1,483 +1,183 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <title>VR Painter 3D</title>
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat (HTML simples)</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    #ui {
-      position: fixed; top: 10px; left: 10px;
-      background: rgba(0,0,0,0.9); padding: 12px; border-radius: 10px;
-      color: #fff; width: 220px; font-family: system-ui; font-size: 11px; z-index: 9999;
+    :root{
+      /* Paleta (troque aqui) */
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: rgba(15,23,42,.62);
+      --border: rgba(15,23,42,.10);
+
+      --primary: #2563eb;     /* azul */
+      --primary-2: #1d4ed8;
+      --in-bubble: #eef2ff;   /* bolha recebida */
+      --out-bubble: #2563eb;  /* bolha enviada */
+      --shadow: 0 10px 30px rgba(15,23,42,.10);
+      --radius: 18px;
     }
-    h2 { font-size: 14px; color: #0ff; text-align: center; margin-bottom: 10px; }
-    h3 { font-size: 11px; color: #f0f; margin: 10px 0 5px; border-top: 1px solid #333; padding-top: 8px; }
-    label { display: block; font-size: 10px; margin: 4px 0 2px; color: #aaa; }
-    input[type="range"] { width: 100%; }
-    input[type="color"] { width: 40px; height: 25px; border: none; border-radius: 4px; cursor: pointer; }
-    button { width: 100%; padding: 6px; margin: 3px 0; border: none; border-radius: 4px; background: linear-gradient(135deg, #0ff, #f0f); color: #000; font-weight: bold; font-size: 10px; cursor: pointer; }
-    button:hover { opacity: 0.85; }
-    button.secondary { background: #333; color: #fff; }
-    button.danger { background: #c33; color: #fff; }
-    button.active { background: #0f0; color: #000; }
-    .btn-row { display: flex; gap: 4px; }
-    .btn-row button { flex: 1; }
-    .section { background: #1a1a1a; padding: 8px; border-radius: 6px; margin: 5px 0; }
-    .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin: 5px 0; }
-    .color-btn { width: 100%; aspect-ratio: 1; border: 2px solid transparent; border-radius: 4px; cursor: pointer; }
-    .color-btn.active { border-color: #fff; }
-    .brush-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0ff; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: bold; display: none; z-index: 10000; }
-    #statusBar { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 6px; color: #0ff; font-family: monospace; font-size: 11px; z-index: 9999; }
-    #help { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 6px; color: #888; font-size: 10px; z-index: 9999; }
+
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 40% -10%, #fff7d6 0%, transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, #e8efff 0%, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .chat{
+      width: min(920px, 100%);
+      height: min(720px, calc(100vh - 36px));
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;                 /* layout flex container */
+      flex-direction: column;        /* coluna: header -> messages -> composer */
+      overflow: hidden;
+    }
+
+    .header{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,1));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .title{
+      display:flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .title strong{ font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+    .title span{ font-size: 13px; color: var(--muted); }
+
+    .badge{
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(37,99,235,.25);
+      background: rgba(37,99,235,.10);
+      color: rgba(30,58,138,.95);
+    }
+
+    .messages{
+      flex: 1 1 auto;                /* cresce e rola */
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(246,247,251,.55);
+    }
+
+    .msg{
+      display:flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .msg--out{ justify-content: flex-end; }
+    .bubble{
+      max-width: min(70%, 620px);
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      line-height: 1.25rem;
+      font-size: 14px;
+      background: var(--in-bubble);
+    }
+    .msg--out .bubble{
+      background: linear-gradient(180deg, var(--primary), var(--primary-2));
+      color: #fff;
+      border-color: rgba(37,99,235,.25);
+    }
+    .meta{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .composer{
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input{
+      flex: 1 1 auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+    .btn{
+      border: 1px solid rgba(37,99,235,.25);
+      background: linear-gradient(180deg, var(--primary), var(--primary-2));
+      color: #fff;
+      font-weight: 800;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .btn:active{ transform: translateY(1px); }
   </style>
 </head>
+
 <body>
-  <div id="ui">
-    <h2>🎨 VR Painter 3D</h2>
-    
-    <div class="btn-row">
-      <button id="btnDraw" class="active" onclick="setTool('draw')">✏️ Desenhar</button>
-      <button id="btnErase" class="secondary" onclick="setTool('erase')">🧹 Apagar</button>
-    </div>
-    
-    <h3>🎨 Cor</h3>
-    <div class="section">
-      <div class="color-grid" id="colorPalette"></div>
-      <div class="btn-row" style="margin-top:5px">
-        <label>Custom:</label>
-        <input type="color" id="customColor" value="#00ffff" onchange="setColor(this.value)">
+  <main class="chat">
+    <header class="header">
+      <div class="title">
+        <strong>Chat</strong>
+        <span>Exemplo estático (só UI)</span>
       </div>
-    </div>
-    
-    <h3>🖌️ Pincel</h3>
-    <div class="section">
-      <div class="brush-grid">
-        <button class="secondary" onclick="setBrush('sphere')">● Esfera</button>
-        <button class="secondary" onclick="setBrush('box')">■ Cubo</button>
-        <button class="secondary" onclick="setBrush('star')">★ Estrela</button>
-      </div>
-      <label>Tamanho: <span id="sizeVal">0.05</span></label>
-      <input type="range" id="brushSize" min="0.01" max="0.3" step="0.01" value="0.05" oninput="updateSize()">
-      <label>Espaçamento: <span id="spacingVal">0.03</span></label>
-      <input type="range" id="spacing" min="0.01" max="0.2" step="0.01" value="0.03" oninput="updateSpacing()">
-    </div>
-    
-    <h3>✨ Efeitos</h3>
-    <div class="section">
-      <label><input type="checkbox" id="glowEnabled" onchange="updateGlow()"> Brilho (Emissivo)</label>
-      <label><input type="checkbox" id="rainbowMode"> Modo Arco-íris</label>
-      <label><input type="checkbox" id="mirrorMode"> Espelho (X)</label>
-      <label>Metalness: <span id="metalVal">0</span></label>
-      <input type="range" id="metalness" min="0" max="1" step="0.1" value="0" oninput="updateMetal()">
-    </div>
-    
-    <h3>🎬 Ações</h3>
-    <div class="section">
-      <button onclick="undoLast()" class="secondary">↩️ Desfazer (Ctrl+Z)</button>
-      <button onclick="clearAll()" class="danger">🗑️ Limpar Tudo</button>
-      <div class="btn-row">
-        <button onclick="exportScene()" class="secondary">💾 Salvar</button>
-        <button onclick="document.getElementById('importFile').click()" class="secondary">📂 Carregar</button>
-      </div>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importScene(event)">
-    </div>
-  </div>
-  
-  <div id="statusBar">Ferramenta: Desenhar | Cor: #00ffff | Strokes: 0</div>
-  <div id="help">
-    WASD: mover | Mouse: olhar<br>
-    Clique+Arraste: pintar<br>
-    Ctrl+Z: desfazer | C: limpar
-  </div>
-  <div id="toast"></div>
+      <div class="badge">ONLINE</div>
+    </header>
 
-  <a-scene id="scene" vr-mode-ui="enabled: true">
-    <a-entity id="rig" position="0 1.6 4">
-      <a-camera id="camera" look-controls wasd-controls="acceleration: 20">
-        <!-- Cursor/brush indicator -->
-        <a-entity id="brushCursor" position="0 0 -1.5">
-          <a-sphere radius="0.05" material="color: #0ff; opacity: 0.5; transparent: true"></a-sphere>
-          <a-ring radius-inner="0.06" radius-outer="0.08" material="color: #fff; shader: flat" rotation="0 0 0"></a-ring>
-        </a-entity>
-      </a-camera>
-    </a-entity>
-    
-    <!-- VR Controllers -->
-    <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .paintable; far: 10"></a-entity>
-    <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .paintable; far: 10">
-      <a-sphere radius="0.02" position="0 0 -0.05" material="color: #0ff; shader: flat"></a-sphere>
-    </a-entity>
-    
-    <a-light type="ambient" color="#888" intensity="0.6"></a-light>
-    <a-light type="directional" color="#fff" intensity="0.7" position="2 4 2"></a-light>
-    <a-light type="point" color="#0ff" intensity="0.3" position="3 2 3"></a-light>
-    <a-light type="point" color="#f0f" intensity="0.3" position="-3 2 -3"></a-light>
-    
-    <a-sky color="#111122"></a-sky>
-    <a-plane class="paintable" rotation="-90 0 0" width="20" height="20" color="#1a1a1a" material="side: double"></a-plane>
-    <a-entity id="grid" position="0 0.01 0"></a-entity>
-    
-    <!-- Paint container -->
-    <a-entity id="paintContainer"></a-entity>
-  </a-scene>
+    <section class="messages">
+      <div class="msg msg--in">
+        <div class="bubble">
+          Oi! Quer testar uma paleta “soft” com bolhas?
+          <div class="meta">10:21</div>
+        </div>
+      </div>
 
-  <script>
-    // State
-    let currentColor = '#00ffff';
-    let currentBrush = 'sphere';
-    let brushSize = 0.05;
-    let spacing = 0.03;
-    let currentTool = 'draw';
-    let isPainting = false;
-    let lastPaintPos = null;
-    let strokes = []; // Array of stroke arrays for undo
-    let currentStroke = [];
-    let strokeCount = 0;
-    let hue = 0;
-    
-    const container = document.getElementById('paintContainer');
-    const brushCursor = document.getElementById('brushCursor');
-    
-    // Color palette
-    const colors = [
-      '#ff0000', '#ff8800', '#ffff00', '#00ff00', '#00ffff', '#0088ff',
-      '#0000ff', '#8800ff', '#ff00ff', '#ff0088', '#ffffff', '#000000'
-    ];
-    
-    function initPalette() {
-      const palette = document.getElementById('colorPalette');
-      colors.forEach(c => {
-        const btn = document.createElement('div');
-        btn.className = 'color-btn' + (c === currentColor ? ' active' : '');
-        btn.style.background = c;
-        btn.onclick = () => setColor(c);
-        palette.appendChild(btn);
-      });
-    }
-    
-    function setColor(color) {
-      currentColor = color;
-      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-      const match = [...document.querySelectorAll('.color-btn')].find(b => b.style.background === color);
-      if (match) match.classList.add('active');
-      document.getElementById('customColor').value = color;
-      updateCursor();
-      updateStatus();
-    }
-    
-    function setBrush(type) {
-      currentBrush = type;
-      showToast(`Pincel: ${type}`);
-    }
-    
-    function setTool(tool) {
-      currentTool = tool;
-      document.getElementById('btnDraw').className = tool === 'draw' ? 'active' : 'secondary';
-      document.getElementById('btnErase').className = tool === 'erase' ? 'active' : 'secondary';
-      updateStatus();
-    }
-    
-    function updateSize() {
-      brushSize = parseFloat(document.getElementById('brushSize').value);
-      document.getElementById('sizeVal').textContent = brushSize.toFixed(2);
-      updateCursor();
-    }
-    
-    function updateSpacing() {
-      spacing = parseFloat(document.getElementById('spacing').value);
-      document.getElementById('spacingVal').textContent = spacing.toFixed(2);
-    }
-    
-    function updateGlow() {}
-    function updateMetal() {
-      document.getElementById('metalVal').textContent = document.getElementById('metalness').value;
-    }
-    
-    function updateCursor() {
-      const sphere = brushCursor.querySelector('a-sphere');
-      sphere.setAttribute('radius', brushSize);
-      sphere.setAttribute('material', `color: ${currentColor}; opacity: 0.5; transparent: true`);
-    }
-    
-    function updateStatus() {
-      document.getElementById('statusBar').textContent = 
-        `Ferramenta: ${currentTool === 'draw' ? 'Desenhar' : 'Apagar'} | Cor: ${currentColor} | Strokes: ${strokeCount}`;
-    }
-    
-    function createGrid() {
-      const grid = document.getElementById('grid');
-      for (let i = -10; i <= 10; i++) {
-        const lx = document.createElement('a-entity');
-        lx.setAttribute('line', `start: -10 0 ${i}; end: 10 0 ${i}; color: #333`);
-        grid.appendChild(lx);
-        const lz = document.createElement('a-entity');
-        lz.setAttribute('line', `start: ${i} 0 -10; end: ${i} 0 10; color: #333`);
-        grid.appendChild(lz);
-      }
-    }
-    
-    function getColor() {
-      if (document.getElementById('rainbowMode').checked) {
-        hue = (hue + 2) % 360;
-        return `hsl(${hue}, 100%, 50%)`;
-      }
-      return currentColor;
-    }
-    
-    function paintAt(x, y, z) {
-      if (currentTool === 'erase') {
-        eraseAt(x, y, z);
-        return;
-      }
-      
-      const color = getColor();
-      const glow = document.getElementById('glowEnabled').checked;
-      const metal = parseFloat(document.getElementById('metalness').value);
-      const mirror = document.getElementById('mirrorMode').checked;
-      
-      const el = document.createElement('a-entity');
-      el.setAttribute('position', `${x} ${y} ${z}`);
-      
-      let geom, mat;
-      if (currentBrush === 'sphere') {
-        geom = `primitive: sphere; radius: ${brushSize}`;
-      } else if (currentBrush === 'box') {
-        geom = `primitive: box; width: ${brushSize*2}; height: ${brushSize*2}; depth: ${brushSize*2}`;
-      } else if (currentBrush === 'star') {
-        geom = `primitive: octahedron; radius: ${brushSize}`;
-      }
-      
-      mat = `color: ${color}; metalness: ${metal}; roughness: ${1-metal}`;
-      if (glow) mat += `; emissive: ${color}; emissiveIntensity: 0.5`;
-      
-      el.setAttribute('geometry', geom);
-      el.setAttribute('material', mat);
-      el.classList.add('paint-dot');
-      
-      container.appendChild(el);
-      currentStroke.push(el);
-      
-      // Mirror
-      if (mirror) {
-        const el2 = document.createElement('a-entity');
-        el2.setAttribute('position', `${-x} ${y} ${z}`);
-        el2.setAttribute('geometry', geom);
-        el2.setAttribute('material', mat);
-        el2.classList.add('paint-dot');
-        container.appendChild(el2);
-        currentStroke.push(el2);
-      }
-    }
-    
-    function eraseAt(x, y, z) {
-      const dots = container.querySelectorAll('.paint-dot');
-      dots.forEach(dot => {
-        const pos = dot.getAttribute('position');
-        const dist = Math.sqrt(
-          Math.pow(pos.x - x, 2) + 
-          Math.pow(pos.y - y, 2) + 
-          Math.pow(pos.z - z, 2)
-        );
-        if (dist < brushSize * 3) {
-          dot.parentNode.removeChild(dot);
-        }
-      });
-    }
-    
-    function startStroke() {
-      currentStroke = [];
-      isPainting = true;
-    }
-    
-    function endStroke() {
-      if (currentStroke.length > 0) {
-        strokes.push(currentStroke);
-        strokeCount++;
-        updateStatus();
-      }
-      currentStroke = [];
-      isPainting = false;
-      lastPaintPos = null;
-    }
-    
-    function undoLast() {
-      if (strokes.length === 0) return;
-      const lastStroke = strokes.pop();
-      lastStroke.forEach(el => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      });
-      strokeCount--;
-      updateStatus();
-      showToast('Desfeito!');
-    }
-    
-    function clearAll() {
-      container.innerHTML = '';
-      strokes = [];
-      currentStroke = [];
-      strokeCount = 0;
-      updateStatus();
-      showToast('Limpo!');
-    }
-    
-    function exportScene() {
-      const dots = container.querySelectorAll('.paint-dot');
-      const data = {
-        strokes: strokes.map(stroke => stroke.map(el => ({
-          position: el.getAttribute('position'),
-          geometry: el.getAttribute('geometry'),
-          material: el.getAttribute('material')
-        })))
-      };
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `painting_${Date.now()}.json`;
-      a.click();
-      showToast('Salvo!');
-    }
-    
-    function importScene(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          clearAll();
-          const data = JSON.parse(ev.target.result);
-          data.strokes.forEach(strokeData => {
-            const stroke = [];
-            strokeData.forEach(d => {
-              const el = document.createElement('a-entity');
-              el.setAttribute('position', d.position);
-              el.setAttribute('geometry', d.geometry);
-              el.setAttribute('material', d.material);
-              el.classList.add('paint-dot');
-              container.appendChild(el);
-              stroke.push(el);
-            });
-            strokes.push(stroke);
-            strokeCount++;
-          });
-          updateStatus();
-          showToast('Carregado!');
-        } catch { showToast('Erro!'); }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
-    }
-    
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.style.display = 'block';
-      setTimeout(() => toast.style.display = 'none', 1500);
-    }
-    
-    // Mouse painting (desktop)
-    const scene = document.querySelector('a-scene');
-    const camera = document.getElementById('camera');
-    
-    scene.addEventListener('mousedown', (e) => {
-      if (e.target.closest('#ui')) return;
-      startStroke();
-    });
-    
-    scene.addEventListener('mouseup', endStroke);
-    scene.addEventListener('mouseleave', endStroke);
-    
-    scene.addEventListener('mousemove', (e) => {
-      if (!isPainting) return;
-      if (e.target.closest('#ui')) return;
-      
-      // Get camera position and direction
-      const cam = camera.object3D;
-      const pos = new THREE.Vector3();
-      const dir = new THREE.Vector3(0, 0, -1);
-      
-      cam.getWorldPosition(pos);
-      dir.applyQuaternion(cam.quaternion);
-      
-      // Paint at fixed distance from camera
-      const paintDist = 1.5;
-      const paintPos = {
-        x: pos.x + dir.x * paintDist,
-        y: pos.y + dir.y * paintDist,
-        z: pos.z + dir.z * paintDist
-      };
-      
-      // Check spacing
-      if (lastPaintPos) {
-        const dist = Math.sqrt(
-          Math.pow(paintPos.x - lastPaintPos.x, 2) +
-          Math.pow(paintPos.y - lastPaintPos.y, 2) +
-          Math.pow(paintPos.z - lastPaintPos.z, 2)
-        );
-        if (dist < spacing) return;
-      }
-      
-      paintAt(paintPos.x, paintPos.y, paintPos.z);
-      lastPaintPos = paintPos;
-    });
-    
-    // VR controller painting
-    const rightHand = document.getElementById('rightHand');
-    
-    rightHand.addEventListener('triggerdown', startStroke);
-    rightHand.addEventListener('triggerup', endStroke);
-    
-    scene.addEventListener('enter-vr', () => {
-      brushCursor.setAttribute('visible', false);
-    });
-    
-    scene.addEventListener('exit-vr', () => {
-      brushCursor.setAttribute('visible', true);
-    });
-    
-    // VR paint loop
-    setInterval(() => {
-      if (!isPainting || !scene.is('vr-mode')) return;
-      
-      const hand = rightHand.object3D;
-      const pos = new THREE.Vector3();
-      hand.getWorldPosition(pos);
-      
-      // Offset slightly forward from controller
-      const dir = new THREE.Vector3(0, 0, -0.1);
-      dir.applyQuaternion(hand.quaternion);
-      pos.add(dir);
-      
-      if (lastPaintPos) {
-        const dist = Math.sqrt(
-          Math.pow(pos.x - lastPaintPos.x, 2) +
-          Math.pow(pos.y - lastPaintPos.y, 2) +
-          Math.pow(pos.z - lastPaintPos.z, 2)
-        );
-        if (dist < spacing) return;
-      }
-      
-      paintAt(pos.x, pos.y, pos.z);
-      lastPaintPos = { x: pos.x, y: pos.y, z: pos.z };
-    }, 16);
-    
-    // Keyboard
-    document.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT') return;
-      if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoLast(); }
-      if (e.key === 'c') clearAll();
-      if (e.key === '1') setTool('draw');
-      if (e.key === '2') setTool('erase');
-    });
-    
-    // Init
-    scene.addEventListener('loaded', () => {
-      createGrid();
-      initPalette();
-      updateCursor();
-      updateStatus();
-    });
-  </script>
+      <div class="msg msg--out">
+        <div class="bubble">
+          Sim — gostei desse azul. Dá pra trocar as cores em :root.
+          <div class="meta">10:22</div>
+        </div>
+      </div>
+
+      <div class="msg msg--in">
+        <div class="bubble">
+          Perfeito. Depois dá pra ligar isso num backend e renderizar as mensagens.
+          <div class="meta">10:23</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="composer">
+      <input class="input" placeholder="Digite uma mensagem…" />
+      <button class="btn">Enviar</button>
+    </footer>
+  </main>
 </body>
 </html>
