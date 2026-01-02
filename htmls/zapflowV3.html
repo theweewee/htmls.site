@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapFlow — Brushed Modular Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Space+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #151515;
+            --accent: #25D366;
+            --accent-muted: #1e3a2a;
+            --text-primary: #e4e4e4;
+            --text-secondary: #888888;
+            --border: rgba(255, 255, 255, 0.08);
+            --brushed: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.02) 100%);
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Matte Texture Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3仿真%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 30px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(13, 13, 13, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 160px 0 100px;
+            position: relative;
+        }
+
+        .hero-bg-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20vw;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.01);
+            z-index: -1;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            background: var(--accent-muted);
+            color: var(--accent);
+            border: 1px solid rgba(37, 211, 102, 0.2);
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: clamp(48px, 8vw, 92px);
+            line-height: 0.95;
+            font-weight: 700;
+            letter-spacing: -4px;
+            margin-bottom: 30px;
+        }
+
+        h1 span {
+            display: block;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 18px 32px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--surface);
+            border-color: var(--text-secondary);
+        }
+
+        /* Construct Grid */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-top: 100px;
+        }
+
+        .module {
+            background: var(--surface);
+            padding: 40px;
+            position: relative;
+            transition: var(--transition);
+            background-image: var(--brushed);
+        }
+
+        .module:hover {
+            background-color: #1a1a1a;
+        }
+
+        .module-span-4 { grid-column: span 4; }
+        .module-span-6 { grid-column: span 6; }
+        .module-span-8 { grid-column: span 8; }
+
+        .module-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--accent);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .module h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .module p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 300;
+        }
+
+        /* Pricing Construct */
+        .pricing-wrap {
+            padding: 120px 0;
+        }
+
+        .price-construct {
+            display: flex;
+            align-items: stretch;
+            gap: 20px;
+        }
+
+        .price-card {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 50px 40px;
+            position: relative;
+            background-image: var(--brushed);
+        }
+
+        .price-card.featured {
+            border-color: var(--accent);
+            z-index: 2;
+        }
+
+        .price-card.featured::after {
+            content: "RECOMENDADO";
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--accent);
+        }
+
+        .price-header {
+            margin-bottom: 40px;
+        }
+
+        .price-val {
+            font-size: 48px;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .price-val span {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 40px 0;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .feature-list li::before {
+            content: "→";
+            color: var(--accent);
+        }
+
+        /* Steps Section */
+        .steps-header {
+            text-align: right;
+            margin-bottom: 60px;
+        }
+
+        .step-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr;
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+            align-items: center;
+        }
+
+        .step-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            color: var(--accent);
+        }
+
+        .step-title {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .step-desc {
+            color: var(--text-secondary);
+            font-size: 18px;
+            max-width: 400px;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .copy {
+            color: var(--text-secondary);
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1024px) {
+            .module-span-4, .module-span-6, .module-span-8 {
+                grid-column: span 12;
+            }
+            .price-construct {
+                flex-direction: column;
+            }
+            .step-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        /* Animation Keyframes */
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            animation: reveal 1s forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container" style="display: flex; justify-content: space-between; width: 100%;">
+            <div class="logo">ZAPFLOW<span>_</span></div>
+            <div class="nav-links">
+                <a href="#features">Módulos</a>
+                <a href="#como-funciona">Processo</a>
+                <a href="#precos">Preços</a>
+                <a href="#">Beta</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-bg-text">FLOW CONTROL</div>
+        <div class="container">
+            <div class="badge">Status: v0.4.2 Early Access</div>
+            <h1>A Inteligência<span>Sincronizada</span>ao seu WhatsApp</h1>
+            <p>Arquitetura modular para automação de conversas. Construa, integre e scale sem tocar em uma linha de código.</p>
+            <div class="btn-group">
+                <button class="btn btn-primary">Iniciar Integração</button>
+                <button class="btn btn-outline">Ver Demo Técnica</button>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="container">
+        <div class="module-grid">
+            <div class="module module-span-8">
+                <span class="module-tag">// FLOW_BUILDER</span>
+                <h3>Nexus Visual Editor</h3>
+                <p>Nossa interface de arrastar e soltar de baixa latência permite estruturar árvores de decisão complexas em minutos. Cada bloco é um componente modular pronto para produção.</p>
+            </div>
+            <div class="module module-span-4">
+                <span class="module-tag">// AI_CORE</span>
+                <h3>NLP Híbrido</h3>
+                <p>Identificação de intenção em tempo real. A IA compreende contexto, gírias e necessidades específicas.</p>
+            </div>
+            <div class="module module-span-4">
+                <span class="module-tag">// DATA_SYST</span>
+                <h3>Analytics Vetorial</h3>
+                <p>Métricas que importam. Visualize o funil de conversão com granularidade milimétrica.</p>
+            </div>
+            <div class="module module-span-4">
+                <span class="module-tag">// INTEGRATION</span>
+                <h3>Webhooks Nativos</h3>
+                <p>Conecte-se a qualquer API. JSON puro, seguro e imediato.</p>
+            </div>
+            <div class="module module-span-4">
+                <span class="module-tag">// HUMAN_TRANS</span>
+                <h3>Smart Handoff</h3>
+                <p>A transição perfeita para humanos quando a IA detecta complexidade emocional.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="como-funciona" class="container" style="margin-top: 150px;">
+        <div class="steps-header">
+            <span class="module-tag">CONSTRUCT_PHASE</span>
+            <h2>Otimização em 3 Estágios</h2>
+        </div>
+        
+        <div class="step-row">
+            <div class="step-num">01</div>
+            <div class="step-title">Blueprint</div>
+            <div class="step-desc">Desenhe sua lógica em nossa malha construtivista. Defina gatilhos e respostas.</div>
+        </div>
+        
+        <div class="step-row">
+            <div class="step-num">02</div>
+            <div class="step-title">Neural Train</div>
+            <div class="step-desc">Ajuste o tom de voz e os parâmetros de IA para alinhar com a identidade da sua marca.</div>
+        </div>
+        
+        <div class="step-row" style="border-bottom: 1px solid var(--border);">
+            <div class="step-num">03</div>
+            <div class="step-title">Deployment</div>
+            <div class="step-desc">Conecte via QR Code e ative o processamento em tempo real 24/7.</div>
+        </div>
+    </section>
+
+    <section id="precos" class="container pricing-wrap">
+        <div class="price-construct">
+            <div class="price-card">
+                <div class="price-header">
+                    <span class="module-tag">BETA_ENTRY</span>
+                    <h3>Essencial</h3>
+                    <div class="price-val">R$ 29<span>/mês</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li>1 Bot Ativo</li>
+                    <li>Flows Ilimitados</li>
+                    <li>IA Básica</li>
+                </ul>
+                <button class="btn btn-outline" style="width: 100%;">Selecionar</button>
+            </div>
+
+            <div class="price-card featured">
+                <div class="price-header">
+                    <span class="module-tag">PRO_SCALE</span>
+                    <h3>Profissional</h3>
+                    <div class="price-val">R$ 89<span>/mês</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li>5 Bots Ativos</li>
+                    <li>Integrações Webhook</li>
+                    <li>Handoff Inteligente</li>
+                    <li>Suporte Priority</li>
+                </ul>
+                <button class="btn btn-primary" style="width: 100%;">Selecionar</button>
+            </div>
+
+            <div class="price-card">
+                <div class="price-header">
+                    <span class="module-tag">ENTERPRISE</span>
+                    <h3>Máximo</h3>
+                    <div class="price-val">R$ 179<span>/mês</span></div>
+                </div>
+                <ul class="feature-list">
+                    <li>Bots Ilimitados</li>
+                    <li>Times & Roles</li>
+                    <li>Custom AI Models</li>
+                </ul>
+                <button class="btn btn-outline" style="width: 100%;">Selecionar</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <span class="footer-logo">ZAPFLOW</span>
+            <p class="copy">© 2026 Modular construct. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Subtle Reveal Animation on Scroll
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('reveal');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.module, .step-row, .price-card').forEach(el => {
+            el.style.opacity = "0";
+            observer.observe(el);
+        });
+
+        // Mouse parallax for brushed effect
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            document.querySelectorAll('.module').forEach(m => {
+                m.style.backgroundPosition = `${x * 20}% ${y * 20}%`;
+            });
+        });
+    </script>
+</body>
+</html>
