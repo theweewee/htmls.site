@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapFlow // Flux-Logic Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --emerald-deep: #061811;
+            --emerald-core: #10b981;
+            --emerald-glow: #34d399;
+            --glass-bg: rgba(6, 24, 17, 0.7);
+            --glass-border: rgba(16, 185, 129, 0.2);
+            --flux-gradient: linear-gradient(135deg, #061811 0%, #0a2e21 50%, #061811 100%);
+            --mono-font: 'Space Mono', monospace;
+            --sans-font: 'Outfit', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--emerald-deep);
+            color: #e2e8f0;
+            font-family: var(--sans-font);
+            line-height: 1.5;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Vitreous Background --- */
+        .flux-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--flux-gradient);
+            overflow: hidden;
+        }
+
+        .flux-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: orb-float 20s infinite alternate;
+        }
+
+        @keyframes orb-float {
+            0% { transform: translate(-10%, -10%) scale(1); }
+            100% { transform: translate(30%, 20%) scale(1.2); }
+        }
+
+        /* --- Components --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        header {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-family: var(--mono-font);
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+            color: var(--emerald-glow);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--emerald-glow);
+            box-shadow: 0 0 15px var(--emerald-glow);
+            display: inline-block;
+        }
+
+        nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #94a3b8;
+            font-family: var(--mono-font);
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        nav a:hover {
+            color: var(--emerald-glow);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            font-family: var(--mono-font);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--emerald-core);
+            background: transparent;
+            color: var(--emerald-glow);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--emerald-core);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--emerald-deep);
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn-primary {
+            background: var(--emerald-core);
+            color: var(--emerald-deep);
+        }
+
+        /* --- Hero --- */
+        .hero {
+            padding: 160px 0 100px;
+            text-align: left;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            align-items: center;
+        }
+
+        .badge {
+            font-family: var(--mono-font);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            color: var(--emerald-glow);
+            display: inline-block;
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 900;
+            line-height: 0.95;
+            letter-spacing: -3px;
+            margin-bottom: 32px;
+            background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.4));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            max-width: 540px;
+            margin-bottom: 48px;
+            font-weight: 300;
+        }
+
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .vitreous-node {
+            width: 300px;
+            height: 380px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            transform: perspective(1000px) rotateY(-15deg) rotateX(5deg);
+            box-shadow: 20px 40px 80px rgba(0,0,0,0.5);
+        }
+
+        .vitreous-node::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%);
+        }
+
+        /* --- Feature Section --- */
+        .features {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            margin-bottom: 80px;
+        }
+
+        .section-header h2 {
+            font-size: 3rem;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1px;
+            background: var(--glass-border);
+            border: 1px solid var(--glass-border);
+        }
+
+        .feature-item {
+            background: var(--emerald-deep);
+            padding: 48px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .feature-item:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .feature-item span {
+            font-family: var(--mono-font);
+            color: var(--emerald-glow);
+            font-size: 0.8rem;
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        .feature-item h3 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .feature-item p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        /* --- Pricing Table --- */
+        .pricing {
+            padding: 120px 0;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .price-card {
+            padding: 60px 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.4s ease;
+        }
+
+        .price-card.featured {
+            border: 1px solid var(--emerald-glow);
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.1);
+            transform: translateY(-10px);
+        }
+
+        .price-card h4 {
+            font-family: var(--mono-font);
+            font-size: 0.9rem;
+            color: var(--emerald-glow);
+            margin-bottom: 32px;
+        }
+
+        .price-card .amount {
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+        }
+
+        .price-card .amount span {
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: #64748b;
+        }
+
+        .price-list {
+            list-style: none;
+            margin: 40px 0;
+            flex-grow: 1;
+        }
+
+        .price-list li {
+            padding: 12px 0;
+            font-size: 0.95rem;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+        }
+
+        .price-list li::before {
+            content: '>';
+            margin-right: 12px;
+            color: var(--emerald-glow);
+            font-family: var(--mono-font);
+        }
+
+        /* --- FAQ --- */
+        .faq {
+            padding: 100px 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            margin-bottom: 32px;
+            border-left: 2px solid var(--glass-border);
+            padding-left: 32px;
+        }
+
+        .faq-item h5 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .faq-item p {
+            color: #94a3b8;
+        }
+
+        /* --- CTA --- */
+        .cta-box {
+            background: var(--emerald-core);
+            color: var(--emerald-deep);
+            padding: 100px 60px;
+            text-align: center;
+            margin: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box h2 {
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: -3px;
+            margin-bottom: 24px;
+        }
+
+        .cta-box .btn {
+            border-color: var(--emerald-deep);
+            color: var(--emerald-deep);
+        }
+
+        .cta-box .btn:hover {
+            background: var(--emerald-deep);
+            color: #fff;
+        }
+
+        footer {
+            padding: 60px 0;
+            border-top: 1px solid var(--glass-border);
+            font-family: var(--mono-font);
+            font-size: 0.8rem;
+            color: #475569;
+            text-align: center;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1024px) {
+            .hero { grid-template-columns: 1fr; }
+            .hero-visual { display: none; }
+            .pricing-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 0 24px; }
+            h1 { font-size: 3.5rem; }
+            .nav-links { display: none; }
+            .cta-box h2 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="flux-bg">
+        <div class="flux-orb"></div>
+        <div class="flux-orb" style="bottom: -10%; right: -10%; animation-delay: -5s;"></div>
+    </div>
+
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">ZapFlow</div>
+            <nav class="nav-links">
+                <a href="#features">Logic</a>
+                <a href="#flux">Flux</a>
+                <a href="#pricing">Nodes</a>
+                <a href="#faq">Terminal</a>
+            </nav>
+            <button class="btn btn-primary">Start Node</button>
+        </div>
+    </header>
+
+    <section class="hero container">
+        <div class="hero-content">
+            <div class="badge">SYSTEM_STATUS: BETA_OPEN_v0.9</div>
+            <h1>Automate<br>with Emerald<br>Precision</h1>
+            <p>Crie fluxos visuais de WhatsApp alimentados por IA. Sem código, sem latência, apenas lógica pura em movimento.</p>
+            <div style="display: flex; gap: 20px;">
+                <button class="btn">Init Beta</button>
+                <button class="btn" style="border-color: rgba(255,255,255,0.2); color: #fff;">Documentation</button>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="vitreous-node">
+                <div style="padding: 30px; font-family: var(--mono-font); font-size: 0.7rem; color: var(--emerald-glow);">
+                    > Initializing Flux...<br>
+                    > Node connection established<br>
+                    > WhatsApp API: Ready<br>
+                    > AI Core: Active<br><br>
+                    <div style="width: 100%; height: 2px; background: var(--emerald-core); margin: 20px 0;"></div>
+                    [SYSTEM_LOG]<br>
+                    Qualifying Lead... [OK]<br>
+                    Processing Intent... [OK]<br>
+                    Sending Response... [OK]
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features container">
+        <div class="section-header">
+            <div class="badge">CAPABILITIES</div>
+            <h2>Flux Logic Architecture</h2>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-item">
+                <span>01 // VISUAL_FLOW</span>
+                <h3>Fluxos Visuais</h3>
+                <p>Arraste blocos de mensagem e condições em um canvas infinito de vidro.</p>
+            </div>
+            <div class="feature-item">
+                <span>02 // NEURAL_INTENT</span>
+                <h3>IA de Intenção</h3>
+                <p>Identifique necessidades complexas e responda com precisão cirúrgica 24/7.</p>
+            </div>
+            <div class="feature-item">
+                <span>03 // ANALYTIC_LAYER</span>
+                <h3>Métricas Vitreas</h3>
+                <p>Visualize taxas de conversão e pontos de atrito em tempo real.</p>
+            </div>
+            <div class="feature-item">
+                <span>04 // WEBHOOK_CORE</span>
+                <h3>Integrações Flux</h3>
+                <p>Conecte seu CRM ou Planilhas através de nossa ponte de dados de baixa latência.</p>
+            </div>
+            <div class="feature-item">
+                <span>05 // HUMAN_HANDOFF</span>
+                <h3>Transição Fluida</h3>
+                <p>A IA transfere para humanos apenas quando a lógica exige sensibilidade.</p>
+            </div>
+            <div class="feature-item">
+                <span>06 // LOGIC_TEMPLATES</span>
+                <h3>Templates Lógicos</h3>
+                <p>Inicie instantaneamente com estruturas validadas para vendas e suporte.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing container">
+        <div class="section-header" style="text-align: center;">
+            <div class="badge">ALLOCATION_PLANS</div>
+            <h2>Scale Your Flow</h2>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h4>// BETA_ENTRY</h4>
+                <div class="amount">R$ 29<span>/mês</span></div>
+                <ul class="price-list">
+                    <li>1 Bot Ativo</li>
+                    <li>Fluxos Ilimitados</li>
+                    <li>IA Intencional Básica</li>
+                    <li>Terminal de Métricas</li>
+                </ul>
+                <button class="btn">Select Node</button>
+            </div>
+            <div class="price-card featured">
+                <h4>// PRO_FLUX</h4>
+                <div class="amount">R$ 89<span>/mês</span></div>
+                <ul class="price-list">
+                    <li>Até 5 Bots Ativos</li>
+                    <li>Full Webhook Access</li>
+                    <li>IA Handoff Inteligente</li>
+                    <li>Advanced Reporting Layer</li>
+                </ul>
+                <button class="btn btn-primary">Select Node</button>
+            </div>
+            <div class="price-card">
+                <h4>// MAX_LOGIC</h4>
+                <div class="amount">R$ 179<span>/mês</span></div>
+                <ul class="price-list">
+                    <li>Bots Ilimitados</li>
+                    <li>Multi-Team Logic</li>
+                    <li>Neural Analytics</li>
+                    <li>Priority Roadmap Access</li>
+                </ul>
+                <button class="btn">Select Node</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="faq container">
+        <div class="section-header" style="text-align: center; margin-bottom: 60px;">
+            <div class="badge">COMMON_QUERIES</div>
+            <h2>System Debug</h2>
+        </div>
+
+        <div class="faq-item">
+            <h5>Precisa programar?</h5>
+            <p>A interface é 100% visual. A lógica é construída através de conexões de nós, dispensando código tradicional.</p>
+        </div>
+        <div class="faq-item">
+            <h5>Custo do WhatsApp API?</h5>
+            <p>O ZapFlow é a camada de inteligência. Custos de mensagens dependem diretamente do seu provedor BSP escolhido.</p>
+        </div>
+        <div class="faq-item">
+            <h5>O que é o Beta Vitalício?</h5>
+            <p>Usuários fundadores garantem a tarifa reduzida enquanto a assinatura permanecer ativa, independente de futuros aumentos.</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="cta-box">
+            <h2>READY_TO_FLUX?</h2>
+            <p style="margin-bottom: 40px; font-weight: 700; opacity: 0.8;">Join the closed beta and secure foundational pricing.</p>
+            <button class="btn">Execute Initialization</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            © 2026 ZAPFLOW_SYS // ALL_RIGHTS_RESERVED // BUILT_ON_LOGIC
+        </div>
+    </footer>
+
+    <script>
+        // Subtle Mouse Follow effect for the vitreous node
+        const node = document.querySelector('.vitreous-node');
+        if (node) {
+            document.addEventListener('mousemove', (e) => {
+                const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+                const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+                node.style.transform = `perspective(1000px) rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+            });
+        }
+    </script>
+</body>
+</html>
