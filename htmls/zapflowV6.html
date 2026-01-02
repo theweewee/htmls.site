@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapFlow | Modular Basalt Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --stone-900: #0a0a0b;
+            --stone-800: #161618;
+            --stone-700: #232326;
+            --stone-600: #3a3a3e;
+            --magma-glow: #00ffa3;
+            --magma-dim: #004d31;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --mono-font: 'Space Mono', monospace;
+            --sans-font: 'Outfit', sans-serif;
+            --bevel: inset 1px 1px 0px rgba(255,255,255,0.05), inset -1px -1px 0px rgba(0,0,0,0.5);
+            --shadow-flat: 10px 10px 20px rgba(0,0,0,0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--stone-900);
+            color: var(--text-primary);
+            font-family: var(--sans-font);
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Basalt Grain Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 9999;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3ExternalIcon %3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .assemblage {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1px;
+            background: var(--stone-700); /* The "Seams" */
+            border: 1px solid var(--stone-700);
+        }
+
+        /* Modular Blocks */
+        .block {
+            background: var(--stone-800);
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--bevel);
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), background 0.3s ease;
+        }
+
+        .block:hover {
+            background: #1c1c1f;
+        }
+
+        /* Header Block */
+        .nav-block {
+            grid-column: span 12;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.75rem;
+            font-family: var(--mono-font);
+        }
+
+        .logo-mark {
+            font-weight: 900;
+            color: var(--magma-glow);
+            font-size: 1.5rem;
+            letter-spacing: -0.05em;
+        }
+
+        /* Hero Block */
+        .hero-block {
+            grid-column: span 8;
+            grid-row: span 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 60vh;
+        }
+
+        .hero-badge {
+            font-family: var(--mono-font);
+            color: var(--magma-glow);
+            font-size: 0.7rem;
+            border: 1px solid var(--magma-dim);
+            padding: 4px 12px;
+            width: fit-content;
+            margin-bottom: 2rem;
+            background: rgba(0, 255, 163, 0.05);
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 0.9;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            letter-spacing: -0.04em;
+        }
+
+        h1 span {
+            display: block;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--stone-600);
+        }
+
+        /* Feature Stones */
+        .feature-stone {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stone-label {
+            font-family: var(--mono-font);
+            color: var(--stone-600);
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-stone h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .feature-stone p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Pricing Slabs */
+        .pricing-section {
+            grid-column: span 12;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--stone-700);
+        }
+
+        .slab {
+            background: var(--stone-800);
+            padding: 4rem 3rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slab.featured {
+            background: var(--stone-900);
+            position: relative;
+            z-index: 2;
+        }
+
+        .slab.featured::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--magma-glow);
+        }
+
+        .price-tag {
+            font-family: var(--mono-font);
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 2rem 0;
+        }
+
+        .price-tag span {
+            font-size: 1rem;
+            color: var(--stone-600);
+        }
+
+        /* Buttons */
+        .btn-basalt {
+            background: var(--text-primary);
+            color: var(--stone-900);
+            padding: 1.25rem 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-block;
+            font-family: var(--mono-font);
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            text-align: center;
+            border: none;
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
+        }
+
+        .btn-basalt:hover {
+            background: var(--magma-glow);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--stone-600);
+            clip-path: none;
+        }
+
+        /* Interactive Elements */
+        .how-it-works {
+            grid-column: span 12;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--stone-700);
+        }
+
+        .step-block {
+            background: var(--stone-800);
+            padding: 4rem;
+        }
+
+        .step-num {
+            font-family: var(--mono-font);
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--stone-700);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        /* Floating Magma Decoration */
+        .magma-orb {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, var(--magma-glow) 0%, transparent 70%);
+            filter: blur(40px);
+            opacity: 0.1;
+            pointer-events: none;
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-20%, -20%) scale(1); }
+            100% { transform: translate(20%, 20%) scale(1.5); }
+        }
+
+        /* Responsiveness */
+        @media (max-width: 1024px) {
+            .hero-block { grid-column: span 12; }
+            .feature-stone { grid-column: span 6; }
+            .pricing-section { grid-template-columns: 1fr; }
+            .how-it-works { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .feature-stone { grid-column: span 12; }
+            .nav-block nav { display: none; }
+            .assemblage { padding: 1rem; }
+            h1 { font-size: 3.5rem; }
+        }
+
+        .faq-block {
+            grid-column: span 12;
+            padding: 4rem 3rem;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4rem;
+            margin-top: 3rem;
+        }
+
+        .faq-item h4 {
+            font-family: var(--mono-font);
+            margin-bottom: 1rem;
+            color: var(--magma-glow);
+        }
+
+        .footer-block {
+            grid-column: span 12;
+            text-align: center;
+            padding: 4rem;
+            font-family: var(--mono-font);
+            color: var(--stone-600);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="assemblage">
+        <!-- Navigation -->
+        <header class="block nav-block">
+            <div class="logo-mark">ZAPFLOW_</div>
+            <nav style="display: flex; gap: 2rem;">
+                <a href="#features" style="color: var(--text-secondary); text-decoration: none;">Recursos</a>
+                <a href="#precos" style="color: var(--text-secondary); text-decoration: none;">Preços</a>
+                <a href="#" class="logo-mark" style="font-size: 0.8rem; color: var(--text-primary);">Entrar</a>
+            </nav>
+        </header>
+
+        <!-- Hero -->
+        <section class="block hero-block">
+            <div class="magma-orb"></div>
+            <div class="hero-badge">// BETA_ACCESS_ENABLED</div>
+            <h1>CHATBOTS <span>PARA WHATSAPP</span> COM IA</h1>
+            <p style="max-width: 500px; color: var(--text-secondary); margin-bottom: 3rem; font-size: 1.1rem;">
+                Crie fluxos complexos sem uma única linha de código. Use o poder da inteligência artificial para automatizar vendas e suporte 24/7.
+            </p>
+            <div style="display: flex; gap: 1rem;">
+                <a href="#" class="btn-basalt">Entrar no Beta</a>
+                <a href="#" class="btn-basalt btn-outline">Demo Visual</a>
+            </div>
+        </section>
+
+        <!-- Dynamic Features -->
+        <section class="block feature-stone">
+            <span class="stone-label">01 // AUTOMATION</span>
+            <h3>Fluxos Visuais</h3>
+            <p>Arraste e solte blocos de decisão para criar conversas que parecem humanas e resolvem problemas reais.</p>
+        </section>
+
+        <section class="block feature-stone">
+            <span class="stone-label">02 // INTELLIGENCE</span>
+            <h3>IA de Intenção</h3>
+            <p>Não apenas palavras-chave. Nossa IA entende o que o cliente quer, mesmo com erros de digitação ou gírias.</p>
+        </section>
+
+        <!-- Sub-Features -->
+        <section class="block feature-stone" id="features">
+            <span class="stone-label">03 // ANALYTICS</span>
+            <h3>Métricas Reais</h3>
+            <p>Acompanhe gargalos no seu funil e veja exatamente onde os usuários estão parando no atendimento.</p>
+        </section>
+
+        <section class="block feature-stone">
+            <span class="stone-label">04 // CONNECTIVITY</span>
+            <h3>Handoff Humano</h3>
+            <p>Transfira para um atendente real assim que a IA identificar um caso complexo ou alta prioridade.</p>
+        </section>
+
+        <section class="block feature-stone">
+            <span class="stone-label">05 // ECOSYSTEM</span>
+            <h3>Webhooks & API</h3>
+            <p>Conecte o ZapFlow à sua planilha, CRM ou sistema interno de forma modular e segura.</p>
+        </section>
+
+        <!-- Process Slabs -->
+        <section class="how-it-works">
+            <div class="block step-block">
+                <div class="step-num">01</div>
+                <h4 style="font-family: var(--mono-font); text-transform: uppercase;">Esculpir</h4>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">Ajuste o fluxo e a personalidade da IA no nosso editor visual de alta performance.</p>
+            </div>
+            <div class="block step-block">
+                <div class="step-num">02</div>
+                <h4 style="font-family: var(--mono-font); text-transform: uppercase;">Fundir</h4>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">Conecte sua API do WhatsApp e defina as integrações de dados necessárias.</p>
+            </div>
+            <div class="block step-block">
+                <div class="step-num">03</div>
+                <h4 style="font-family: var(--mono-font); text-transform: uppercase;">Escalar</h4>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">Atenda milhares de pessoas simultaneamente com latência zero.</p>
+            </div>
+        </section>
+
+        <!-- Pricing Slabs -->
+        <section class="pricing-section" id="precos">
+            <div class="slab">
+                <span class="stone-label">BLOCK // BETA</span>
+                <p style="color: var(--text-secondary);">Validar ideias</p>
+                <div class="price-tag">R$ 29<span>/mês</span></div>
+                <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: grid; gap: 0.5rem;">
+                    <li>_ 1 Bot Ativo</li>
+                    <li>_ Fluxos Ilimitados</li>
+                    <li>_ IA Básica</li>
+                </ul>
+                <a href="#" class="btn-basalt btn-outline">Selecionar</a>
+            </div>
+            <div class="slab featured">
+                <span class="stone-label" style="color: var(--magma-glow);">BLOCK // PRO</span>
+                <p style="color: var(--text-secondary);">Escala comercial</p>
+                <div class="price-tag">R$ 89<span>/mês</span></div>
+                <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: grid; gap: 0.5rem;">
+                    <li>_ 5 Bots Ativos</li>
+                    <li>_ Webhooks Full</li>
+                    <li>_ IA com Handoff</li>
+                    <li>_ Suporte Prioritário</li>
+                </ul>
+                <a href="#" class="btn-basalt">Recomendado</a>
+            </div>
+            <div class="slab">
+                <span class="stone-label">BLOCK // MAX</span>
+                <p style="color: var(--text-secondary);">Dominação total</p>
+                <div class="price-tag">R$ 179<span>/mês</span></div>
+                <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: grid; gap: 0.5rem;">
+                    <li>_ Bots Ilimitados</li>
+                    <li>_ Times & Permissões</li>
+                    <li>_ Analytics Avançado</li>
+                </ul>
+                <a href="#" class="btn-basalt btn-outline">Selecionar</a>
+            </div>
+        </section>
+
+        <!-- FAQ Assemblage -->
+        <section class="block faq-block">
+            <h2 style="font-size: 2.5rem; text-transform: uppercase;">FAQ_SESSÃO</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>// PRECISA PROGRAMAR?</h4>
+                    <p style="color: var(--text-secondary);">Absolutamente não. A interface foi desenhada para que qualquer pessoa possa montar um fluxo lógico em minutos.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>// CUSTO DO WHATSAPP?</h4>
+                    <p style="color: var(--text-secondary);">O ZapFlow é a camada de inteligência. Os custos de mensagens da API oficial do WhatsApp são cobrados pelo seu provedor.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="block" style="grid-column: span 12; text-align: center; padding: 6rem 3rem;">
+            <div class="magma-orb" style="left: 50%; transform: translateX(-50%);"></div>
+            <h2 style="font-size: 3rem; margin-bottom: 2rem;">PRONTO PARA MODULAR SEU ATENDIMENTO?</h2>
+            <a href="#" class="btn-basalt" style="padding: 2rem 4rem; font-size: 1.2rem;">Garantir Preço Beta</a>
+        </section>
+
+        <!-- Footer -->
+        <footer class="block footer-block">
+            © 2026 ZAPFLOW // BUILT_ON_BASALT // ALL_RIGHTS_RESERVED
+        </footer>
+    </main>
+
+    <script>
+        // Subtle Parallax effect on "Basalt Blocks"
+        document.addEventListener('mousemove', (e) => {
+            const blocks = document.querySelectorAll('.block');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+
+            blocks.forEach((block, index) => {
+                const shift = (index % 3) + 1;
+                block.style.transform = `translate(${(x - 0.5) * shift * 5}px, ${(y - 0.5) * shift * 5}px)`;
+            });
+        });
+
+        // Entry Reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.block').forEach(b => {
+            b.style.opacity = '0';
+            b.style.transform = 'translateY(20px)';
+            b.style.transition = 'all 0.8s cubic-bezier(0.2, 1, 0.3, 1)';
+            observer.observe(b);
+        });
+    </script>
+</body>
+</html>
