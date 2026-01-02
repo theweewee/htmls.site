@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapFlow | Porous Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,700;0,800;1,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink-black: #0c0c0c;
+            --paper-white: #fcfcf9;
+            --wa-green: #25D366;
+            --dither-opacity: 0.15;
+            --transition: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--paper-white);
+            color: var(--ink-black);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.2;
+        }
+
+        /* --- Ink Noise Textures --- */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .dither-pattern {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(var(--ink-black) 0.5px, transparent 0.5px);
+            background-size: 4px 4px;
+            opacity: var(--dither-opacity);
+            pointer-events: none;
+            mask-image: linear-gradient(to bottom, black, transparent);
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 { font-weight: 800; text-transform: uppercase; letter-spacing: -0.04em; }
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        header {
+            padding: 30px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(252, 252, 249, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(12, 12, 12, 0.05);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-dot {
+            width: 12px;
+            height: 12px;
+            background: var(--wa-green);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 15px var(--wa-green);
+        }
+
+        nav { display: flex; gap: 40px; align-items: center; }
+        nav a { text-decoration: none; color: var(--ink-black); font-size: 0.85rem; font-weight: 700; transition: opacity 0.3s; }
+        nav a:hover { opacity: 0.5; }
+
+        /* --- Hero --- */
+        .hero {
+            padding: 140px 0 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            align-items: end;
+            gap: 60px;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6.5rem);
+            line-height: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .ink-reveal {
+            color: transparent;
+            -webkit-text-stroke: 1.5px var(--ink-black);
+            position: relative;
+        }
+
+        .ink-reveal::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--wa-green);
+            clip-path: polygon(0 0, 0 100%, 0 100%, 0 0);
+            transition: clip-path 1.2s var(--transition);
+        }
+
+        .hero:hover .ink-reveal::after {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+
+        .hero-p {
+            font-size: 1.25rem;
+            max-width: 450px;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        /* --- Buttons --- */
+        .btn-ink {
+            display: inline-flex;
+            align-items: center;
+            padding: 20px 40px;
+            background: var(--ink-black);
+            color: var(--paper-white);
+            text-decoration: none;
+            font-weight: 800;
+            border-radius: 0;
+            position: relative;
+            transition: transform 0.2s var(--transition);
+            overflow: hidden;
+        }
+
+        .btn-ink:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 8px 8px 0 var(--wa-green);
+        }
+
+        .btn-ink span { position: relative; z-index: 2; }
+
+        /* --- Features: The Porous Grid --- */
+        .features {
+            padding: 100px 0;
+            background: #f0f0eb;
+            border-top: 1px solid var(--ink-black);
+            border-bottom: 1px solid var(--ink-black);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            border-left: 1px solid rgba(12, 12, 12, 0.1);
+        }
+
+        .feature-card {
+            padding: 60px 40px;
+            border-right: 1px solid rgba(12, 12, 12, 0.1);
+            border-bottom: 1px solid rgba(12, 12, 12, 0.1);
+            transition: background 0.4s var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            background: var(--paper-white);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: rgba(12, 12, 12, 0.6);
+            line-height: 1.5;
+        }
+
+        /* --- Pricing: Tension Layout --- */
+        .pricing {
+            padding: 120px 0;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 40px 0;
+            border-bottom: 1px solid var(--ink-black);
+            transition: all 0.3s var(--transition);
+        }
+
+        .price-row:hover {
+            padding-left: 20px;
+            background: linear-gradient(90deg, rgba(37, 211, 102, 0.05) 0%, transparent 100%);
+        }
+
+        .price-title { font-size: 2.5rem; flex: 1; }
+        .price-details { flex: 1; font-weight: 500; }
+        .price-value { font-size: 2.5rem; text-align: right; flex: 1; }
+        .price-value span { font-size: 1rem; vertical-align: top; }
+
+        /* --- Animations --- */
+        [data-reveal] {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s var(--transition);
+        }
+
+        [data-reveal].active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            .price-row { flex-direction: column; gap: 20px; }
+            .price-value { text-align: left; }
+            .nav-desktop { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+    
+    <header>
+        <div class="container" style="display: flex; justify-content: space-between; width: 100%;">
+            <div class="logo">
+                <span class="logo-dot"></span>
+                <strong>ZAPFLOW</strong>
+            </div>
+            <nav class="nav-desktop">
+                <a href="#features">RECURSOS</a>
+                <a href="#how">PROCESSO</a>
+                <a href="#pricing">PLANOS</a>
+                <a href="#" class="btn-ink" style="padding: 10px 20px; font-size: 0.7rem;"><span>BETA LOGIN</span></a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="dither-pattern"></div>
+        <div class="container">
+            <div class="hero-grid">
+                <div>
+                    <div class="mono" style="margin-bottom: 20px;">v0.12 Early Access</div>
+                    <h1>
+                        <span class="ink-reveal" data-text="IA SEM">IA SEM</span><br>
+                        CÓDIGO.
+                    </h1>
+                    <p class="hero-p">
+                        Crie fluxos de atendimento visuais que aprendem com a intenção dos seus clientes. Inteligência fluida para WhatsApp Business.
+                    </p>
+                    <div style="display: flex; gap: 20px;">
+                        <a href="#" class="btn-ink"><span>COMEÇAR AGORA</span></a>
+                        <div class="mono" style="align-self: center; width: 120px;">24/7 Automação Ativa</div>
+                    </div>
+                </div>
+                <div style="position: relative; height: 300px; border: 1px solid var(--ink-black);">
+                    <div class="dither-pattern" style="opacity: 0.4;"></div>
+                    <div style="position: absolute; bottom: 20px; right: 20px; font-size: 3rem; font-weight: 800; opacity: 0.1;">FLOW_01</div>
+                    <svg style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" width="120" height="120" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="black" stroke-width="0.5" stroke-dasharray="2 2" />
+                        <path d="M30 50 L70 50 M50 30 L50 70" stroke="black" stroke-width="1" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <div class="mono" style="margin-bottom: 40px;">Recursos / Engine</div>
+            <div class="feature-grid">
+                <div class="feature-card" data-reveal>
+                    <div class="mono">01</div>
+                    <h3>Fluxos Visuais</h3>
+                    <p>Arraste e solte blocos de lógica. Sem necessidade de sintaxe complexa ou conhecimento técnico prévio.</p>
+                </div>
+                <div class="feature-card" data-reveal>
+                    <div class="mono">02</div>
+                    <h3>Intenção Neural</h3>
+                    <p>Nossa IA identifica o que o cliente quer (compra, suporte, dúvida) antes mesmo de processar o texto.</p>
+                </div>
+                <div class="feature-card" data-reveal>
+                    <div class="mono">03</div>
+                    <h3>Handoff Fluido</h3>
+                    <p>Quando a conversa exige sensibilidade humana, o ZapFlow transfere com o histórico completo.</p>
+                </div>
+                <div class="feature-card" data-reveal>
+                    <div class="mono">04</div>
+                    <h3>Webhooks Ink</h3>
+                    <p>Conecte-se a qualquer planilha ou CRM. Seus dados fluem como tinta em papel.</p>
+                </div>
+                <div class="feature-card" data-reveal>
+                    <div class="mono">05</div>
+                    <h3>Métricas Raw</h3>
+                    <p>Analytics focado no que importa: taxa de conversão por etapa do funil e retenção.</p>
+                </div>
+                <div class="feature-card" data-reveal>
+                    <div class="mono">06</div>
+                    <h3>Templates</h3>
+                    <p>Comece com estruturas validadas para imobiliárias, e-commerce e serviços de agendamento.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="mono" style="margin-bottom: 60px;">Investimento / Escalabilidade</div>
+            
+            <div class="price-row" data-reveal>
+                <div class="price-title">BETA</div>
+                <div class="price-details">
+                    • 1 Agente Ativo<br>
+                    • IA Básica de Intenção<br>
+                    • Suporte Comunitário
+                </div>
+                <div class="price-value"><span>R$</span>29<span style="vertical-align: bottom;">/mês</span></div>
+            </div>
+
+            <div class="price-row" data-reveal style="border-width: 4px; background: rgba(37, 211, 102, 0.03);">
+                <div class="price-title">PRO <span class="mono" style="font-size: 0.6rem; background: var(--wa-green); color: white; padding: 2px 6px; vertical-align: middle;">RECOMENDADO</span></div>
+                <div class="price-details">
+                    • 5 Agentes Ativos<br>
+                    • Handoff Inteligente<br>
+                    • Webhooks Ilimitados
+                </div>
+                <div class="price-value"><span>R$</span>89<span style="vertical-align: bottom;">/mês</span></div>
+            </div>
+
+            <div class="price-row" data-reveal>
+                <div class="price-title">MAX</div>
+                <div class="price-details">
+                    • Agentes Ilimitados<br>
+                    • White-label Analytics<br>
+                    • Roadmap Prioritário
+                </div>
+                <div class="price-value"><span>R$</span>179<span style="vertical-align: bottom;">/mês</span></div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="padding: 100px 0 60px; border-top: 1px solid var(--ink-black);">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h2 style="font-size: 4rem; margin-bottom: 20px;">ESTÁ<br>PRONTO?</h2>
+                    <a href="#" class="btn-ink"><span>GARANTIR PREÇO BETA</span></a>
+                </div>
+                <div class="mono" style="text-align: right;">
+                    ZapFlow © 2026<br>
+                    Built for the Porous Web<br>
+                    Brazil / Global
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Intersection Observer for Reveal Animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('[data-reveal]').forEach((el) => {
+            observer.observe(el);
+        });
+
+        // Subtle parallax effect on noise for "tension"
+        window.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 10;
+            const y = (e.clientY / window.innerHeight) * 10;
+            document.querySelector('.noise-overlay').style.transform = `translate(${x}px, ${y}px)`;
+        });
+    </script>
+</body>
+</html>
