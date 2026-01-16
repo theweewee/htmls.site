@@ -809,7 +809,7 @@
             card.onclick = (e) => {
                 if (e.ctrlKey || e.metaKey) {
                     // Ctrl+Click também abre em nova aba
-                    openInNewTab(item.id, type);
+                    openInNewTab(item.id, type, title, poster);
                 } else {
                     selectMedia(item.id, type, title, poster);
                 }
@@ -819,7 +819,7 @@
             card.onauxclick = (e) => {
                 if (e.button === 1) { // Botão do meio
                     e.preventDefault();
-                    openInNewTab(item.id, type);
+                    openInNewTab(item.id, type, title, poster);
                 }
             };
 
@@ -850,17 +850,17 @@
             return card;
         }
 
-        // Abre filme/série em nova aba
-        async function openInNewTab(id, type) {
-            if (type === 'movie') {
-                // Tentar pegar IMDB ID para melhor compatibilidade
-                const imdbId = await getImdbId(id, 'movie');
-                const finalId = imdbId || id;
-                window.open(`https://superflixapi.buzz/filme/${finalId}`, '_blank');
-            } else {
-                // Para séries, abre o primeiro episódio
-                window.open(`https://superflixapi.buzz/serie/${id}/1/1`, '_blank');
-            }
+        // Abre filme/série em nova aba (usando a própria página)
+        function openInNewTab(id, type, title, poster) {
+            // Criar URL com parâmetros para abrir na própria página
+            const params = new URLSearchParams();
+            params.set('play', id);
+            params.set('type', type);
+            if (title) params.set('title', title);
+            if (poster) params.set('poster', poster);
+
+            const url = `${window.location.pathname}?${params.toString()}`;
+            window.open(url, '_blank');
             showToast('Abrindo em nova aba...', 'info');
         }
 
@@ -1115,13 +1115,37 @@
             if (e.key === 'Enter') searchMedia();
         }
 
+        // Checa parâmetros da URL para deep links
+        function handleUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const playId = params.get('play');
+            const type = params.get('type');
+            const title = params.get('title') || 'Carregando...';
+            const poster = params.get('poster') || null;
+
+            if (playId && type) {
+                // Limpar URL sem recarregar
+                history.replaceState({}, '', window.location.pathname);
+
+                // Selecionar a mídia
+                selectMedia(parseInt(playId), type, decodeURIComponent(title), poster ? decodeURIComponent(poster) : null);
+                return true;
+            }
+            return false;
+        }
+
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
             // Inicializar dropdown de anos
             initYearFilter();
 
-            // Load trending on start
-            loadTrending('day');
+            // Verificar parâmetros da URL primeiro
+            const hasDeepLink = handleUrlParams();
+
+            // Se não tem deep link, carregar trending
+            if (!hasDeepLink) {
+                loadTrending('day');
+            }
 
             // Infinite scroll
             window.addEventListener('scroll', () => {
