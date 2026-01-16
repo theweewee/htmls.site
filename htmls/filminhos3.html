@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperFlix Search & Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: 0.5rem;
+        }
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .season-btn.active {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+        .episode-card.active {
+            border-color: #dc2626;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+        .episode-card:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-red-500 mb-2">SuperFlix<span class="text-white">Integration</span></h1>
+            <p class="text-gray-400 text-sm">Pesquise no TMDB e assista via SuperFlix API</p>
+        </header>
+
+        <div class="bg-gray-800 p-4 rounded-lg mb-6 border border-gray-700">
+            <label class="block text-xs text-gray-400 mb-1">Sua API Key do TMDB (v3 auth):bbd242a4dedabc93d26b08b7af509d57</label>
+            <input type="text" id="tmdbKey" placeholder="Cole sua chave aqui ex: a1b2c3d4..." class="w-full bg-gray-900 text-gray-200 text-sm p-2 rounded border border-gray-600 focus:outline-none focus:border-red-500">
+            <p class="text-xs text-gray-500 mt-1">Obtenha grátis em <a href="https://www.themoviedb.org/settings/api" target="_blank" class="text-blue-400 hover:underline">themoviedb.org</a></p>
+        </div>
+
+        <div class="flex gap-2 mb-8">
+            <input type="text" id="searchInput" placeholder="Nome do filme ou série..." class="flex-1 bg-gray-800 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onkeypress="handleEnter(event)">
+            <button onclick="searchMedia()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors">
+                Buscar
+            </button>
+        </div>
+
+        <div id="playerSection" class="hidden mb-10">
+            <div class="text-center mb-4">
+                <h2 id="playerTitle" class="text-2xl font-bold"></h2>
+                <p id="playerSubtitle" class="text-gray-400 text-sm mt-1"></p>
+            </div>
+
+            <div class="player-wrapper shadow-2xl shadow-red-900/20 mb-6">
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+
+            <div id="seriesControls" class="hidden bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                <div class="flex">
+                    <div class="w-32 bg-gray-850 border-r border-gray-700 p-3">
+                        <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Temporadas</h3>
+                        <div id="seasonsList" class="flex flex-col gap-2">
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 p-4">
+                        <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Episódios</h3>
+                        <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="navBar" class="flex items-center justify-between bg-gray-900 px-4 py-3 border-t border-gray-700">
+                    <button onclick="prevEpisode()" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                        <span>◀</span> Anterior
+                    </button>
+                    <span id="currentEpInfo" class="text-sm font-semibold text-red-400">Ep 1</span>
+                    <button onclick="nextEpisode()" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                        Próximo <span>▶</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        </div>
+    </div>
+
+    <script>
+        let currentMediaId = null;
+        let currentMediaType = null;
+        let currentSeason = 1;
+        let currentEpisode = 1;
+        let episodesData = [];
+        let totalSeasons = 1;
+
+        async function searchMedia() {
+            const query = document.getElementById('searchInput').value;
+            const apiKey = document.getElementById('tmdbKey').value;
+            const grid = document.getElementById('resultsGrid');
+
+            if (!apiKey) {
+                alert('Por favor, insira uma API Key do TMDB válida.');
+                return;
+            }
+            if (!query) return;
+
+            // Esconder player e limpar iframe ao buscar
+            document.getElementById('playerSection').classList.add('hidden');
+            document.getElementById('videoFrame').src = '';
+
+            grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Pesquisando...</p>';
+
+            try {
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&language=pt-BR&query=${encodeURIComponent(query)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                grid.innerHTML = '';
+
+                if (!data.results || data.results.length === 0) {
+                    grid.innerHTML = '<p class="text-center col-span-4">Nenhum resultado encontrado.</p>';
+                    return;
+                }
+
+                data.results.forEach(item => {
+                    if (item.media_type !== 'movie' && item.media_type !== 'tv') return;
+
+                    const title = item.title || item.name;
+                    const date = item.release_date || item.first_air_date || '???';
+                    const poster = item.poster_path 
+                        ? `https://image.tmdb.org/t/p/w300${item.poster_path}` 
+                        : 'https://via.placeholder.com/300x450?text=Sem+Imagem';
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
+                    card.onclick = () => selectMedia(item.id, item.media_type, title);
+                    
+                    card.innerHTML = `
+                        <div class="relative">
+                            <img src="${poster}" class="w-full h-auto object-cover aspect-[2/3]">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all">
+                                <span class="text-transparent group-hover:text-white font-bold text-lg">Assistir ▶</span>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold text-sm truncate" title="${title}">${title}</h3>
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>${date.split('-')[0]}</span>
+                                <span class="uppercase border border-gray-600 px-1 rounded">${item.media_type === 'tv' ? 'Série' : 'Filme'}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro na API (Verifique sua Key).</p>';
+            }
+        }
+
+        async function selectMedia(tmdbId, type, title) {
+            currentMediaId = tmdbId;
+            currentMediaType = type;
+            currentSeason = 1;
+            currentEpisode = 1;
+
+            // Esconder resultados ao selecionar mídia
+            document.getElementById('resultsGrid').innerHTML = '';
+
+            document.getElementById('playerSection').classList.remove('hidden');
+            document.getElementById('playerTitle').innerText = title;
+            
+            const iframe = document.getElementById('videoFrame');
+            const seriesControls = document.getElementById('seriesControls');
+
+            document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth' });
+
+            if (type === 'movie') {
+                seriesControls.classList.add('hidden');
+                document.getElementById('playerSubtitle').innerText = '🎬 Filme';
+                
+                const imdbId = await getImdbId(tmdbId, 'movie');
+                const finalId = imdbId || tmdbId;
+                iframe.src = `https://superflixapi.buzz/filme/${finalId}`;
+            
+            } else if (type === 'tv') {
+                seriesControls.classList.remove('hidden');
+                await loadSeriesInfo(tmdbId);
+            }
+        }
+
+        async function loadSeriesInfo(tmdbId) {
+            const apiKey = document.getElementById('tmdbKey').value;
+            try {
+                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pt-BR`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                totalSeasons = data.number_of_seasons;
+                document.getElementById('playerSubtitle').innerText = `📺 Série • ${data.number_of_seasons} temp • ${data.number_of_episodes} eps`;
+
+                const seasonsList = document.getElementById('seasonsList');
+                seasonsList.innerHTML = '';
+                
+                for (let i = 1; i <= data.number_of_seasons; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = `season-btn text-sm py-2 px-3 rounded border border-gray-600 hover:border-red-500 transition ${i === 1 ? 'active' : ''}`;
+                    btn.innerText = `T${i}`;
+                    btn.onclick = () => selectSeason(i);
+                    seasonsList.appendChild(btn);
+                }
+
+                await loadSeasonEpisodes(1);
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function selectSeason(seasonNum) {
+            currentSeason = seasonNum;
+            currentEpisode = 1;
+
+            document.querySelectorAll('.season-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === seasonNum);
+            });
+
+            await loadSeasonEpisodes(seasonNum);
+        }
+
+        async function loadSeasonEpisodes(seasonNum) {
+            const apiKey = document.getElementById('tmdbKey').value;
+            const grid = document.getElementById('episodesGrid');
+            
+            grid.innerHTML = '<p class="col-span-full text-gray-500 text-sm">Carregando...</p>';
+
+            try {
+                const url = `https://api.themoviedb.org/3/tv/${currentMediaId}/season/${seasonNum}?api_key=${apiKey}&language=pt-BR`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                episodesData = data.episodes || [];
+                grid.innerHTML = '';
+
+                episodesData.forEach((ep, idx) => {
+                    const thumb = ep.still_path 
+                        ? `https://image.tmdb.org/t/p/w185${ep.still_path}`
+                        : 'https://via.placeholder.com/185x104?text=Sem+Img';
+
+                    const card = document.createElement('div');
+                    card.className = `episode-card bg-gray-700 rounded overflow-hidden cursor-pointer transition-all ${idx + 1 === currentEpisode ? 'active' : ''}`;
+                    card.onclick = () => playEpisode(idx + 1);
+                    
+                    card.innerHTML = `
+                        <div class="relative">
+                            <img src="${thumb}" class="w-full aspect-video object-cover">
+                            ${idx + 1 === currentEpisode ? '<div class="absolute inset-0 bg-red-600 bg-opacity-30 flex items-center justify-center"><span class="text-white text-lg">▶</span></div>' : ''}
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-bold">${ep.episode_number}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                playEpisode(currentEpisode);
+
+            } catch (e) {
+                grid.innerHTML = '<p class="col-span-full text-red-500 text-sm">Erro ao carregar episódios</p>';
+            }
+        }
+
+        function playEpisode(epNum) {
+            currentEpisode = epNum;
+            const iframe = document.getElementById('videoFrame');
+            iframe.src = `https://superflixapi.buzz/serie/${currentMediaId}/${currentSeason}/${epNum}`;
+
+            document.querySelectorAll('.episode-card').forEach((card, idx) => {
+                card.classList.toggle('active', idx + 1 === epNum);
+                const overlay = card.querySelector('.absolute');
+                if (idx + 1 === epNum && !overlay) {
+                    card.querySelector('.relative').innerHTML += '<div class="absolute inset-0 bg-red-600 bg-opacity-30 flex items-center justify-center"><span class="text-white text-lg">▶</span></div>';
+                } else if (idx + 1 !== epNum && overlay) {
+                    overlay.remove();
+                }
+            });
+
+            const epData = episodesData[epNum - 1];
+            const epName = epData?.name || '';
+            document.getElementById('currentEpInfo').innerText = `S${String(currentSeason).padStart(2,'0')}E${String(epNum).padStart(2,'0')}${epName ? ' - ' + epName : ''}`;
+        }
+
+        function prevEpisode() {
+            if (currentEpisode > 1) {
+                playEpisode(currentEpisode - 1);
+            } else if (currentSeason > 1) {
+                selectSeason(currentSeason - 1);
+                setTimeout(() => playEpisode(episodesData.length), 500);
+            }
+        }
+
+        function nextEpisode() {
+            if (currentEpisode < episodesData.length) {
+                playEpisode(currentEpisode + 1);
+            } else if (currentSeason < totalSeasons) {
+                selectSeason(currentSeason + 1);
+            }
+        }
+
+        async function getImdbId(id, type) {
+            const apiKey = document.getElementById('tmdbKey').value;
+            try {
+                const url = `https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${apiKey}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                return data.imdb_id;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') searchMedia();
+        }
+
+        console.log("Página carregada");
+    </script>
+</body>
+</html>
