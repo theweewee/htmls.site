@@ -163,10 +163,18 @@
             </button>
         </div>
 
-        <!-- Tabs: Histórico e Favoritos -->
-        <div class="flex gap-2 mb-4">
-            <button onclick="showTab('search')" id="tabSearch"
+        <!-- Tabs: Trending, Histórico e Favoritos -->
+        <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="showTab('trending_day')" id="tabTrending_day"
                 class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition active">
+                🔥 Hoje
+            </button>
+            <button onclick="showTab('trending_week')" id="tabTrending_week"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📈 Semana
+            </button>
+            <button onclick="showTab('search')" id="tabSearch"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
                 🔍 Busca
             </button>
             <button onclick="showTab('history')" id="tabHistory"
@@ -240,8 +248,9 @@
         let currentEpisode = 1;
         let episodesData = [];
         let totalSeasons = 1;
-        let currentTab = 'search';
+        let currentTab = 'trending_day';
         const TMDB_API_KEY = 'bbd242a4dedabc93d26b08b7af509d57';
+        let trendingCache = { day: null, week: null };
 
         // Toast notification
         function showToast(message, type = 'info') {
@@ -367,16 +376,62 @@
         function showTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+
+            // Handle dynamic tab IDs
+            const tabId = `tab${tab.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('_')}`;
+            const tabBtn = document.getElementById(tabId);
+            if (tabBtn) tabBtn.classList.add('active');
 
             const grid = document.getElementById('resultsGrid');
 
-            if (tab === 'history') {
+            if (tab === 'trending_day') {
+                loadTrending('day');
+            } else if (tab === 'trending_week') {
+                loadTrending('week');
+            } else if (tab === 'history') {
                 renderHistory();
             } else if (tab === 'favorites') {
                 renderFavorites();
             } else {
                 grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Faça uma busca acima</p>';
+            }
+        }
+
+        async function loadTrending(period = 'day') {
+            const grid = document.getElementById('resultsGrid');
+
+            // Use cache if available
+            if (trendingCache[period]) {
+                grid.innerHTML = '';
+                trendingCache[period].forEach(item => {
+                    grid.appendChild(createMediaCard(item));
+                });
+                return;
+            }
+
+            grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+
+            try {
+                const url = `https://api.themoviedb.org/3/trending/all/${period}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.results || data.results.length === 0) {
+                    grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum conteúdo em alta.</p>';
+                    return;
+                }
+
+                // Cache results
+                trendingCache[period] = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+
+                grid.innerHTML = '';
+                trendingCache[period].forEach(item => {
+                    grid.appendChild(createMediaCard(item));
+                });
+
+            } catch (error) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro ao carregar trending.</p>';
+                showToast('Erro ao carregar conteúdo em alta', 'error');
             }
         }
 
@@ -686,8 +741,8 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Initial state
-            document.getElementById('resultsGrid').innerHTML = '<p class="text-center col-span-4 text-gray-500">Faça uma busca acima</p>';
+            // Load trending on start
+            loadTrending('day');
         });
 
         console.log("Página carregada");
