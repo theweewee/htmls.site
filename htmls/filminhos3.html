@@ -816,10 +816,12 @@
             };
 
             // Clique do meio (scroll) - abre em nova aba
-            card.onauxclick = (e) => {
+            card.onmousedown = (e) => {
                 if (e.button === 1) { // Botão do meio
                     e.preventDefault();
+                    e.stopPropagation();
                     openInNewTab(item.id, type, title, poster);
+                    return false;
                 }
             };
 
