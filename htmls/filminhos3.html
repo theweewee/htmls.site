@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +15,7 @@
             background: #000;
             border-radius: 0.5rem;
         }
+
         .player-wrapper iframe {
             position: absolute;
             top: 0;
@@ -22,19 +24,124 @@
             height: 100%;
             border: 0;
         }
+
         .season-btn.active {
             background: #dc2626;
             border-color: #dc2626;
         }
+
         .episode-card.active {
             border-color: #dc2626;
             box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
         }
+
         .episode-card:hover {
             transform: scale(1.05);
         }
+
+        /* Spinner Animation */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        .toast.info {
+            background: #2563eb;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Favorite Button */
+        .fav-btn {
+            transition: all 0.2s ease;
+        }
+
+        .fav-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .fav-btn.active {
+            color: #f59e0b;
+        }
+
+        /* History/Favorites Tabs */
+        .tab-btn.active {
+            background: #dc2626;
+            color: white;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 640px) {
+            .series-layout {
+                flex-direction: column;
+            }
+
+            .seasons-sidebar {
+                width: 100% !important;
+                border-right: none !important;
+                border-bottom: 1px solid #374151;
+                flex-direction: row !important;
+                overflow-x: auto;
+                padding: 8px !important;
+            }
+
+            .seasons-sidebar>div {
+                flex-direction: row !important;
+                gap: 8px !important;
+            }
+        }
     </style>
 </head>
+
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="mb-8 text-center">
@@ -42,23 +149,46 @@
             <p class="text-gray-400 text-sm">Pesquise no TMDB e assista via SuperFlix API</p>
         </header>
 
-        <div class="bg-gray-800 p-4 rounded-lg mb-6 border border-gray-700">
-            <label class="block text-xs text-gray-400 mb-1">Sua API Key do TMDB (v3 auth):bbd242a4dedabc93d26b08b7af509d57</label>
-            <input type="text" id="tmdbKey" placeholder="Cole sua chave aqui ex: a1b2c3d4..." class="w-full bg-gray-900 text-gray-200 text-sm p-2 rounded border border-gray-600 focus:outline-none focus:border-red-500">
-            <p class="text-xs text-gray-500 mt-1">Obtenha grátis em <a href="https://www.themoviedb.org/settings/api" target="_blank" class="text-blue-400 hover:underline">themoviedb.org</a></p>
-        </div>
 
-        <div class="flex gap-2 mb-8">
-            <input type="text" id="searchInput" placeholder="Nome do filme ou série..." class="flex-1 bg-gray-800 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onkeypress="handleEnter(event)">
-            <button onclick="searchMedia()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors">
-                Buscar
+
+        <div class="flex gap-2 mb-6">
+            <input type="text" id="searchInput" placeholder="Nome do filme ou série..."
+                class="flex-1 bg-gray-800 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                onkeypress="handleEnter(event)">
+            <button onclick="searchMedia()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2">
+                <span id="searchBtnText">Buscar</span>
+                <div id="searchSpinner" class="spinner hidden" style="width: 20px; height: 20px; border-width: 2px;">
+                </div>
             </button>
         </div>
 
+        <!-- Tabs: Histórico e Favoritos -->
+        <div class="flex gap-2 mb-4">
+            <button onclick="showTab('search')" id="tabSearch"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition active">
+                🔍 Busca
+            </button>
+            <button onclick="showTab('history')" id="tabHistory"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📜 Histórico
+            </button>
+            <button onclick="showTab('favorites')" id="tabFavorites"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                ⭐ Favoritos
+            </button>
+        </div>
+
+        <!-- Player Section -->
         <div id="playerSection" class="hidden mb-10">
-            <div class="text-center mb-4">
-                <h2 id="playerTitle" class="text-2xl font-bold"></h2>
-                <p id="playerSubtitle" class="text-gray-400 text-sm mt-1"></p>
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 id="playerTitle" class="text-2xl font-bold"></h2>
+                    <p id="playerSubtitle" class="text-gray-400 text-sm mt-1"></p>
+                </div>
+                <button onclick="toggleFavorite()" id="favButton" class="fav-btn text-3xl text-gray-500">
+                    ☆
+                </button>
             </div>
 
             <div class="player-wrapper shadow-2xl shadow-red-900/20 mb-6">
@@ -66,32 +196,37 @@
             </div>
 
             <div id="seriesControls" class="hidden bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-                <div class="flex">
-                    <div class="w-32 bg-gray-850 border-r border-gray-700 p-3">
+                <div class="flex series-layout">
+                    <div class="w-32 seasons-sidebar bg-gray-850 border-r border-gray-700 p-3 flex flex-col">
                         <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Temporadas</h3>
                         <div id="seasonsList" class="flex flex-col gap-2">
                         </div>
                     </div>
-                    
+
                     <div class="flex-1 p-4">
                         <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Episódios</h3>
-                        <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        <div id="episodesGrid"
+                            class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                         </div>
                     </div>
                 </div>
-                
-                <div id="navBar" class="flex items-center justify-between bg-gray-900 px-4 py-3 border-t border-gray-700">
-                    <button onclick="prevEpisode()" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+
+                <div id="navBar"
+                    class="flex items-center justify-between bg-gray-900 px-4 py-3 border-t border-gray-700">
+                    <button onclick="prevEpisode()"
+                        class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
                         <span>◀</span> Anterior
                     </button>
                     <span id="currentEpInfo" class="text-sm font-semibold text-red-400">Ep 1</span>
-                    <button onclick="nextEpisode()" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                    <button onclick="nextEpisode()"
+                        class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
                         Próximo <span>▶</span>
                     </button>
                 </div>
             </div>
         </div>
 
+        <!-- Results/History/Favorites Grid -->
         <div id="resultsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
         </div>
     </div>
@@ -99,89 +234,293 @@
     <script>
         let currentMediaId = null;
         let currentMediaType = null;
+        let currentMediaTitle = null;
+        let currentMediaPoster = null;
         let currentSeason = 1;
         let currentEpisode = 1;
         let episodesData = [];
         let totalSeasons = 1;
+        let currentTab = 'search';
+        const TMDB_API_KEY = 'bbd242a4dedabc93d26b08b7af509d57';
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // LocalStorage helpers
+        function getStorage(key) {
+            try {
+                return JSON.parse(localStorage.getItem(key)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function setStorage(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // Save API Key
+        function saveApiKey(key) {
+            localStorage.setItem('tmdb_api_key', key);
+        }
+
+        function loadApiKey() {
+            return localStorage.getItem('tmdb_api_key') || '';
+        }
+
+        // History functions
+        function addToHistory(item) {
+            let history = getStorage('watch_history');
+            // Remove duplicate if exists
+            history = history.filter(h => !(h.id === item.id && h.type === item.type));
+            // Add to beginning
+            history.unshift({
+                ...item,
+                watchedAt: new Date().toISOString()
+            });
+            // Keep only last 50
+            history = history.slice(0, 50);
+            setStorage('watch_history', history);
+        }
+
+        // Favorites functions
+        function getFavorites() {
+            return getStorage('favorites');
+        }
+
+        function isFavorite(id, type) {
+            const favorites = getFavorites();
+            return favorites.some(f => f.id === id && f.type === type);
+        }
+
+        function toggleFavorite() {
+            if (!currentMediaId) return;
+
+            let favorites = getFavorites();
+            const exists = favorites.findIndex(f => f.id === currentMediaId && f.type === currentMediaType);
+
+            if (exists >= 0) {
+                favorites.splice(exists, 1);
+                showToast('Removido dos favoritos', 'info');
+                document.getElementById('favButton').classList.remove('active');
+                document.getElementById('favButton').textContent = '☆';
+            } else {
+                favorites.push({
+                    id: currentMediaId,
+                    type: currentMediaType,
+                    title: currentMediaTitle,
+                    poster: currentMediaPoster,
+                    addedAt: new Date().toISOString()
+                });
+                showToast('Adicionado aos favoritos!', 'success');
+                document.getElementById('favButton').classList.add('active');
+                document.getElementById('favButton').textContent = '★';
+            }
+
+            setStorage('favorites', favorites);
+        }
+
+        function updateFavoriteButton() {
+            const btn = document.getElementById('favButton');
+            if (isFavorite(currentMediaId, currentMediaType)) {
+                btn.classList.add('active');
+                btn.textContent = '★';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '☆';
+            }
+        }
+
+        // Continue watching - save progress
+        function saveProgress() {
+            if (!currentMediaId || currentMediaType !== 'tv') return;
+
+            let progress = getStorage('watch_progress');
+            const key = `${currentMediaType}-${currentMediaId}`;
+            progress[key] = {
+                season: currentSeason,
+                episode: currentEpisode,
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('watch_progress', JSON.stringify(progress));
+        }
+
+        function getProgress(id, type) {
+            try {
+                const progress = JSON.parse(localStorage.getItem('watch_progress')) || {};
+                return progress[`${type}-${id}`] || null;
+            } catch {
+                return null;
+            }
+        }
+
+        // Tab functions
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+
+            const grid = document.getElementById('resultsGrid');
+
+            if (tab === 'history') {
+                renderHistory();
+            } else if (tab === 'favorites') {
+                renderFavorites();
+            } else {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Faça uma busca acima</p>';
+            }
+        }
+
+        function renderHistory() {
+            const grid = document.getElementById('resultsGrid');
+            const history = getStorage('watch_history');
+
+            if (history.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Nenhum item no histórico</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            history.forEach(item => {
+                grid.appendChild(createMediaCard(item, true));
+            });
+        }
+
+        function renderFavorites() {
+            const grid = document.getElementById('resultsGrid');
+            const favorites = getFavorites();
+
+            if (favorites.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Nenhum favorito ainda</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            favorites.forEach(item => {
+                grid.appendChild(createMediaCard(item, true));
+            });
+        }
+
+        function createMediaCard(item, fromStorage = false) {
+            const title = item.title || item.name;
+            const date = item.release_date || item.first_air_date || item.watchedAt?.split('T')[0] || '';
+            const poster = fromStorage ? item.poster : (item.poster_path
+                ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
+                : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450"><rect fill="%23374151" width="300" height="450"/><text x="150" y="225" fill="%239ca3af" text-anchor="middle" font-size="20">Sem Imagem</text></svg>');
+            const type = item.media_type || item.type;
+
+            const card = document.createElement('div');
+            card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
+            card.onclick = () => selectMedia(item.id, type, title, poster);
+
+            const progress = getProgress(item.id, type);
+            const progressBadge = progress ? `<span class="absolute top-2 left-2 bg-red-600 text-xs px-2 py-1 rounded">S${progress.season}E${progress.episode}</span>` : '';
+
+            card.innerHTML = `
+                <div class="relative">
+                    <img src="${poster}" class="w-full h-auto object-cover aspect-[2/3]" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23374151%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2220%22>Sem Imagem</text></svg>'">
+                    ${progressBadge}
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all">
+                        <span class="text-transparent group-hover:text-white font-bold text-lg">Assistir ▶</span>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <h3 class="font-bold text-sm truncate" title="${title}">${title}</h3>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>${date.split('-')[0] || ''}</span>
+                        <span class="uppercase border border-gray-600 px-1 rounded">${type === 'tv' ? 'Série' : 'Filme'}</span>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
 
         async function searchMedia() {
             const query = document.getElementById('searchInput').value;
-            const apiKey = document.getElementById('tmdbKey').value;
             const grid = document.getElementById('resultsGrid');
+            const spinner = document.getElementById('searchSpinner');
+            const btnText = document.getElementById('searchBtnText');
 
-            if (!apiKey) {
-                alert('Por favor, insira uma API Key do TMDB válida.');
+            if (!query) {
+                showToast('Digite o nome do filme ou série.', 'error');
                 return;
             }
-            if (!query) return;
 
-            // Esconder player e limpar iframe ao buscar
+            // Show loading
+            spinner.classList.remove('hidden');
+            btnText.textContent = '';
+
+            // Hide player
             document.getElementById('playerSection').classList.add('hidden');
             document.getElementById('videoFrame').src = '';
 
-            grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Pesquisando...</p>';
+            grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+
+            // Switch to search tab
+            showTab('search');
+            document.getElementById('tabSearch').classList.add('active');
 
             try {
-                const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&language=pt-BR&query=${encodeURIComponent(query)}`;
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`;
                 const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error(`Erro ${res.status}: ${res.statusText}`);
+                }
+
                 const data = await res.json();
 
                 grid.innerHTML = '';
 
                 if (!data.results || data.results.length === 0) {
-                    grid.innerHTML = '<p class="text-center col-span-4">Nenhum resultado encontrado.</p>';
+                    grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum resultado encontrado.</p>';
+                    showToast('Nenhum resultado encontrado', 'info');
                     return;
                 }
 
                 data.results.forEach(item => {
                     if (item.media_type !== 'movie' && item.media_type !== 'tv') return;
-
-                    const title = item.title || item.name;
-                    const date = item.release_date || item.first_air_date || '???';
-                    const poster = item.poster_path 
-                        ? `https://image.tmdb.org/t/p/w300${item.poster_path}` 
-                        : 'https://via.placeholder.com/300x450?text=Sem+Imagem';
-
-                    const card = document.createElement('div');
-                    card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
-                    card.onclick = () => selectMedia(item.id, item.media_type, title);
-                    
-                    card.innerHTML = `
-                        <div class="relative">
-                            <img src="${poster}" class="w-full h-auto object-cover aspect-[2/3]">
-                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all">
-                                <span class="text-transparent group-hover:text-white font-bold text-lg">Assistir ▶</span>
-                            </div>
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-bold text-sm truncate" title="${title}">${title}</h3>
-                            <div class="flex justify-between text-xs text-gray-400 mt-1">
-                                <span>${date.split('-')[0]}</span>
-                                <span class="uppercase border border-gray-600 px-1 rounded">${item.media_type === 'tv' ? 'Série' : 'Filme'}</span>
-                            </div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
+                    grid.appendChild(createMediaCard(item));
                 });
 
+                showToast(`${data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv').length} resultados encontrados`, 'success');
+
             } catch (error) {
-                console.error(error);
-                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro na API (Verifique sua Key).</p>';
+                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro na API. Verifique sua Key e tente novamente.</p>';
+                showToast('Erro ao buscar. Verifique sua API Key.', 'error');
+            } finally {
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Buscar';
             }
         }
 
-        async function selectMedia(tmdbId, type, title) {
+        async function selectMedia(tmdbId, type, title, poster) {
             currentMediaId = tmdbId;
             currentMediaType = type;
+            currentMediaTitle = title;
+            currentMediaPoster = poster;
             currentSeason = 1;
             currentEpisode = 1;
 
-            // Esconder resultados ao selecionar mídia
+            // Add to history
+            addToHistory({ id: tmdbId, type, title, poster });
+
             document.getElementById('resultsGrid').innerHTML = '';
 
             document.getElementById('playerSection').classList.remove('hidden');
             document.getElementById('playerTitle').innerText = title;
-            
+
+            updateFavoriteButton();
+
             const iframe = document.getElementById('videoFrame');
             const seriesControls = document.getElementById('seriesControls');
 
@@ -190,21 +529,30 @@
             if (type === 'movie') {
                 seriesControls.classList.add('hidden');
                 document.getElementById('playerSubtitle').innerText = '🎬 Filme';
-                
+
                 const imdbId = await getImdbId(tmdbId, 'movie');
                 const finalId = imdbId || tmdbId;
                 iframe.src = `https://superflixapi.buzz/filme/${finalId}`;
-            
+                showToast('Carregando filme...', 'info');
+
             } else if (type === 'tv') {
                 seriesControls.classList.remove('hidden');
+
+                // Check for saved progress
+                const progress = getProgress(tmdbId, type);
+                if (progress) {
+                    currentSeason = progress.season;
+                    currentEpisode = progress.episode;
+                    showToast(`Continuando de S${progress.season}E${progress.episode}`, 'info');
+                }
+
                 await loadSeriesInfo(tmdbId);
             }
         }
 
         async function loadSeriesInfo(tmdbId) {
-            const apiKey = document.getElementById('tmdbKey').value;
             try {
-                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pt-BR`;
+                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&language=pt-BR`;
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -213,19 +561,19 @@
 
                 const seasonsList = document.getElementById('seasonsList');
                 seasonsList.innerHTML = '';
-                
+
                 for (let i = 1; i <= data.number_of_seasons; i++) {
                     const btn = document.createElement('button');
-                    btn.className = `season-btn text-sm py-2 px-3 rounded border border-gray-600 hover:border-red-500 transition ${i === 1 ? 'active' : ''}`;
+                    btn.className = `season-btn text-sm py-2 px-3 rounded border border-gray-600 hover:border-red-500 transition ${i === currentSeason ? 'active' : ''}`;
                     btn.innerText = `T${i}`;
                     btn.onclick = () => selectSeason(i);
                     seasonsList.appendChild(btn);
                 }
 
-                await loadSeasonEpisodes(1);
+                await loadSeasonEpisodes(currentSeason);
 
             } catch (e) {
-                console.error(e);
+                showToast('Erro ao carregar informações da série', 'error');
             }
         }
 
@@ -241,13 +589,12 @@
         }
 
         async function loadSeasonEpisodes(seasonNum) {
-            const apiKey = document.getElementById('tmdbKey').value;
             const grid = document.getElementById('episodesGrid');
-            
-            grid.innerHTML = '<p class="col-span-full text-gray-500 text-sm">Carregando...</p>';
+
+            grid.innerHTML = '<div class="col-span-full flex justify-center py-4"><div class="spinner"></div></div>';
 
             try {
-                const url = `https://api.themoviedb.org/3/tv/${currentMediaId}/season/${seasonNum}?api_key=${apiKey}&language=pt-BR`;
+                const url = `https://api.themoviedb.org/3/tv/${currentMediaId}/season/${seasonNum}?api_key=${TMDB_API_KEY}&language=pt-BR`;
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -255,17 +602,17 @@
                 grid.innerHTML = '';
 
                 episodesData.forEach((ep, idx) => {
-                    const thumb = ep.still_path 
+                    const thumb = ep.still_path
                         ? `https://image.tmdb.org/t/p/w185${ep.still_path}`
-                        : 'https://via.placeholder.com/185x104?text=Sem+Img';
+                        : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 104"><rect fill="%23374151" width="185" height="104"/><text x="92" y="52" fill="%239ca3af" text-anchor="middle" font-size="12">Sem Img</text></svg>';
 
                     const card = document.createElement('div');
                     card.className = `episode-card bg-gray-700 rounded overflow-hidden cursor-pointer transition-all ${idx + 1 === currentEpisode ? 'active' : ''}`;
                     card.onclick = () => playEpisode(idx + 1);
-                    
+
                     card.innerHTML = `
                         <div class="relative">
-                            <img src="${thumb}" class="w-full aspect-video object-cover">
+                            <img src="${thumb}" class="w-full aspect-video object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 185 104%22><rect fill=%22%23374151%22 width=%22185%22 height=%22104%22/><text x=%2292%22 y=%2252%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2212%22>Sem Img</text></svg>'">
                             ${idx + 1 === currentEpisode ? '<div class="absolute inset-0 bg-red-600 bg-opacity-30 flex items-center justify-center"><span class="text-white text-lg">▶</span></div>' : ''}
                         </div>
                         <div class="p-2 text-center">
@@ -287,6 +634,9 @@
             const iframe = document.getElementById('videoFrame');
             iframe.src = `https://superflixapi.buzz/serie/${currentMediaId}/${currentSeason}/${epNum}`;
 
+            // Save progress
+            saveProgress();
+
             document.querySelectorAll('.episode-card').forEach((card, idx) => {
                 card.classList.toggle('active', idx + 1 === epNum);
                 const overlay = card.querySelector('.absolute');
@@ -299,7 +649,7 @@
 
             const epData = episodesData[epNum - 1];
             const epName = epData?.name || '';
-            document.getElementById('currentEpInfo').innerText = `S${String(currentSeason).padStart(2,'0')}E${String(epNum).padStart(2,'0')}${epName ? ' - ' + epName : ''}`;
+            document.getElementById('currentEpInfo').innerText = `S${String(currentSeason).padStart(2, '0')}E${String(epNum).padStart(2, '0')}${epName ? ' - ' + epName : ''}`;
         }
 
         function prevEpisode() {
@@ -320,9 +670,8 @@
         }
 
         async function getImdbId(id, type) {
-            const apiKey = document.getElementById('tmdbKey').value;
             try {
-                const url = `https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${apiKey}`;
+                const url = `https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${TMDB_API_KEY}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 return data.imdb_id;
@@ -335,7 +684,14 @@
             if (e.key === 'Enter') searchMedia();
         }
 
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial state
+            document.getElementById('resultsGrid').innerHTML = '<p class="text-center col-span-4 text-gray-500">Faça uma busca acima</p>';
+        });
+
         console.log("Página carregada");
     </script>
 </body>
+
 </html>
