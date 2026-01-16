@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperFlix Search & Player</title>
+    <title>Estou Pobre Sem Netflix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .player-wrapper {
@@ -145,8 +145,9 @@
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-red-500 mb-2">SuperFlix<span class="text-white">Integration</span></h1>
-            <p class="text-gray-400 text-sm">Pesquise no TMDB e assista via SuperFlix API</p>
+            <h1 class="text-3xl font-bold text-red-500 mb-2">Estou Pobre<span class="text-white"> Sem Netflix</span>
+            </h1>
+            <p class="text-gray-400 text-sm">💸 Porque pagar é overrated</p>
         </header>
 
 
@@ -250,7 +251,10 @@
         let totalSeasons = 1;
         let currentTab = 'trending_day';
         const TMDB_API_KEY = 'bbd242a4dedabc93d26b08b7af509d57';
-        let trendingCache = { day: null, week: null };
+        let trendingCache = { day: [], week: [] };
+        let trendingPage = { day: 1, week: 1 };
+        let trendingMaxPage = { day: 10, week: 10 };
+        let isLoadingMore = false;
 
         // Toast notification
         function showToast(message, type = 'info') {
@@ -382,6 +386,10 @@
             const tabBtn = document.getElementById(tabId);
             if (tabBtn) tabBtn.classList.add('active');
 
+            // Esconder player e limpar iframe ao trocar de aba
+            document.getElementById('playerSection').classList.add('hidden');
+            document.getElementById('videoFrame').src = '';
+
             const grid = document.getElementById('resultsGrid');
 
             if (tab === 'trending_day') {
@@ -397,11 +405,11 @@
             }
         }
 
-        async function loadTrending(period = 'day') {
+        async function loadTrending(period = 'day', append = false) {
             const grid = document.getElementById('resultsGrid');
 
-            // Use cache if available
-            if (trendingCache[period]) {
+            // Se não é append e já tem cache, usa o cache
+            if (!append && trendingCache[period].length > 0) {
                 grid.innerHTML = '';
                 trendingCache[period].forEach(item => {
                     grid.appendChild(createMediaCard(item));
@@ -409,30 +417,70 @@
                 return;
             }
 
-            grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+            // Se é append e já está carregando ou chegou no limite, ignora
+            if (append && (isLoadingMore || trendingPage[period] > trendingMaxPage[period])) {
+                return;
+            }
+
+            isLoadingMore = true;
+
+            if (!append) {
+                grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+                trendingPage[period] = 1;
+                trendingCache[period] = [];
+            } else {
+                // Adiciona spinner no final
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loadingMore';
+                loadingDiv.className = 'col-span-4 flex justify-center py-6';
+                loadingDiv.innerHTML = '<div class="spinner"></div>';
+                grid.appendChild(loadingDiv);
+            }
 
             try {
-                const url = `https://api.themoviedb.org/3/trending/all/${period}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+                const url = `https://api.themoviedb.org/3/trending/all/${period}?api_key=${TMDB_API_KEY}&language=pt-BR&page=${trendingPage[period]}`;
                 const res = await fetch(url);
                 const data = await res.json();
 
+                // Remove spinner de loading
+                const loadingEl = document.getElementById('loadingMore');
+                if (loadingEl) loadingEl.remove();
+
                 if (!data.results || data.results.length === 0) {
-                    grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum conteúdo em alta.</p>';
+                    if (!append) {
+                        grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum conteúdo em alta.</p>';
+                    }
+                    trendingMaxPage[period] = trendingPage[period]; // Marca como último
+                    isLoadingMore = false;
                     return;
                 }
 
-                // Cache results
-                trendingCache[period] = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+                // Filtra e adiciona ao cache
+                const newItems = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+                trendingCache[period].push(...newItems);
 
-                grid.innerHTML = '';
-                trendingCache[period].forEach(item => {
+                if (!append) {
+                    grid.innerHTML = '';
+                }
+
+                newItems.forEach(item => {
                     grid.appendChild(createMediaCard(item));
                 });
 
+                trendingPage[period]++;
+                trendingMaxPage[period] = data.total_pages || 10;
+
             } catch (error) {
-                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro ao carregar trending.</p>';
+                const loadingEl = document.getElementById('loadingMore');
+                if (loadingEl) loadingEl.remove();
+
+                if (!append) {
+                    grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro ao carregar trending.</p>';
+                }
                 showToast('Erro ao carregar conteúdo em alta', 'error');
             }
+
+            isLoadingMore = false;
         }
 
         function renderHistory() {
@@ -475,7 +523,24 @@
 
             const card = document.createElement('div');
             card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
-            card.onclick = () => selectMedia(item.id, type, title, poster);
+
+            // Clique normal - abre no player interno
+            card.onclick = (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    // Ctrl+Click também abre em nova aba
+                    openInNewTab(item.id, type);
+                } else {
+                    selectMedia(item.id, type, title, poster);
+                }
+            };
+
+            // Clique do meio (scroll) - abre em nova aba
+            card.onauxclick = (e) => {
+                if (e.button === 1) { // Botão do meio
+                    e.preventDefault();
+                    openInNewTab(item.id, type);
+                }
+            };
 
             const progress = getProgress(item.id, type);
             const progressBadge = progress ? `<span class="absolute top-2 left-2 bg-red-600 text-xs px-2 py-1 rounded">S${progress.season}E${progress.episode}</span>` : '';
@@ -497,6 +562,20 @@
                 </div>
             `;
             return card;
+        }
+
+        // Abre filme/série em nova aba
+        async function openInNewTab(id, type) {
+            if (type === 'movie') {
+                // Tentar pegar IMDB ID para melhor compatibilidade
+                const imdbId = await getImdbId(id, 'movie');
+                const finalId = imdbId || id;
+                window.open(`https://superflixapi.buzz/filme/${finalId}`, '_blank');
+            } else {
+                // Para séries, abre o primeiro episódio
+                window.open(`https://superflixapi.buzz/serie/${id}/1/1`, '_blank');
+            }
+            showToast('Abrindo em nova aba...', 'info');
         }
 
         async function searchMedia() {
@@ -743,6 +822,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Load trending on start
             loadTrending('day');
+
+            // Infinite scroll
+            window.addEventListener('scroll', () => {
+                // Verifica se chegou perto do fim da página
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                    // Só carrega mais se estiver em uma aba de trending
+                    if (currentTab === 'trending_day') {
+                        loadTrending('day', true);
+                    } else if (currentTab === 'trending_week') {
+                        loadTrending('week', true);
+                    }
+                }
+            });
         });
 
         console.log("Página carregada");
