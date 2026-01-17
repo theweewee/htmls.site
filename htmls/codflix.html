@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; 
+                   frame-src https://superflixapi.buzz; 
+                   img-src * data:; 
+                   style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+                   connect-src https://api.themoviedb.org https://raw.githubusercontent.com;">
+    <title>Estou Pobre Sem Netflix...</title>
+    <link rel="icon" type="image/png"
+        href="https://www.emojimax.com/uploads/mixes/ai_mix_e378cff6bbce0e31b1a6633f05476fd0.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Desabilitar seleção de texto */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        input,
+        textarea {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: 0.5rem;
+        }
+
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .season-btn.active {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .episode-card.active {
+            border-color: #dc2626;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+
+        .episode-card:hover {
+            transform: scale(1.05);
+        }
+
+        /* Spinner Animation */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        .toast.success {
+            background: #16a34a;
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        .toast.info {
+            background: #2563eb;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Favorite Button */
+        .fav-btn {
+            transition: all 0.2s ease;
+        }
+
+        .fav-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .fav-btn.active {
+            color: #f59e0b;
+        }
+
+        /* History/Favorites Tabs */
+        .tab-btn.active {
+            background: #dc2626;
+            color: white;
+        }
+
+        .filter-btn.active {
+            background: #dc2626;
+            color: white;
+        }
+
+        .watchlist-btn.active {
+            color: #3b82f6;
+        }
+
+        .rating-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #1f2937, #374151);
+            border: 1px solid #4b5563;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 640px) {
+            .series-layout {
+                flex-direction: column;
+            }
+
+            .seasons-sidebar {
+                width: 100% !important;
+                border-right: none !important;
+                border-bottom: 1px solid #374151;
+                flex-direction: row !important;
+                overflow-x: auto;
+                padding: 8px !important;
+            }
+
+            .seasons-sidebar>div {
+                flex-direction: row !important;
+                gap: 8px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-red-500 mb-2">Estou Pobre<span class="text-white"> Sem Netflix</span>
+            </h1>
+            <p class="text-gray-400 text-sm">💸 Porque pagar é overrated</p>
+        </header>
+
+
+
+        <div class="flex gap-2 mb-6">
+            <input type="text" id="searchInput" placeholder="Nome do filme ou série..."
+                class="flex-1 bg-gray-800 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                onkeypress="handleEnter(event)">
+            <button onclick="searchMedia()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2">
+                <span id="searchBtnText">Buscar</span>
+                <div id="searchSpinner" class="spinner hidden" style="width: 20px; height: 20px; border-width: 2px;">
+                </div>
+            </button>
+        </div>
+
+        <!-- Tabs: Trending, Histórico e Favoritos -->
+        <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="showTab('trending_day')" id="tabTrending_day"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition active">
+                🔥 Hoje
+            </button>
+            <button onclick="showTab('trending_week')" id="tabTrending_week"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📈 Semana
+            </button>
+            <button onclick="showTab('search')" id="tabSearch"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                🔍 Busca
+            </button>
+            <button onclick="showTab('history')" id="tabHistory"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📜 Histórico
+            </button>
+            <button onclick="showTab('favorites')" id="tabFavorites"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                ⭐ Favoritos
+            </button>
+            <button onclick="showTab('watchlist')" id="tabWatchlist"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📋 Watchlist
+            </button>
+            <button onclick="showTab('stats')" id="tabStats"
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                📊 Stats
+            </button>
+        </div>
+
+        <!-- Filtros de Busca (só aparece na busca) -->
+        <div id="searchFilters" class="hidden flex gap-2 mb-4 flex-wrap items-center bg-gray-800 p-3 rounded-lg">
+            <span class="text-gray-400 text-sm">Filtros:</span>
+            <button onclick="setTypeFilter('all')" id="filterAll"
+                class="filter-btn px-3 py-1 rounded text-sm bg-gray-700 hover:bg-gray-600 transition active">
+                Todos
+            </button>
+            <button onclick="setTypeFilter('movie')" id="filterMovie"
+                class="filter-btn px-3 py-1 rounded text-sm bg-gray-700 hover:bg-gray-600 transition">
+                🎬 Filmes
+            </button>
+            <button onclick="setTypeFilter('tv')" id="filterTv"
+                class="filter-btn px-3 py-1 rounded text-sm bg-gray-700 hover:bg-gray-600 transition">
+                📺 Séries
+            </button>
+            <span class="text-gray-600">|</span>
+            <select id="yearFilter" onchange="applySearchFilters()"
+                class="bg-gray-700 text-white px-3 py-1 rounded text-sm">
+                <option value="">📅 Ano</option>
+            </select>
+        </div>
+
+        <!-- Player Section -->
+        <div id="playerSection" class="hidden mb-10">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 id="playerTitle" class="text-2xl font-bold"></h2>
+                    <p id="playerSubtitle" class="text-gray-400 text-sm mt-1"></p>
+                </div>
+                <button onclick="toggleFavorite()" id="favButton" class="fav-btn text-3xl text-gray-500"
+                    title="Favorito">
+                    ☆
+                </button>
+                <button onclick="toggleWatchlist()" id="watchlistButton"
+                    class="watchlist-btn text-3xl text-gray-500 ml-2" title="Watchlist">
+                    📋
+                </button>
+            </div>
+            <div class="player-wrapper shadow-2xl shadow-red-900/20 mb-6">
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media"
+                    sandbox="allow-scripts allow-same-origin" allowfullscreen>
+                </iframe>
+            </div>
+
+            <div id="seriesControls" class="hidden bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                <div class="flex series-layout">
+                    <div class="w-32 seasons-sidebar bg-gray-850 border-r border-gray-700 p-3 flex flex-col">
+                        <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Temporadas</h3>
+                        <div id="seasonsList" class="flex flex-col gap-2">
+                        </div>
+                    </div>
+
+                    <div class="flex-1 p-4">
+                        <h3 class="text-xs text-gray-400 uppercase mb-3 font-bold">Episódios</h3>
+                        <div id="episodesGrid"
+                            class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="navBar"
+                    class="flex items-center justify-between bg-gray-900 px-4 py-3 border-t border-gray-700">
+                    <button onclick="prevEpisode()"
+                        class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                        <span>◀</span> Anterior
+                    </button>
+                    <span id="currentEpInfo" class="text-sm font-semibold text-red-400">Ep 1</span>
+                    <button onclick="nextEpisode()"
+                        class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">
+                        Próximo <span>▶</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div id="statsSection" class="hidden mb-10">
+            <h2 class="text-2xl font-bold mb-6">📊 Suas Estatísticas</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stats-card p-4 rounded-lg text-center">
+                    <div class="text-3xl font-bold text-red-500" id="statWatched">0</div>
+                    <div class="text-gray-400 text-sm">Assistidos</div>
+                </div>
+                <div class="stats-card p-4 rounded-lg text-center">
+                    <div class="text-3xl font-bold text-yellow-500" id="statFavorites">0</div>
+                    <div class="text-gray-400 text-sm">Favoritos</div>
+                </div>
+                <div class="stats-card p-4 rounded-lg text-center">
+                    <div class="text-3xl font-bold text-blue-500" id="statWatchlist">0</div>
+                    <div class="text-gray-400 text-sm">Watchlist</div>
+                </div>
+                <div class="stats-card p-4 rounded-lg text-center">
+                    <div class="text-3xl font-bold text-green-500" id="statHours">0h</div>
+                    <div class="text-gray-400 text-sm">Tempo estimado</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="stats-card p-4 rounded-lg">
+                    <h3 class="font-bold mb-3">🎬 Filmes vs 📺 Séries</h3>
+                    <div class="flex gap-2 h-6 rounded overflow-hidden">
+                        <div class="bg-red-600" id="statMoviesBar" style="width: 50%"></div>
+                        <div class="bg-blue-600" id="statSeriesBar" style="width: 50%"></div>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-400 mt-2">
+                        <span id="statMoviesCount">0 filmes</span>
+                        <span id="statSeriesCount">0 séries</span>
+                    </div>
+                </div>
+                <div class="stats-card p-4 rounded-lg">
+                    <h3 class="font-bold mb-3">🏆 Últimos Assistidos</h3>
+                    <div id="recentWatched" class="text-gray-400 text-sm">Assista algo para ver aqui!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results/History/Favorites Grid -->
+        <div id="resultsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        </div>
+    </div>
+
+    <script>
+        let currentMediaId = null;
+        let currentMediaType = null;
+        let currentMediaTitle = null;
+        let currentMediaPoster = null;
+        let currentSeason = 1;
+        let currentEpisode = 1;
+        let episodesData = [];
+        let totalSeasons = 1;
+        let currentTab = 'trending_day';
+        const TMDB_API_KEY = 'bbd242a4dedabc93d26b08b7af509d57';
+        let trendingCache = { day: [], week: [] };
+        let trendingPage = { day: 1, week: 1 };
+        let trendingMaxPage = { day: 10, week: 10 };
+        let isLoadingMore = false;
+        let searchResults = []; // Cache dos resultados de busca para filtrar
+        let currentTypeFilter = 'all';
+        let currentYearFilter = '';
+
+        // Inicializa dropdown de anos
+        function initYearFilter() {
+            const select = document.getElementById('yearFilter');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 1950; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // LocalStorage helpers
+        function getStorage(key) {
+            try {
+                return JSON.parse(localStorage.getItem(key)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function setStorage(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // Save API Key
+        function saveApiKey(key) {
+            localStorage.setItem('tmdb_api_key', key);
+        }
+
+        function loadApiKey() {
+            return localStorage.getItem('tmdb_api_key') || '';
+        }
+
+        // History functions
+        function addToHistory(item) {
+            let history = getStorage('watch_history');
+            // Remove duplicate if exists
+            history = history.filter(h => !(h.id === item.id && h.type === item.type));
+            // Add to beginning
+            history.unshift({
+                ...item,
+                watchedAt: new Date().toISOString()
+            });
+            // Keep only last 50
+            history = history.slice(0, 50);
+            setStorage('watch_history', history);
+        }
+
+        // Favorites functions
+        function getFavorites() {
+            return getStorage('favorites');
+        }
+
+        function isFavorite(id, type) {
+            const favorites = getFavorites();
+            return favorites.some(f => f.id === id && f.type === type);
+        }
+
+        function toggleFavorite() {
+            if (!currentMediaId) return;
+
+            let favorites = getFavorites();
+            const exists = favorites.findIndex(f => f.id === currentMediaId && f.type === currentMediaType);
+
+            if (exists >= 0) {
+                favorites.splice(exists, 1);
+                showToast('Removido dos favoritos', 'info');
+                document.getElementById('favButton').classList.remove('active');
+                document.getElementById('favButton').textContent = '☆';
+            } else {
+                favorites.push({
+                    id: currentMediaId,
+                    type: currentMediaType,
+                    title: currentMediaTitle,
+                    poster: currentMediaPoster,
+                    addedAt: new Date().toISOString()
+                });
+                showToast('Adicionado aos favoritos!', 'success');
+                document.getElementById('favButton').classList.add('active');
+                document.getElementById('favButton').textContent = '★';
+            }
+
+            setStorage('favorites', favorites);
+        }
+
+        function updateFavoriteButton() {
+            const btn = document.getElementById('favButton');
+            if (isFavorite(currentMediaId, currentMediaType)) {
+                btn.classList.add('active');
+                btn.textContent = '★';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = '☆';
+            }
+        }
+
+        // Watchlist functions
+        function getWatchlist() {
+            return getStorage('watchlist');
+        }
+
+        function isInWatchlist(id, type) {
+            return getWatchlist().some(w => w.id === id && w.type === type);
+        }
+
+        function toggleWatchlist() {
+            if (!currentMediaId) return;
+
+            let watchlist = getWatchlist();
+            const exists = watchlist.findIndex(w => w.id === currentMediaId && w.type === currentMediaType);
+
+            if (exists >= 0) {
+                watchlist.splice(exists, 1);
+                showToast('Removido da watchlist', 'info');
+                document.getElementById('watchlistButton').classList.remove('active');
+            } else {
+                watchlist.push({
+                    id: currentMediaId,
+                    type: currentMediaType,
+                    title: currentMediaTitle,
+                    poster: currentMediaPoster,
+                    addedAt: new Date().toISOString()
+                });
+                showToast('Adicionado à watchlist!', 'success');
+                document.getElementById('watchlistButton').classList.add('active');
+            }
+
+            setStorage('watchlist', watchlist);
+        }
+
+        function updateWatchlistButton() {
+            const btn = document.getElementById('watchlistButton');
+            if (isInWatchlist(currentMediaId, currentMediaType)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // Continue watching - save progress
+        function saveProgress() {
+            if (!currentMediaId || currentMediaType !== 'tv') return;
+
+            let progress = getStorage('watch_progress');
+            const key = `${currentMediaType}-${currentMediaId}`;
+            progress[key] = {
+                season: currentSeason,
+                episode: currentEpisode,
+                updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('watch_progress', JSON.stringify(progress));
+        }
+
+        function getProgress(id, type) {
+            try {
+                const progress = JSON.parse(localStorage.getItem('watch_progress')) || {};
+                return progress[`${type}-${id}`] || null;
+            } catch {
+                return null;
+            }
+        }
+
+        // Tab functions
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Handle dynamic tab IDs
+            const tabId = `tab${tab.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('_')}`;
+            const tabBtn = document.getElementById(tabId);
+            if (tabBtn) tabBtn.classList.add('active');
+
+            // Esconder player e limpar iframe ao trocar de aba
+            document.getElementById('playerSection').classList.add('hidden');
+            document.getElementById('videoFrame').src = '';
+
+            // Esconder stats section
+            document.getElementById('statsSection').classList.add('hidden');
+            document.getElementById('resultsGrid').classList.remove('hidden');
+
+            // Mostrar/esconder filtros de busca
+            const searchFilters = document.getElementById('searchFilters');
+            if (tab === 'search') {
+                searchFilters.classList.remove('hidden');
+            } else {
+                searchFilters.classList.add('hidden');
+            }
+
+            const grid = document.getElementById('resultsGrid');
+
+            if (tab === 'trending_day') {
+                loadTrending('day');
+            } else if (tab === 'trending_week') {
+                loadTrending('week');
+            } else if (tab === 'history') {
+                renderHistory();
+            } else if (tab === 'favorites') {
+                renderFavorites();
+            } else if (tab === 'watchlist') {
+                renderWatchlist();
+            } else if (tab === 'stats') {
+                document.getElementById('resultsGrid').classList.add('hidden');
+                document.getElementById('statsSection').classList.remove('hidden');
+                updateStats();
+            } else {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Faça uma busca acima</p>';
+            }
+        }
+
+
+        async function loadTrending(period = 'day', append = false) {
+            const grid = document.getElementById('resultsGrid');
+
+            // Se não é append e já tem cache, usa o cache
+            if (!append && trendingCache[period].length > 0) {
+                grid.innerHTML = '';
+                trendingCache[period].forEach(item => {
+                    grid.appendChild(createMediaCard(item));
+                });
+                return;
+            }
+
+            // Se é append e já está carregando ou chegou no limite, ignora
+            if (append && (isLoadingMore || trendingPage[period] > trendingMaxPage[period])) {
+                return;
+            }
+
+            isLoadingMore = true;
+
+            if (!append) {
+                grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+                trendingPage[period] = 1;
+                trendingCache[period] = [];
+            } else {
+                // Adiciona spinner no final
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loadingMore';
+                loadingDiv.className = 'col-span-4 flex justify-center py-6';
+                loadingDiv.innerHTML = '<div class="spinner"></div>';
+                grid.appendChild(loadingDiv);
+            }
+
+            try {
+                const url = `https://api.themoviedb.org/3/trending/all/${period}?api_key=${TMDB_API_KEY}&language=pt-BR&page=${trendingPage[period]}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                // Remove spinner de loading
+                const loadingEl = document.getElementById('loadingMore');
+                if (loadingEl) loadingEl.remove();
+
+                if (!data.results || data.results.length === 0) {
+                    if (!append) {
+                        grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum conteúdo em alta.</p>';
+                    }
+                    trendingMaxPage[period] = trendingPage[period]; // Marca como último
+                    isLoadingMore = false;
+                    return;
+                }
+
+                // Filtra e adiciona ao cache
+                const newItems = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+                trendingCache[period].push(...newItems);
+
+                if (!append) {
+                    grid.innerHTML = '';
+                }
+
+                newItems.forEach(item => {
+                    grid.appendChild(createMediaCard(item));
+                });
+
+                trendingPage[period]++;
+                trendingMaxPage[period] = data.total_pages || 10;
+
+            } catch (error) {
+                const loadingEl = document.getElementById('loadingMore');
+                if (loadingEl) loadingEl.remove();
+
+                if (!append) {
+                    grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro ao carregar trending.</p>';
+                }
+                showToast('Erro ao carregar conteúdo em alta', 'error');
+            }
+
+            isLoadingMore = false;
+        }
+
+        function renderHistory() {
+            const grid = document.getElementById('resultsGrid');
+            const history = getStorage('watch_history');
+
+            if (history.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Nenhum item no histórico</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            history.forEach(item => {
+                grid.appendChild(createMediaCard(item, true));
+            });
+        }
+
+        function renderFavorites() {
+            const grid = document.getElementById('resultsGrid');
+            const favorites = getFavorites();
+
+            if (favorites.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Nenhum favorito ainda</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            favorites.forEach(item => {
+                grid.appendChild(createMediaCard(item, true));
+            });
+        }
+
+        function renderWatchlist() {
+            const grid = document.getElementById('resultsGrid');
+            const watchlist = getWatchlist();
+
+            if (watchlist.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-500">Watchlist vazia - adicione algo para assistir depois!</p>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            watchlist.forEach(item => {
+                grid.appendChild(createMediaCard(item, true));
+            });
+        }
+
+        // Funções de filtro de busca
+        function setTypeFilter(filter) {
+            currentTypeFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+            applySearchFilters();
+        }
+
+        function applySearchFilters() {
+            currentYearFilter = document.getElementById('yearFilter').value;
+
+            if (searchResults.length === 0) return;
+
+            const grid = document.getElementById('resultsGrid');
+            let filtered = searchResults;
+
+            // Filtro por tipo
+            if (currentTypeFilter !== 'all') {
+                filtered = filtered.filter(i => (i.media_type || i.type) === currentTypeFilter);
+            }
+
+            // Filtro por ano
+            if (currentYearFilter) {
+                filtered = filtered.filter(i => {
+                    const date = i.release_date || i.first_air_date || '';
+                    return date.startsWith(currentYearFilter);
+                });
+            }
+
+            grid.innerHTML = '';
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum resultado com esses filtros.</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                grid.appendChild(createMediaCard(item));
+            });
+
+            showToast(`${filtered.length} resultados`, 'info');
+        }
+
+        // Estatísticas
+        function updateStats() {
+            const history = getStorage('watch_history');
+            const favorites = getFavorites();
+            const watchlist = getWatchlist();
+
+            const movies = history.filter(h => h.type === 'movie').length;
+            const series = history.filter(h => h.type === 'tv').length;
+            const total = movies + series;
+
+            document.getElementById('statWatched').textContent = history.length;
+            document.getElementById('statFavorites').textContent = favorites.length;
+            document.getElementById('statWatchlist').textContent = watchlist.length;
+
+            // Estimativa de tempo (2h por filme, 45min por série assistida)
+            const hours = Math.round(movies * 2 + series * 0.75);
+            document.getElementById('statHours').textContent = `${hours}h`;
+
+            document.getElementById('statMoviesCount').textContent = `${movies} filmes`;
+            document.getElementById('statSeriesCount').textContent = `${series} séries`;
+
+            if (total > 0) {
+                const moviePercent = (movies / total) * 100;
+                const seriesPercent = (series / total) * 100;
+                document.getElementById('statMoviesBar').style.width = `${moviePercent}%`;
+                document.getElementById('statSeriesBar').style.width = `${seriesPercent}%`;
+            }
+
+            // Últimos assistidos
+            const recent = history.slice(0, 5);
+            if (recent.length > 0) {
+                document.getElementById('recentWatched').innerHTML = recent.map(item =>
+                    `<div class="truncate py-1">${item.type === 'movie' ? '🎬' : '📺'} ${item.title}</div>`
+                ).join('');
+            }
+        }
+
+        function createMediaCard(item, fromStorage = false) {
+            const title = item.title || item.name;
+            const date = item.release_date || item.first_air_date || item.watchedAt?.split('T')[0] || '';
+            const poster = fromStorage ? item.poster : (item.poster_path
+                ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
+                : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450"><rect fill="%23374151" width="300" height="450"/><text x="150" y="225" fill="%239ca3af" text-anchor="middle" font-size="20">Sem Imagem</text></svg>');
+            const type = item.media_type || item.type;
+
+            const card = document.createElement('div');
+            card.className = 'bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer group';
+
+            // Clique normal - abre no player interno
+            // Clique normal - abre no player interno
+            card.onclick = (e) => {
+                selectMedia(item.id, type, title, poster);
+            };
+
+            // Clique do meio (scroll) - abre em nova aba
+            // Clique do meio (scroll) - desabilitado
+            /* card.onmousedown removido */
+
+            const progress = getProgress(item.id, type);
+            const progressBadge = progress ? `<span class="absolute top-2 left-2 bg-red-600 text-xs px-2 py-1 rounded">S${progress.season}E${progress.episode}</span>` : '';
+
+            // Rating badge
+            const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
+            const ratingBadge = rating && rating > 0 ? `<span class="absolute top-2 right-2 rating-badge">⭐ ${rating}</span>` : '';
+
+            card.innerHTML = `
+                <div class="relative">
+                    <img src="${poster}" class="w-full h-auto object-cover aspect-[2/3]" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23374151%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2220%22>Sem Imagem</text></svg>'">
+                    ${progressBadge}
+                    ${ratingBadge}
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all">
+                        <span class="text-transparent group-hover:text-white font-bold text-lg">Assistir ▶</span>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <h3 class="font-bold text-sm truncate" title="${title}">${title}</h3>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>${date.split('-')[0] || ''}</span>
+                        <span class="uppercase border border-gray-600 px-1 rounded">${type === 'tv' ? 'Série' : 'Filme'}</span>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        /* Função openInNewTab removida para segurança */
+
+        async function searchMedia() {
+            const query = document.getElementById('searchInput').value;
+            const grid = document.getElementById('resultsGrid');
+            const spinner = document.getElementById('searchSpinner');
+            const btnText = document.getElementById('searchBtnText');
+
+            if (!query) {
+                showToast('Digite o nome do filme ou série.', 'error');
+                return;
+            }
+
+            // Show loading
+            spinner.classList.remove('hidden');
+            btnText.textContent = '';
+
+            // Hide player
+            document.getElementById('playerSection').classList.add('hidden');
+            document.getElementById('videoFrame').src = '';
+
+            grid.innerHTML = '<div class="col-span-4 flex justify-center py-12"><div class="spinner"></div></div>';
+
+            // Switch to search tab
+            showTab('search');
+            document.getElementById('tabSearch').classList.add('active');
+
+            try {
+                const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`;
+                const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error(`Erro ${res.status}: ${res.statusText}`);
+                }
+
+                const data = await res.json();
+
+                grid.innerHTML = '';
+
+                if (!data.results || data.results.length === 0) {
+                    grid.innerHTML = '<p class="text-center col-span-4 text-gray-400">Nenhum resultado encontrado.</p>';
+                    showToast('Nenhum resultado encontrado', 'info');
+                    searchResults = [];
+                    return;
+                }
+
+                // Salvar resultados para filtrar depois
+                searchResults = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+
+                // Resetar filtros
+                currentTypeFilter = 'all';
+                currentYearFilter = '';
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('filterAll').classList.add('active');
+                document.getElementById('yearFilter').value = '';
+
+                searchResults.forEach(item => {
+                    grid.appendChild(createMediaCard(item));
+                });
+
+                showToast(`${searchResults.length} resultados encontrados`, 'success');
+
+            } catch (error) {
+                grid.innerHTML = '<p class="text-center col-span-4 text-red-500">Erro na API. Verifique sua Key e tente novamente.</p>';
+                showToast('Erro ao buscar. Verifique sua API Key.', 'error');
+            } finally {
+                spinner.classList.add('hidden');
+                btnText.textContent = 'Buscar';
+            }
+        }
+
+        async function selectMedia(tmdbId, type, title, poster) {
+            currentMediaId = tmdbId;
+            currentMediaType = type;
+            currentMediaTitle = title;
+            currentMediaPoster = poster;
+            currentSeason = 1;
+            currentEpisode = 1;
+
+            // Add to history
+            addToHistory({ id: tmdbId, type, title, poster });
+
+            document.getElementById('resultsGrid').innerHTML = '';
+
+            document.getElementById('playerSection').classList.remove('hidden');
+            document.getElementById('playerTitle').innerText = title;
+
+            updateFavoriteButton();
+            updateWatchlistButton();
+
+            const iframe = document.getElementById('videoFrame');
+            const seriesControls = document.getElementById('seriesControls');
+
+            document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth' });
+
+            if (type === 'movie') {
+                seriesControls.classList.add('hidden');
+                document.getElementById('playerSubtitle').innerText = '🎬 Filme';
+
+                const imdbId = await getImdbId(tmdbId, 'movie');
+                const finalId = imdbId || tmdbId;
+                iframe.src = `https://superflixapi.buzz/filme/${finalId}`;
+                showToast('Carregando filme...', 'info');
+
+            } else if (type === 'tv') {
+                seriesControls.classList.remove('hidden');
+
+                // Check for saved progress
+                const progress = getProgress(tmdbId, type);
+                if (progress) {
+                    currentSeason = progress.season;
+                    currentEpisode = progress.episode;
+                    showToast(`Continuando de S${progress.season}E${progress.episode}`, 'info');
+                }
+
+                await loadSeriesInfo(tmdbId);
+            }
+        }
+
+        async function loadSeriesInfo(tmdbId) {
+            try {
+                const url = `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                totalSeasons = data.number_of_seasons;
+                document.getElementById('playerSubtitle').innerText = `📺 Série • ${data.number_of_seasons} temp • ${data.number_of_episodes} eps`;
+
+                const seasonsList = document.getElementById('seasonsList');
+                seasonsList.innerHTML = '';
+
+                for (let i = 1; i <= data.number_of_seasons; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = `season-btn text-sm py-2 px-3 rounded border border-gray-600 hover:border-red-500 transition ${i === currentSeason ? 'active' : ''}`;
+                    btn.innerText = `T${i}`;
+                    btn.onclick = () => selectSeason(i);
+                    seasonsList.appendChild(btn);
+                }
+
+                await loadSeasonEpisodes(currentSeason);
+
+            } catch (e) {
+                showToast('Erro ao carregar informações da série', 'error');
+            }
+        }
+
+        async function selectSeason(seasonNum) {
+            currentSeason = seasonNum;
+            currentEpisode = 1;
+
+            document.querySelectorAll('.season-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === seasonNum);
+            });
+
+            await loadSeasonEpisodes(seasonNum);
+        }
+
+        async function loadSeasonEpisodes(seasonNum) {
+            const grid = document.getElementById('episodesGrid');
+
+            grid.innerHTML = '<div class="col-span-full flex justify-center py-4"><div class="spinner"></div></div>';
+
+            try {
+                const url = `https://api.themoviedb.org/3/tv/${currentMediaId}/season/${seasonNum}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                episodesData = data.episodes || [];
+                grid.innerHTML = '';
+
+                episodesData.forEach((ep, idx) => {
+                    const thumb = ep.still_path
+                        ? `https://image.tmdb.org/t/p/w185${ep.still_path}`
+                        : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 185 104"><rect fill="%23374151" width="185" height="104"/><text x="92" y="52" fill="%239ca3af" text-anchor="middle" font-size="12">Sem Img</text></svg>';
+
+                    const card = document.createElement('div');
+                    card.className = `episode-card bg-gray-700 rounded overflow-hidden cursor-pointer transition-all ${idx + 1 === currentEpisode ? 'active' : ''}`;
+                    card.onclick = () => playEpisode(idx + 1);
+
+                    card.innerHTML = `
+                        <div class="relative">
+                            <img src="${thumb}" class="w-full aspect-video object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 185 104%22><rect fill=%22%23374151%22 width=%22185%22 height=%22104%22/><text x=%2292%22 y=%2252%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2212%22>Sem Img</text></svg>'">
+                            ${idx + 1 === currentEpisode ? '<div class="absolute inset-0 bg-red-600 bg-opacity-30 flex items-center justify-center"><span class="text-white text-lg">▶</span></div>' : ''}
+                        </div>
+                        <div class="p-2 text-center">
+                            <span class="text-xs font-bold">${ep.episode_number}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+                playEpisode(currentEpisode);
+
+            } catch (e) {
+                grid.innerHTML = '<p class="col-span-full text-red-500 text-sm">Erro ao carregar episódios</p>';
+            }
+        }
+
+        function playEpisode(epNum) {
+            currentEpisode = epNum;
+            const iframe = document.getElementById('videoFrame');
+            iframe.src = `https://superflixapi.buzz/serie/${currentMediaId}/${currentSeason}/${epNum}`;
+
+            // Save progress
+            saveProgress();
+
+            document.querySelectorAll('.episode-card').forEach((card, idx) => {
+                card.classList.toggle('active', idx + 1 === epNum);
+                const overlay = card.querySelector('.absolute');
+                if (idx + 1 === epNum && !overlay) {
+                    card.querySelector('.relative').innerHTML += '<div class="absolute inset-0 bg-red-600 bg-opacity-30 flex items-center justify-center"><span class="text-white text-lg">▶</span></div>';
+                } else if (idx + 1 !== epNum && overlay) {
+                    overlay.remove();
+                }
+            });
+
+            const epData = episodesData[epNum - 1];
+            const epName = epData?.name || '';
+            document.getElementById('currentEpInfo').innerText = `S${String(currentSeason).padStart(2, '0')}E${String(epNum).padStart(2, '0')}${epName ? ' - ' + epName : ''}`;
+        }
+
+        function prevEpisode() {
+            if (currentEpisode > 1) {
+                playEpisode(currentEpisode - 1);
+            } else if (currentSeason > 1) {
+                selectSeason(currentSeason - 1);
+                setTimeout(() => playEpisode(episodesData.length), 500);
+            }
+        }
+
+        function nextEpisode() {
+            if (currentEpisode < episodesData.length) {
+                playEpisode(currentEpisode + 1);
+            } else if (currentSeason < totalSeasons) {
+                selectSeason(currentSeason + 1);
+            }
+        }
+
+        async function getImdbId(id, type) {
+            try {
+                const url = `https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${TMDB_API_KEY}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                return data.imdb_id;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') searchMedia();
+        }
+
+        // Checa parâmetros da URL para deep links
+        function handleUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const playId = params.get('play');
+            const type = params.get('type');
+            const title = params.get('title') || 'Carregando...';
+            const poster = params.get('poster') || null;
+
+            if (playId && type) {
+                // Limpar URL sem recarregar
+                history.replaceState({}, '', window.location.pathname);
+
+                // Selecionar a mídia
+                selectMedia(parseInt(playId), type, decodeURIComponent(title), poster ? decodeURIComponent(poster) : null);
+                return true;
+            }
+            return false;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Bloquear window.open globalmente
+            window.open = function () {
+                showToast('Redirecionamento bloqueado', 'error');
+                return null;
+            };
+
+            // 2. Bloquear mudanças de location
+            Object.defineProperty(window, 'location', {
+                writable: false,
+                configurable: false
+            });
+
+            // 3. Interceptar todos os cliques em links
+            document.addEventListener('click', function (e) {
+                const link = e.target.closest('a');
+                if (link && link.href) {
+                    e.preventDefault();
+                    showToast('Links externos bloqueados', 'error');
+                    return false;
+                }
+            }, true);
+            // Inicializar dropdown de anos
+            initYearFilter();
+
+            // Verificar parâmetros da URL primeiro
+            const hasDeepLink = handleUrlParams();
+
+            // Se não tem deep link, carregar trending
+            if (!hasDeepLink) {
+                loadTrending('day');
+            }
+
+            // Infinite scroll
+            window.addEventListener('scroll', () => {
+                // Verifica se chegou perto do fim da página
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                    // Só carrega mais se estiver em uma aba de trending
+                    if (currentTab === 'trending_day') {
+                        loadTrending('day', true);
+                    } else if (currentTab === 'trending_week') {
+                        loadTrending('week', true);
+                    }
+                }
+            });
+        });
+
+        console.log("Página carregada");
+    </script>
+</body>
+
+</html>
