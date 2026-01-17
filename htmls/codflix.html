@@ -279,8 +279,8 @@
                 </button>
             </div>
             <div class="player-wrapper shadow-2xl shadow-red-900/20 mb-6">
-                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media"
-                    sandbox="allow-scripts allow-same-origin" allowfullscreen>
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allowfullscreen>
                 </iframe>
             </div>
 
@@ -1132,11 +1132,8 @@
                 return null;
             };
 
-            // 2. Bloquear mudanças de location
-            Object.defineProperty(window, 'location', {
-                writable: false,
-                configurable: false
-            });
+            // 2. Bloquear mudanças de location (Removido: causa crash em navegadores modernos)
+            // A navegação é controlada pelo interceptor de cliques abaixo
 
             // 3. Interceptar todos os cliques em links
             document.addEventListener('click', function (e) {
