@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-                   script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; 
-                   frame-src https://superflixapi.buzz; 
+                   script-src * 'unsafe-inline' 'unsafe-eval'; 
+                   frame-src *; 
                    img-src * data:; 
-                   style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
-                   connect-src https://api.themoviedb.org https://raw.githubusercontent.com;">
+                   style-src * 'unsafe-inline';
+                   connect-src *;">
     <title>Estou Pobre Sem Netflix...</title>
     <link rel="icon" type="image/png"
         href="https://www.emojimax.com/uploads/mixes/ai_mix_e378cff6bbce0e31b1a6633f05476fd0.png">
@@ -279,8 +279,7 @@
                 </button>
             </div>
             <div class="player-wrapper shadow-2xl shadow-red-900/20 mb-6">
-                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allowfullscreen>
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen>
                 </iframe>
             </div>
 
