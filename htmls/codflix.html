@@ -955,7 +955,7 @@
 
                 const imdbId = await getImdbId(tmdbId, 'movie');
                 const finalId = imdbId || tmdbId;
-                iframe.src = `https://superflixapi.buzz/filme/${finalId}`;
+                iframe.src = `https://superflixapi.bond/filme/${finalId}`;
                 showToast('Carregando filme...', 'info');
 
             } else if (type === 'tv') {
@@ -1055,7 +1055,7 @@
         function playEpisode(epNum) {
             currentEpisode = epNum;
             const iframe = document.getElementById('videoFrame');
-            iframe.src = `https://superflixapi.buzz/serie/${currentMediaId}/${currentSeason}/${epNum}`;
+            iframe.src = `https://superflixapi.bond/serie/${currentMediaId}/${currentSeason}/${epNum}`;
 
             // Save progress
             saveProgress();
