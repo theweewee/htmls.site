@@ -433,7 +433,10 @@
       },[html,filename]);
 
       useEffect(()=>{
-        const delay = isMobile ? 1000 : 600;
+        // No mobile, só atualiza o iframe quando preview está visível
+        if(isMobile && mobilePane !== "preview") return;
+        
+        const delay = isMobile ? 300 : 600;
         const t = setTimeout(()=>{
           if(!iframeRef.current) return;
           let doc = html;
