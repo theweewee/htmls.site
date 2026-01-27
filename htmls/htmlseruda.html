@@ -518,7 +518,7 @@
           toasts.map(t=>h("div",{key:t.id,className:`toast toast-${t.type}`},t.msg))
         ),
 
-        isMobile && hasChanges && h("button",{className:"fab",onClick:handleSave,disabled:saving},saving?"...":"💾"),
+        isMobile && hasChanges && mobilePane==="editor" && h("button",{className:"fab",onClick:handleSave,disabled:saving},saving?"...":"💾"),
 
         showFiles && h("div",{className:"modal-overlay",onClick:()=>setShowFiles(false)},
           h("div",{className:"modal-content",onClick:e=>e.stopPropagation()},
