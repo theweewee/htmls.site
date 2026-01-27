@@ -1,107 +1,51 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Three.js - Bolha glass</title>
-  <style>
-    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-    canvas { display: block; }
-  </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
-      }
-    }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecionador</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 250px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
 </head>
 <body>
-  <script type="module">
-    import * as THREE from "three";
-    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+<div class="container">
+    <h3>Redirecionar para URL/IP</h3>
+    <!-- O input onde o usuário digita a URL (ex: google.com ou 192.168.1.1) -->
+    <input type="text" id="urlInput" placeholder="Digite a URL ou IP (ex: google.com)" value="https://">
+    <button onclick="redirecionar()">Ir</button>
+</div>
 
-    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 3.2);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-    document.body.appendChild(renderer.domElement);
-
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envScene = new RoomEnvironment();
-    scene.environment = pmrem.fromScene(envScene, 0.04).texture;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.10));
-
-    const key = new THREE.PointLight(0xff5cff, 18, 50);
-    key.position.set(2.4, 1.8, 4.5);
-    scene.add(key);
-
-    const fill = new THREE.PointLight(0x55ccff, 10, 50);
-    fill.position.set(-2.6, -1.6, 4.0);
-    scene.add(fill);
-
-    const bubbleMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      metalness: 0.0,
-      roughness: 0.03,
-      transmission: 1.0,
-      transparent: true,
-      opacity: 1.0,
-      ior: 1.35,
-      thickness: 0.75,
-      reflectivity: 0.95,
-      envMapIntensity: 1.8,
-      iridescence: 1.0,
-      iridescenceIOR: 1.3,
-      iridescenceThicknessRange: [120, 420],
-      attenuationColor: new THREE.Color(0xc08cff),
-      attenuationDistance: 2.7,
-      specularIntensity: 1.0,
-      specularColor: new THREE.Color(0xffffff),
-    });
-
-    const bubble = new THREE.Mesh(
-      new THREE.SphereGeometry(1.0, 128, 128),
-      bubbleMat
-    );
-    scene.add(bubble);
-
-    const glow = new THREE.Mesh(
-      new THREE.SphereGeometry(1.06, 128, 128),
-      new THREE.MeshBasicMaterial({
-        color: 0xb05cff,
-        transparent: true,
-        opacity: 0.06,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-      })
-    );
-    scene.add(glow);
-
-    function animate() {
-      requestAnimationFrame(animate);
-      bubble.rotation.y += 0.006;
-      bubble.rotation.x += 0.003;
-      renderer.render(scene, camera);
+<script>
+    function redirecionar() {
+        // Obtém o valor do input
+        var url = document.getElementById('urlInput').value;
+        
+        // Validação básica para garantir que haja algo digitado
+        if (url && url !== "https://") {
+            // Se o usuário não colocar http:// ou https://, adiciona automaticamente
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'http://' + url;
+            }
+            // Redireciona o navegador
+            window.location.href = url;
+        } else {
+            alert("Por favor, digite uma URL válida.");
+        }
     }
-    animate();
 
-    addEventListener("resize", () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    // Permite "apertar enter" para redirecionar
+    document.getElementById("urlInput").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            redirecionar();
+        }
     });
-  </script>
+</script>
+
 </body>
 </html>
