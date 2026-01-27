@@ -440,7 +440,13 @@
           // Sempre carregar Eruda no preview interno para debug
           if(!/eruda\.init/i.test(doc)){
             const erudaScript = `<script src="https://cdn.jsdelivr.net/npm/eruda"><\/script><script>eruda.init();<\/script>`;
-            doc = doc.replace(/<\/head>/i, `${erudaScript}</head>`);
+            if(/<\/head>/i.test(doc)){
+              doc = doc.replace(/<\/head>/i, `${erudaScript}</head>`);
+            } else if(/<body/i.test(doc)){
+              doc = doc.replace(/<body/i, `<head>${erudaScript}</head><body`);
+            } else {
+              doc = `<!DOCTYPE html><html><head>${erudaScript}</head><body>${doc}</body></html>`;
+            }
           }
           iframeRef.current.srcdoc = doc;
         }, delay);
