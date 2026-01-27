@@ -451,7 +451,7 @@
           iframeRef.current.srcdoc = doc;
         }, delay);
         return ()=>clearTimeout(t);
-      },[html,isMobile]);
+      },[html,isMobile,mobilePane]);
 
       const lineCount = html.split("\n").length;
 
