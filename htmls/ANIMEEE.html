@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anime Pobre (Sem Crunchyroll)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      min-height: 100vh;
+    }
+    header {
+      padding: 20px;
+      text-align: center;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      color: #f97316;
+      margin-bottom: 10px;
+    }
+    header p {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+    form {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    input[type="text"] {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      min-width: 220px;
+      max-width: 360px;
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: none;
+      background: #f97316;
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #fb923c; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    h2 {
+      margin: 20px 0 10px;
+      font-size: 1.3rem;
+      color: #e5e7eb;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px rgba(0,0,0,0.5);
+    }
+    .card img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      background: #111827;
+    }
+    .card-body {
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #f9fafb;
+      min-height: 2.6em;
+    }
+    .meta {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+    .synopsis {
+      font-size: 0.78rem;
+      color: #d1d5db;
+      max-height: 4.6em;
+      overflow: hidden;
+    }
+    .card a {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      text-decoration: none;
+      align-self: flex-start;
+    }
+    .card a:hover { text-decoration: underline; }
+
+    .status {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #1e293b;
+      color: #e5e7eb;
+      margin-right: 4px;
+    }
+    .hidden { display: none; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🍜 Anime Pobre (Sem Crunchyroll)</h1>
+    <p>Busca animes usando a API pública do MyAnimeList (Jikan). Nada de assinatura, só HTML + JS.</p>
+    <form id="search-form">
+      <input id="search-input" type="text" placeholder="Digite o nome do anime (ex: Fate)" />
+      <button type="submit">Buscar</button>
+      <button type="button" id="btn-top">Top 10</button>
+    </form>
+    <div class="status" id="status"></div>
+  </header>
+
+  <main>
+    <section>
+      <h2 id="section-title">Top 10 animes de pobre</h2>
+      <div id="anime-grid" class="grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const grid = document.getElementById('anime-grid');
+    const statusEl = document.getElementById('status');
+    const sectionTitle = document.getElementById('section-title');
+    const form = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const btnTop = document.getElementById('btn-top');
+
+    async function fetchAnimes(url, label) {
+      statusEl.textContent = 'Carregando...';
+      grid.innerHTML = '';
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json(); // Jikan retorna JSON em `data` [web:80][web:118]
+        const animes = json.data || [];
+        if (animes.length === 0) {
+          statusEl.textContent = 'Nada encontrado.';
+        } else {
+          statusEl.textContent = `Mostrando ${animes.length} resultados (${label}).`;
+        }
+        renderCards(animes);
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Erro ao falar com a API. Tenta de novo em alguns segundos.';
+      }
+    }
+
+    function renderCards(list) {
+      grid.innerHTML = '';
+      list.forEach(a => {
+        const img = a.images && a.images.jpg ? a.images.jpg.image_url : '';
+        const title = a.title || 'Sem título';
+        const score = a.score ? a.score.toFixed(1) : 'N/A';
+        const eps = a.episodes || '?';
+        const year = a.year || (a.aired && a.aired.from ? new Date(a.aired.from).getFullYear() : '?');
+        const synopsis = a.synopsis ? a.synopsis.slice(0, 180) + '...' : 'Sem sinopse.';
+
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${img}" alt="${title}" />
+          <div class="card-body">
+            <div class="card-title">${title}</div>
+            <div class="meta">
+              <span class="badge">⭐ ${score}</span>
+              <span class="badge">${eps} eps</span>
+              <span class="badge">${year}</span>
+            </div>
+            <p class="synopsis">${synopsis}</p>
+            <a href="${a.url}" target="_blank" rel="noopener noreferrer">Ver no MyAnimeList</a>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = searchInput.value.trim();
+      if (!q) return;
+      sectionTitle.textContent = `Resultados para: "${q}"`;
+      // Endpoint de busca da Jikan API v4 [web:80][web:110]
+      fetchAnimes(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=20`, `busca "${q}"`);
+    });
+
+    btnTop.addEventListener('click', () => {
+      sectionTitle.textContent = 'Top 10 animes de pobre';
+      fetchAnimes('https://api.jikan.moe/v4/top/anime?limit=10', 'top 10');
+    });
+
+    // Carrega top 10 ao abrir
+    fetchAnimes('https://api.jikan.moe/v4/top/anime?limit=10', 'top 10');
+  </script>
+</body>
+</html>
