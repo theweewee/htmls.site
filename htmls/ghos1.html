@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST1.CLOUD | Santuário Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'JetBrains+Mono', monospace;
+            background-color: black;
+            color: #00ff41;
+            overflow-x: hidden;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes grain {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5%, -10%); }
+            20% { transform: translate(-15%, 5%); }
+            30% { transform: translate(7%, -25%); }
+            40% { transform: translate(-5%, 25%); }
+            50% { transform: translate(-15%, 10%); }
+            60% { transform: translate(15%, 0%); }
+            70% { transform: translate(0%, 15%); }
+            80% { transform: translate(3%, 35%); }
+            90% { transform: translate(-10%, 10%); }
+        }
+
+        .bg-noise {
+            position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+            animation: grain 8s steps(10) infinite;
+            pointer-events: none; z-index: 50; opacity: 0.08;
+        }
+
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px; position: fixed; inset: 0;
+            pointer-events: none; z-index: 51;
+        }
+
+        .monitor-glow {
+            box-shadow: inset 0 0 100px rgba(0, 255, 65, 0.1); position: fixed; inset: 0;
+            pointer-events: none; z-index: 52;
+        }
+
+        .glitch-overlay {
+            position: fixed; inset: 0; background: rgba(0, 255, 65, 0.05);
+            display: none; z-index: 60; pointer-events: none;
+        }
+
+        .glitch-text-layer {
+            clip-path: inset(10% 0 60% 0);
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .ghost-eyes {
+            display: none;
+        }
+
+        .ghost-container:hover .ghost-eyes {
+            display: block;
+        }
+
+        .glitch-span {
+            position: absolute; top: 0; left: 0; width: 100%;
+            display: none;
+        }
+
+        .glitch-container:hover .glitch-span {
+            display: block;
+        }
+
+        @keyframes scan {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(500%); }
+        }
+
+        .btn-scanline {
+            animation: scan 2s linear infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <div class="bg-noise"></div>
+    <div class="scanlines"></div>
+    <div class="monitor-glow"></div>
+    <div id="glitch-trigger" class="glitch-overlay"></div>
+
+    <!-- Background Grid -->
+    <div class="absolute inset-0 z-0 opacity-10" 
+         style="background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(20deg) scale(1.5) translateY(-50px);">
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center w-full max-w-4xl px-4">
+        
+        <!-- Header -->
+        <div class="absolute top-0 left-0 w-full flex justify-between items-center py-6 px-8 border-b border-green-900/30 backdrop-blur-sm">
+            <div class="flex items-center space-x-2 text-sm">
+                <i data-lucide="cloud" class="w-4 h-4 text-green-700"></i>
+                <span class="tracking-widest opacity-60">GHOST1.CLOUD</span>
+            </div>
+            <div class="flex items-center space-x-4 text-xs">
+                <div class="flex items-center space-x-1 text-green-700">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <span>SERVER: HAUNTED</span>
+                </div>
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#00ff41]"></div>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="mt-20 mb-12 flex flex-col items-center">
+            
+            <!-- Ghost Icon Container -->
+            <div class="ghost-container relative mb-8 cursor-pointer floating">
+                <div class="absolute inset-0 bg-green-500 rounded-full blur-[60px] opacity-10 transition-opacity duration-700 hover:opacity-30"></div>
+                
+                <i data-lucide="ghost" stroke-width="1" class="w-32 h-32 text-green-400 drop-shadow-[0_0_15px_rgba(0,255,65,0.5)] transition-all duration-300 hover:scale-110 hover:text-white"></i>
+                
+                <div class="ghost-eyes absolute top-0 left-0 w-full h-full pointer-events-none">
+                    <i data-lucide="ghost" stroke-width="1" class="absolute top-0 left-0 w-32 h-32 text-red-500 mix-blend-screen animate-pulse opacity-50 transform -translate-x-1"></i>
+                    <i data-lucide="ghost" stroke-width="1" class="absolute top-0 left-0 w-32 h-32 text-blue-500 mix-blend-screen animate-pulse opacity-50 transform translate-x-1"></i>
+                </div>
+            </div>
+
+            <!-- Title with Glitch Effect -->
+            <h1 class="text-4xl md:text-6xl font-bold tracking-tighter mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-green-900 drop-shadow-lg text-center">
+                <div class="glitch-container relative inline-block group">
+                    <span class="relative z-10">GHOST1</span>
+                    <span class="glitch-span text-red-500 opacity-70" style="clip-path: inset(10% 0 60% 0);">GHOST1</span>
+                    <span class="glitch-span text-cyan-500 opacity-70" style="clip-path: inset(40% 0 10% 0);">GHOST1</span>
+                </div>
+                <span class="text-green-700">.</span>
+                <div class="glitch-container relative inline-block group">
+                    <span class="relative z-10">CLOUD</span>
+                    <span class="glitch-span text-red-500 opacity-70" style="clip-path: inset(10% 0 60% 0);">CLOUD</span>
+                    <span class="glitch-span text-cyan-500 opacity-70" style="clip-path: inset(40% 0 10% 0);">CLOUD</span>
+                </div>
+            </h1>
+            
+            <p class="text-green-800 text-sm md:text-base tracking-[0.3em] uppercase mb-10 text-center max-w-lg">
+                Santuário digital para algoritmos perdidos
+            </p>
+
+            <!-- Action Button -->
+            <button class="relative px-8 py-3 bg-black border border-green-800 text-green-500 hover:text-black hover:bg-green-500 hover:border-green-400 hover:shadow-[0_0_20px_rgba(0,255,65,0.6)] transition-all duration-300 group overflow-hidden">
+                <span class="relative z-10 flex items-center space-x-2">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                    <span class="font-bold tracking-widest">ACESSAR DASHBOARD</span>
+                </span>
+                <div class="btn-scanline absolute top-0 left-0 w-full h-[2px] bg-white opacity-20"></div>
+            </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full opacity-60 mt-8">
+            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
+                <div class="flex justify-between items-start mb-2">
+                    <i data-lucide="cpu" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
+                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+                </div>
+                <div class="text-xs text-green-800 tracking-widest mb-1">BOTS ATIVOS</div>
+                <div class="text-xl font-bold text-green-600 group-hover:text-white">404</div>
+            </div>
+            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
+                <div class="flex justify-between items-start mb-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
+                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+                </div>
+                <div class="text-xs text-green-800 tracking-widest mb-1">SECURITY LEVEL</div>
+                <div class="text-xl font-bold text-green-600 group-hover:text-white">PARANORMAL</div>
+            </div>
+            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
+                <div class="flex justify-between items-start mb-2">
+                    <i data-lucide="zap" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
+                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+                </div>
+                <div class="text-xs text-green-800 tracking-widest mb-1">ECTOPLASMA</div>
+                <div class="text-xl font-bold text-green-600 group-hover:text-white">98%</div>
+            </div>
+        </div>
+
+        <!-- System Log Container -->
+        <div id="system-logs" class="font-mono text-xs text-green-900/80 mt-8 w-full max-w-md border-t border-green-900/30 pt-4">
+            <!-- Logs injected by JS -->
+        </div>
+        
+        <div class="mt-8 text-[10px] text-green-900 uppercase tracking-widest opacity-40">
+            ID: <span id="session-id"></span> // RIO GRANDE DO SUL
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Session ID Generation
+        document.getElementById('session-id').innerText = Math.random().toString(36).substr(2, 9).toUpperCase();
+
+        // System Log Logic
+        const logsContainer = document.getElementById('system-logs');
+        const possibleLogs = [
+            "DETECTED: SPECTRAL ANOMALY",
+            "BOT_ID_99 HAS JOINED THE LOBBY",
+            "WARNING: HIGH LATENCY IN SECTOR 7",
+            "UPLOADING SOUL_FRAGMENT.DAT...",
+            "ENCRYPTION: ETHEREAL LAYER ACTIVE",
+            "PING: 666ms",
+            "POLTERGEIST DAEMON STARTED",
+            "SCANNING FOR NON-CORPOREAL ENTITIES..."
+        ];
+
+        let currentLogs = [
+            "INIT_SEQUENCE_GHOST_1...",
+            "CONNECTING TO ECTO_CLOUD..."
+        ];
+
+        function updateLogs() {
+            const time = new Date().toLocaleTimeString();
+            const newLog = possibleLogs[Math.floor(Math.random() * possibleLogs.length)];
+            currentLogs.push(`[${time}] ${newLog}`);
+            if (currentLogs.length > 5) currentLogs.shift();
+
+            logsContainer.innerHTML = currentLogs.map(log => `
+                <div class="mb-1 truncate hover:text-green-500 transition-colors cursor-default">
+                    <span class="opacity-50 mr-2">></span>${log}
+                </div>
+            `).join('');
+        }
+
+        updateLogs();
+        setInterval(updateLogs, 2500);
+
+        // Screen Glitch Trigger
+        const glitchOverlay = document.getElementById('glitch-trigger');
+        function triggerGlitch() {
+            glitchOverlay.style.display = 'block';
+            setTimeout(() => {
+                glitchOverlay.style.display = 'none';
+            }, 200);
+            
+            const nextTime = Math.random() * 7000 + 3000;
+            setTimeout(triggerGlitch, nextTime);
+        }
+        setTimeout(triggerGlitch, 5000);
+    </script>
+</body>
+</html>
