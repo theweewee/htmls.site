@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHOST1.CLOUD | Santuário Digital</title>
+    <title>OPENCLAW DASHBOARD | GHOST1.CLOUD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'JetBrains+Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             background-color: black;
             color: #00ff41;
             overflow-x: hidden;
+            user-select: none;
         }
 
         @keyframes float {
@@ -32,6 +33,12 @@
             70% { transform: translate(0%, 15%); }
             80% { transform: translate(3%, 35%); }
             90% { transform: translate(-10%, 10%); }
+        }
+
+        @keyframes scan {
+            0% { top: -10%; opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { top: 110%; opacity: 0; }
         }
 
         .bg-noise {
@@ -57,12 +64,45 @@
             display: none; z-index: 60; pointer-events: none;
         }
 
-        .glitch-text-layer {
-            clip-path: inset(10% 0 60% 0);
+        .glitch-overlay.active {
+            display: block;
+            animation: glitch-anim 0.2s infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); filter: hue-rotate(0deg); }
+            25% { transform: translate(-3px, 3px); filter: hue-rotate(90deg); }
+            50% { transform: translate(3px, -3px); filter: hue-rotate(180deg); }
+            75% { transform: translate(-3px, -3px); filter: hue-rotate(270deg); }
+            100% { transform: translate(0); filter: hue-rotate(360deg); }
+        }
+
+        .btn-scanline {
+            position: absolute; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.4); opacity: 0.1;
+            animation: scan 3s linear infinite; pointer-events: none;
+        }
+
+        .perspective-grid {
+            background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(20deg) scale(1.5) translateY(-50px);
         }
 
         .floating {
             animation: float 6s ease-in-out infinite;
+        }
+
+        .card-neo {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card-neo:hover {
+            border-color: #00ff41;
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
         }
 
         .ghost-eyes {
@@ -73,190 +113,252 @@
             display: block;
         }
 
-        .glitch-span {
-            position: absolute; top: 0; left: 0; width: 100%;
-            display: none;
+        ::-webkit-scrollbar {
+            width: 4px;
         }
-
-        .glitch-container:hover .glitch-span {
-            display: block;
+        ::-webkit-scrollbar-track {
+            background: #000;
         }
-
-        @keyframes scan {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(500%); }
+        ::-webkit-scrollbar-thumb {
+            background: #00441b;
         }
-
-        .btn-scanline {
-            animation: scan 2s linear infinite;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ff41;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen">
+<body class="min-h-screen flex flex-col">
 
     <div class="bg-noise"></div>
     <div class="scanlines"></div>
     <div class="monitor-glow"></div>
-    <div id="glitch-trigger" class="glitch-overlay"></div>
+    <div id="global-glitch" class="glitch-overlay"></div>
+    <div class="absolute inset-0 z-0 opacity-10 perspective-grid"></div>
 
-    <!-- Background Grid -->
-    <div class="absolute inset-0 z-0 opacity-10" 
-         style="background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(20deg) scale(1.5) translateY(-50px);">
-    </div>
-
-    <div class="relative z-10 flex flex-col items-center w-full max-w-4xl px-4">
+    <div class="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-6 py-8">
         
-        <!-- Header -->
-        <div class="absolute top-0 left-0 w-full flex justify-between items-center py-6 px-8 border-b border-green-900/30 backdrop-blur-sm">
-            <div class="flex items-center space-x-2 text-sm">
-                <i data-lucide="cloud" class="w-4 h-4 text-green-700"></i>
-                <span class="tracking-widest opacity-60">GHOST1.CLOUD</span>
+        <!-- Header Superior -->
+        <div class="w-full flex justify-between items-center py-4 px-6 border border-green-900/40 bg-black/40 backdrop-blur-md rounded-xl mb-12 shadow-2xl">
+            <div class="flex items-center space-x-3 text-sm">
+                <i data-lucide="ghost" class="w-5 h-5 text-green-500"></i>
+                <span class="tracking-[0.3em] font-bold">OPENCLAW.HOST <span class="text-green-900">//</span> GHOST1.CLOUD</span>
             </div>
-            <div class="flex items-center space-x-4 text-xs">
-                <div class="flex items-center space-x-1 text-green-700">
-                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                    <span>SERVER: HAUNTED</span>
+            <div class="flex items-center space-x-6 text-[10px]">
+                <div class="hidden md:flex items-center space-x-2 text-green-700">
+                    <i data-lucide="shield" class="w-3 h-3"></i>
+                    <span class="uppercase">Encrypted: Ethereal_SSL</span>
                 </div>
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#00ff41]"></div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-green-500 animate-pulse">SYSTEM ONLINE</span>
+                    <div class="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#00ff41]"></div>
+                </div>
             </div>
         </div>
 
-        <!-- Hero Section -->
-        <div class="mt-20 mb-12 flex flex-col items-center">
-            
-            <!-- Ghost Icon Container -->
-            <div class="ghost-container relative mb-8 cursor-pointer floating">
-                <div class="absolute inset-0 bg-green-500 rounded-full blur-[60px] opacity-10 transition-opacity duration-700 hover:opacity-30"></div>
-                
-                <i data-lucide="ghost" stroke-width="1" class="w-32 h-32 text-green-400 drop-shadow-[0_0_15px_rgba(0,255,65,0.5)] transition-all duration-300 hover:scale-110 hover:text-white"></i>
-                
-                <div class="ghost-eyes absolute top-0 left-0 w-full h-full pointer-events-none">
-                    <i data-lucide="ghost" stroke-width="1" class="absolute top-0 left-0 w-32 h-32 text-red-500 mix-blend-screen animate-pulse opacity-50 transform -translate-x-1"></i>
-                    <i data-lucide="ghost" stroke-width="1" class="absolute top-0 left-0 w-32 h-32 text-blue-500 mix-blend-screen animate-pulse opacity-50 transform translate-x-1"></i>
+        <!-- Hero central -->
+        <div class="flex flex-col items-center mb-16">
+            <div class="ghost-container relative mb-6 cursor-pointer floating">
+                <div class="absolute inset-0 bg-green-500 rounded-full blur-[60px] opacity-10"></div>
+                <i data-lucide="cpu" stroke-width="1" class="w-24 h-24 text-green-400 drop-shadow-[0_0_15px_rgba(0,255,65,0.5)] transition-all duration-300 hover:scale-110 hover:text-white"></i>
+                <div class="ghost-eyes absolute top-0 left-0 w-full h-full">
+                     <i data-lucide="cpu" stroke-width="1" class="absolute top-0 left-0 w-24 h-24 text-red-500 mix-blend-screen animate-pulse opacity-50 transform -translate-x-1"></i>
                 </div>
             </div>
 
-            <!-- Title with Glitch Effect -->
-            <h1 class="text-4xl md:text-6xl font-bold tracking-tighter mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-green-900 drop-shadow-lg text-center">
-                <div class="glitch-container relative inline-block group">
-                    <span class="relative z-10">GHOST1</span>
-                    <span class="glitch-span text-red-500 opacity-70" style="clip-path: inset(10% 0 60% 0);">GHOST1</span>
-                    <span class="glitch-span text-cyan-500 opacity-70" style="clip-path: inset(40% 0 10% 0);">GHOST1</span>
-                </div>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-2 text-center group">
+                <span class="text-white group-hover:text-green-400 transition-colors">CONTAINER</span>
                 <span class="text-green-700">.</span>
-                <div class="glitch-container relative inline-block group">
-                    <span class="relative z-10">CLOUD</span>
-                    <span class="glitch-span text-red-500 opacity-70" style="clip-path: inset(10% 0 60% 0);">CLOUD</span>
-                    <span class="glitch-span text-cyan-500 opacity-70" style="clip-path: inset(40% 0 10% 0);">CLOUD</span>
-                </div>
+                <span class="text-green-500">EXPLORER</span>
             </h1>
-            
-            <p class="text-green-800 text-sm md:text-base tracking-[0.3em] uppercase mb-10 text-center max-w-lg">
-                Santuário digital para algoritmos perdidos
+            <p class="text-green-800 text-xs md:text-sm tracking-[0.5em] uppercase mb-8">
+                Digital Sanctum for Lost Algorithms
             </p>
-
-            <!-- Action Button -->
-            <button class="relative px-8 py-3 bg-black border border-green-800 text-green-500 hover:text-black hover:bg-green-500 hover:border-green-400 hover:shadow-[0_0_20px_rgba(0,255,65,0.6)] transition-all duration-300 group overflow-hidden">
-                <span class="relative z-10 flex items-center space-x-2">
-                    <i data-lucide="terminal" class="w-4 h-4"></i>
-                    <span class="font-bold tracking-widest">ACESSAR DASHBOARD</span>
-                </span>
-                <div class="btn-scanline absolute top-0 left-0 w-full h-[2px] bg-white opacity-20"></div>
-            </button>
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full opacity-60 mt-8">
-            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
-                <div class="flex justify-between items-start mb-2">
-                    <i data-lucide="cpu" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
-                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mb-12">
+            <div class="card-neo p-6 relative overflow-hidden group">
+                <div class="btn-scanline"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <i data-lucide="file-code" class="w-8 h-8 text-green-500 group-hover:rotate-12 transition-transform"></i>
+                    <span class="text-[10px] text-green-900 font-bold">METRIC_A1</span>
                 </div>
-                <div class="text-xs text-green-800 tracking-widest mb-1">BOTS ATIVOS</div>
-                <div class="text-xl font-bold text-green-600 group-hover:text-white">404</div>
+                <div id="totalFiles" class="text-3xl font-black text-white">--</div>
+                <div class="text-[10px] text-green-700 tracking-widest uppercase mt-1">Total Objects</div>
             </div>
-            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
-                <div class="flex justify-between items-start mb-2">
-                    <i data-lucide="shield-alert" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
-                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+            <div class="card-neo p-6 relative overflow-hidden group">
+                <div class="btn-scanline" style="animation-delay: 1.5s"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <i data-lucide="globe" class="w-8 h-8 text-green-500 group-hover:rotate-12 transition-transform"></i>
+                    <span class="text-[10px] text-green-900 font-bold">METRIC_B2</span>
                 </div>
-                <div class="text-xs text-green-800 tracking-widest mb-1">SECURITY LEVEL</div>
-                <div class="text-xl font-bold text-green-600 group-hover:text-white">PARANORMAL</div>
+                <div id="htmlPages" class="text-3xl font-black text-white">0</div>
+                <div class="text-[10px] text-green-700 tracking-widest uppercase mt-1">HTML Nodes</div>
             </div>
-            <div class="border border-green-900/40 bg-black/50 p-4 backdrop-blur-sm hover:border-green-500/50 transition-colors group cursor-not-allowed">
-                <div class="flex justify-between items-start mb-2">
-                    <i data-lucide="zap" class="w-4 h-4 text-green-800 group-hover:text-green-400"></i>
-                    <i data-lucide="lock" class="w-3 h-3 text-green-900"></i>
+            <div class="card-neo p-6 relative overflow-hidden group">
+                <div class="btn-scanline" style="animation-delay: 0.7s"></div>
+                <div class="flex justify-between items-start mb-4">
+                    <i data-lucide="zap" class="w-8 h-8 text-green-500 group-hover:rotate-12 transition-transform"></i>
+                    <span class="text-[10px] text-green-900 font-bold">METRIC_C3</span>
                 </div>
-                <div class="text-xs text-green-800 tracking-widest mb-1">ECTOPLASMA</div>
-                <div class="text-xl font-bold text-green-600 group-hover:text-white">98%</div>
+                <div id="containerSize" class="text-3xl font-black text-white">--</div>
+                <div class="text-[10px] text-green-700 tracking-widest uppercase mt-1">Filesystem Weight</div>
             </div>
         </div>
 
-        <!-- System Log Container -->
-        <div id="system-logs" class="font-mono text-xs text-green-900/80 mt-8 w-full max-w-md border-t border-green-900/30 pt-4">
-            <!-- Logs injected by JS -->
-        </div>
-        
-        <div class="mt-8 text-[10px] text-green-900 uppercase tracking-widest opacity-40">
-            ID: <span id="session-id"></span> // RIO GRANDE DO SUL
+        <!-- Content Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+            <!-- Column 1: Logs & HTML -->
+            <div class="space-y-8">
+                <section class="card-neo p-8 h-[400px] flex flex-col">
+                    <h2 class="text-xl font-bold mb-6 flex items-center">
+                        <i data-lucide="terminal" class="w-5 h-5 mr-3 text-green-500"></i>
+                        SYSTEM_LOGS
+                    </h2>
+                    <div id="system-logs" class="flex-1 overflow-y-auto font-mono text-[11px] text-green-600/80 space-y-2">
+                        <!-- Logs are injected here -->
+                    </div>
+                </section>
+                
+                <section class="card-neo p-8 min-h-[300px]">
+                    <h2 class="text-xl font-bold mb-6 flex items-center">
+                        <i data-lucide="layers" class="w-5 h-5 mr-3 text-green-500"></i>
+                        DETECTED_DOMAINS
+                    </h2>
+                    <div id="pagesList" class="grid grid-cols-1 gap-3">
+                        <div class="p-4 border border-green-900/30 rounded bg-black/40 text-green-900 italic text-center text-sm">Awaiting spectral link...</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Column 2: File Browser -->
+            <section class="card-neo p-8 h-full">
+                 <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <i data-lucide="folder-tree" class="w-5 h-5 mr-3 text-green-500"></i>
+                    FS_EXPLORER
+                </h2>
+                <div id="filesList" class="space-y-2 overflow-y-auto max-h-[700px] pr-2">
+                    <!-- Files are injected here -->
+                </div>
+            </section>
         </div>
 
+        <!-- Footer details -->
+        <div class="mt-12 flex flex-col items-center text-[10px] text-green-900 uppercase tracking-widest opacity-60">
+            <div class="mb-2">SESSION_ID: <span id="session-id" class="text-green-600"></span></div>
+            <div class="flex space-x-4">
+                <span>RIO GRANDE DO SUL // BR</span>
+                <span>NULL_PTR_EXCEPTION PROTECTION: ACTIVE</span>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Initialize Icons
         lucide.createIcons();
 
-        // Session ID Generation
-        document.getElementById('session-id').innerText = Math.random().toString(36).substr(2, 9).toUpperCase();
+        // Session Info
+        document.getElementById('session-id').innerText = Math.random().toString(36).substr(2, 12).toUpperCase();
 
-        // System Log Logic
-        const logsContainer = document.getElementById('system-logs');
-        const possibleLogs = [
-            "DETECTED: SPECTRAL ANOMALY",
-            "BOT_ID_99 HAS JOINED THE LOBBY",
-            "WARNING: HIGH LATENCY IN SECTOR 7",
-            "UPLOADING SOUL_FRAGMENT.DAT...",
-            "ENCRYPTION: ETHEREAL LAYER ACTIVE",
-            "PING: 666ms",
-            "POLTERGEIST DAEMON STARTED",
-            "SCANNING FOR NON-CORPOREAL ENTITIES..."
-        ];
+        // Mock / Logic for Loading Data
+        async function loadData() {
+            // In a real environment, replace this with your actual API endpoint
+            // For this UI demo, we simulate a response
+            const mockData = {
+                files: [
+                    { name: "ghost_daemon.js", size: 10240 },
+                    { name: "index.html", size: 2048 },
+                    { name: "style.css", size: 5120 },
+                    { name: "config.yaml", size: 128 },
+                    { name: "secret_keys.txt.enc", size: 40960 },
+                    { name: "manifest.json", size: 1024 },
+                    { name: "spectral_engine.c", size: 256000 },
+                    { name: "ui_core.lib", size: 12000 }
+                ],
+                htmlPages: ["index.html", "dashboard.html", "login.html", "portal_404.html"],
+                size: "1.2 GB"
+            };
 
-        let currentLogs = [
-            "INIT_SEQUENCE_GHOST_1...",
-            "CONNECTING TO ECTO_CLOUD..."
-        ];
+            renderData(mockData);
+        }
 
-        function updateLogs() {
-            const time = new Date().toLocaleTimeString();
-            const newLog = possibleLogs[Math.floor(Math.random() * possibleLogs.length)];
-            currentLogs.push(`[${time}] ${newLog}`);
-            if (currentLogs.length > 5) currentLogs.shift();
+        function renderData(data) {
+            document.getElementById('totalFiles').textContent = data.files.length;
+            document.getElementById('htmlPages').textContent = data.htmlPages.length;
+            document.getElementById('containerSize').textContent = data.size;
 
-            logsContainer.innerHTML = currentLogs.map(log => `
-                <div class="mb-1 truncate hover:text-green-500 transition-colors cursor-default">
-                    <span class="opacity-50 mr-2">></span>${log}
+            // Render HTML pages
+            document.getElementById('pagesList').innerHTML = data.htmlPages.map(p => `
+                <a href="#" class="group flex items-center justify-between p-3 border border-green-900/40 rounded bg-green-500/5 hover:bg-green-500/20 hover:border-green-500/60 transition-all">
+                    <span class="text-sm font-bold">${p}</span>
+                    <i data-lucide="external-link" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                </a>
+            `).join('');
+
+            // Render File List
+            document.getElementById('filesList').innerHTML = data.files.map(f => `
+                <div class="flex items-center justify-between p-3 border-b border-green-900/20 hover:bg-white/5 transition-colors group cursor-crosshair">
+                    <div class="flex items-center space-x-3">
+                        <i data-lucide="file-text" class="w-4 h-4 text-green-700 group-hover:text-green-400"></i>
+                        <span class="text-xs font-mono">${f.name}</span>
+                    </div>
+                    <span class="text-[10px] opacity-40">${(f.size/1024).toFixed(1)} KB</span>
                 </div>
             `).join('');
+
+            lucide.createIcons();
         }
 
-        updateLogs();
-        setInterval(updateLogs, 2500);
+        // Log logic
+        const logsContainer = document.getElementById('system-logs');
+        const possibleLogs = [
+            "ANOMALY DETECTED IN SECTOR 4",
+            "BYPASSING KERNEL RESTRICTIONS...",
+            "UPLOADING SPECTRAL DATA TO CLOUD",
+            "CONNECTED TO HAUNTED_SERVER_01",
+            "PACKET LOSS DETECTED: 0.003%",
+            "POLTERGEIST DAEMON IDLE",
+            "DECRYPTING ETHEREAL LAYER...",
+            "SCANNING FOR HUMAN INTERFERENCE... NONE."
+        ];
+        let currentLogs = ["> INIT_SEQUENCE_LOADED", "> OPENCLAW_CORE_ACTIVE"];
 
-        // Screen Glitch Trigger
-        const glitchOverlay = document.getElementById('glitch-trigger');
+        function updateLogs() {
+            const time = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+            const newLog = possibleLogs[Math.floor(Math.random() * possibleLogs.length)];
+            currentLogs.push(`[${time}] ${newLog}`);
+            if (currentLogs.length > 15) currentLogs.shift();
+
+            logsContainer.innerHTML = currentLogs.map(log => `
+                <div class="hover:text-white transition-colors cursor-default select-all">
+                    <span class="text-green-900 mr-2">$</span>${log}
+                </div>
+            `).join('');
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // Global Glitch Controller
         function triggerGlitch() {
-            glitchOverlay.style.display = 'block';
-            setTimeout(() => {
-                glitchOverlay.style.display = 'none';
-            }, 200);
+            const overlay = document.getElementById('global-glitch');
+            overlay.classList.add('active');
+            setTimeout(() => overlay.classList.remove('active'), 150);
             
-            const nextTime = Math.random() * 7000 + 3000;
-            setTimeout(triggerGlitch, nextTime);
+            const next = Math.random() * 8000 + 4000;
+            setTimeout(triggerGlitch, next);
         }
-        setTimeout(triggerGlitch, 5000);
+
+        // Initialization
+        loadData();
+        setInterval(updateLogs, 3000);
+        setTimeout(triggerGlitch, 2000);
+        
+        // Mouse Move Glitch Effect
+        document.addEventListener('mousemove', (e) => {
+            if(Math.random() > 0.99) {
+                const overlay = document.getElementById('global-glitch');
+                overlay.classList.add('active');
+                setTimeout(() => overlay.classList.remove('active'), 80);
+            }
+        });
     </script>
 </body>
 </html>
