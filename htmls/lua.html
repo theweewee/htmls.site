@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superfície Lunar Interativa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: #0f0;
+            border: 2px solid #0f0;
+            z-index: 1000;
+            min-width: 280px;
+        }
+        
+        #controls h3 {
+            margin-bottom: 15px;
+            text-align: center;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+        
+        .control-group {
+            margin: 15px 0;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #0f0;
+            border: none;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #0ff;
+            box-shadow: 0 0 20px #0ff;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: #0f0;
+            border: 2px solid #0f0;
+            font-size: 12px;
+        }
+        
+        .meteor {
+            animation: meteorFall 2s linear;
+        }
+        
+        @keyframes meteorFall {
+            from {
+                opacity: 1;
+                transform: translate(0, 0);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-200px, 200px);
+            }
+        }
+        
+        .explosion {
+            animation: explode 0.5s ease-out;
+        }
+        
+        @keyframes explode {
+            from {
+                opacity: 1;
+                transform: scale(0);
+            }
+            to {
+                opacity: 0;
+                transform: scale(3);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>🌙 CONTROLE LUNAR</h3>
+        
+        <div class="control-group">
+            <label>Velocidade Estrelas: <span id="starSpeed">1</span>x</label>
+            <input type="range" id="starSpeedControl" min="0.1" max="3" step="0.1" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label>Rotação Terra: <span id="earthRotation">0</span>°</label>
+            <input type="range" id="earthRotationControl" min="0" max="360" step="1" value="0">
+        </div>
+        
+        <div class="control-group">
+            <label>Zoom Terra: <span id="earthZoom">1</span>x</label>
+            <input type="range" id="earthZoomControl" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        
+        <button id="toggleStars">⭐ Pausar Estrelas</button>
+        <button id="addMeteor">☄️ Lançar Meteoro</button>
+        <button id="toggleDust">💨 Ativar/Desativar Poeira</button>
+        <button id="randomCrater">💥 Criar Cratera</button>
+        <button id="dayNight">🌗 Modo Dia/Noite</button>
+    </div>
+    
+    <div class="info">
+        <div>🖱️ Clique para criar explosões</div>
+        <div>⌨️ Espaço para meteoro</div>
+        <div>🌍 Arraste a Terra</div>
+    </div>
+
+    <svg id="moonScene" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <defs>
+            <radialGradient id="earthGlow" cx="50%" cy="50%">
+                <stop offset="0%" style="stop-color:#4a9eff;stop-opacity:0.3"/>
+                <stop offset="100%" style="stop-color:#1e5a9e;stop-opacity:0"/>
+            </radialGradient>
+            
+            <radialGradient id="earthSurface" cx="35%" cy="35%">
+                <stop offset="0%" style="stop-color:#7cb8ff"/>
+                <stop offset="30%" style="stop-color:#4a9eff"/>
+                <stop offset="60%" style="stop-color:#2670c7"/>
+                <stop offset="100%" style="stop-color:#0d3d6b"/>
+            </radialGradient>
+            
+            <linearGradient id="moonSurface" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#8a8a8a"/>
+                <stop offset="50%" style="stop-color:#6b6b6b"/>
+                <stop offset="100%" style="stop-color:#4a4a4a"/>
+            </linearGradient>
+            
+            <linearGradient id="moonSurfaceNight" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#2a2a2a"/>
+                <stop offset="50%" style="stop-color:#1b1b1b"/>
+                <stop offset="100%" style="stop-color:#0a0a0a"/>
+            </linearGradient>
+            
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+            
+            <filter id="crater">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                <feOffset dx="2" dy="2" result="offsetblur"/>
+                <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.5"/>
+                </feComponentTransfer>
+                <feMerge>
+                    <feMergeNode/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        
+        <rect id="space" width="1920" height="1080" fill="#000000"/>
+        
+        <g id="stars"></g>
+        
+        <g id="meteors"></g>
+        
+        <g id="earth" transform="translate(0,0)">
+            <circle cx="960" cy="280" r="200" fill="url(#earthGlow)" filter="url(#glow)"/>
+            <g id="earthRotatable">
+                <circle cx="960" cy="280" r="150" fill="url(#earthSurface)"/>
+                <ellipse cx="920" cy="260" rx="35" ry="15" fill="#fff" opacity="0.3"/>
+                <ellipse cx="980" cy="290" rx="40" ry="18" fill="#fff" opacity="0.25"/>
+                <ellipse cx="950" cy="310" rx="28" ry="12" fill="#fff" opacity="0.3"/>
+                <path d="M 900,270 Q 910,265 920,270 T 940,275 L 935,285 Q 925,288 915,283 Z" fill="#2d5f3f" opacity="0.6"/>
+                <path d="M 970,250 Q 985,248 995,255 L 1000,268 Q 992,275 980,270 Z" fill="#3d6f4f" opacity="0.5"/>
+            </g>
+        </g>
+        
+        <g id="moonSurfaceGroup">
+            <rect id="surfaceBase" y="650" width="1920" height="430" fill="url(#moonSurface)"/>
+            
+            <g id="craters">
+                <ellipse cx="320" cy="820" rx="120" ry="80" fill="#3a3a3a" filter="url(#crater)"/>
+                <ellipse cx="320" cy="820" rx="100" ry="65" fill="#4a4a4a"/>
+                <ellipse cx="300" cy="805" rx="30" ry="20" fill="#2a2a2a"/>
+                
+                <ellipse cx="1450" cy="880" rx="140" ry="90" fill="#3a3a3a" filter="url(#crater)"/>
+                <ellipse cx="1450" cy="880" rx="115" ry="73" fill="#4a4a4a"/>
+                <ellipse cx="1420" cy="860" rx="35" ry="22" fill="#2a2a2a"/>
+                
+                <ellipse cx="680" cy="750" rx="80" ry="50" fill="#3a3a3a" filter="url(#crater)"/>
+                <ellipse cx="680" cy="750" rx="65" ry="40" fill="#4a4a4a"/>
+                
+                <ellipse cx="1120" cy="920" rx="70" ry="45" fill="#3a3a3a" filter="url(#crater)"/>
+                <ellipse cx="1120" cy="920" rx="55" ry="35" fill="#4a4a4a"/>
+            </g>
+            
+            <g id="rocks">
+                <polygon points="150,1000 180,1020 165,1040 135,1035" fill="#5a5a5a"/>
+                <polygon points="450,950 470,965 460,985 440,975" fill="#6a6a6a"/>
+                <polygon points="950,990 975,1010 960,1035 930,1025" fill="#5a5a5a"/>
+            </g>
+        </g>
+        
+        <g id="dust" opacity="0.3"></g>
+        
+        <g id="explosions"></g>
+    </svg>
+
+    <script>
+        const svg = document.getElementById('moonScene');
+        const starsGroup = document.getElementById('stars');
+        const meteorsGroup = document.getElementById('meteors');
+        const dustGroup = document.getElementById('dust');
+        const explosionsGroup = document.getElementById('explosions');
+        const earthGroup = document.getElementById('earth');
+        const earthRotatable = document.getElementById('earthRotatable');
+        const cratersGroup = document.getElementById('craters');
+        
+        let starsActive = true;
+        let dustActive = true;
+        let isDayMode = true;
+        let starSpeedMultiplier = 1;
+        let isDraggingEarth = false;
+        let earthX = 0;
+        let earthY = 0;
+        
+        // Criar estrelas
+        function createStars(count = 100) {
+            starsGroup.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                const x = Math.random() * 2000;
+                const y = Math.random() * 600;
+                const r = Math.random() * 1.5 + 0.5;
+                const duration = Math.random() * 30 + 30;
+                
+                star.setAttribute('cx', x);
+                star.setAttribute('cy', y);
+                star.setAttribute('r', r);
+                star.setAttribute('fill', '#fff');
+                star.setAttribute('opacity', Math.random() * 0.5 + 0.5);
+                
+                const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+                animate.setAttribute('attributeName', 'cx');
+                animate.setAttribute('from', x);
+                animate.setAttribute('to', -50);
+                animate.setAttribute('dur', duration + 's');
+                animate.setAttribute('repeatCount', 'indefinite');
+                
+                star.appendChild(animate);
+                starsGroup.appendChild(star);
+            }
+        }
+        
+        // Criar poeira
+        function createDust() {
+            dustGroup.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const dust = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                const x = Math.random() * 1920;
+                const y = Math.random() * 100 + 650;
+                const r = Math.random() * 2 + 1;
+                
+                dust.setAttribute('cx', x);
+                dust.setAttribute('cy', y);
+                dust.setAttribute('r', r);
+                dust.setAttribute('fill', '#8a8a8a');
+                
+                const animateY = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+                animateY.setAttribute('attributeName', 'cy');
+                animateY.setAttribute('values', `${y};${y-20};${y}`);
+                animateY.setAttribute('dur', (Math.random() * 5 + 5) + 's');
+                animateY.setAttribute('repeatCount', 'indefinite');
+                
+                const animateOpacity = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+                animateOpacity.setAttribute('attributeName', 'opacity');
+                animateOpacity.setAttribute('values', '0.3;0.1;0.3');
+                animateOpacity.setAttribute('dur', (Math.random() * 5 + 5) + 's');
+                animateOpacity.setAttribute('repeatCount', 'indefinite');
+                
+                dust.appendChild(animateY);
+                dust.appendChild(animateOpacity);
+                dustGroup.appendChild(dust);
+            }
+        }
+        
+        // Criar meteoro
+        function createMeteor() {
+            const meteor = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            meteor.classList.add('meteor');
+            
+            const x = Math.random() * 1920;
+            const y = Math.random() * 300;
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', y);
+            circle.setAttribute('r', 5);
+            circle.setAttribute('fill', '#ff6600');
+            circle.setAttribute('filter', 'url(#glow)');
+            
+            const tail = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tail.setAttribute('x1', x);
+            tail.setAttribute('y1', y);
+            tail.setAttribute('x2', x + 50);
+            tail.setAttribute('y2', y - 50);
+            tail.setAttribute('stroke', '#ff9933');
+            tail.setAttribute('stroke-width', 3);
+            tail.setAttribute('opacity', 0.6);
+            
+            meteor.appendChild(tail);
+            meteor.appendChild(circle);
+            meteorsGroup.appendChild(meteor);
+            
+            setTimeout(() => {
+                meteor.remove();
+                createExplosion(x - 200, y + 200);
+            }, 2000);
+        }
+        
+        // Criar explosão
+        function createExplosion(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                particle.classList.add('explosion');
+                particle.setAttribute('cx', x);
+                particle.setAttribute('cy', y);
+                particle.setAttribute('r', Math.random() * 10 + 5);
+                particle.setAttribute('fill', `hsl(${Math.random() * 60 + 15}, 100%, 50%)`);
+                
+                explosionsGroup.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 500);
+            }
+        }
+        
+        // Criar cratera nova
+        function createCrater() {
+            const x = Math.random() * 1920;
+            const y = Math.random() * 300 + 750;
+            const rx = Math.random() * 80 + 40;
+            const ry = Math.random() * 50 + 25;
+            
+            const crater1 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            crater1.setAttribute('cx', x);
+            crater1.setAttribute('cy', y);
+            crater1.setAttribute('rx', rx);
+            crater1.setAttribute('ry', ry);
+            crater1.setAttribute('fill', '#3a3a3a');
+            crater1.setAttribute('filter', 'url(#crater)');
+            
+            const crater2 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+            crater2.setAttribute('cx', x);
+            crater2.setAttribute('cy', y);
+            crater2.setAttribute('rx', rx * 0.8);
+            crater2.setAttribute('ry', ry * 0.8);
+            crater2.setAttribute('fill', '#4a4a4a');
+            
+            cratersGroup.appendChild(crater1);
+            cratersGroup.appendChild(crater2);
+            
+            createExplosion(x, y);
+        }
+        
+        // Controles
+        document.getElementById('starSpeedControl').addEventListener('input', (e) => {
+            starSpeedMultiplier = e.target.value;
+            document.getElementById('starSpeed').textContent = starSpeedMultiplier;
+            
+            const animates = starsGroup.querySelectorAll('animate');
+            animates.forEach(anim => {
+                const baseDur = parseFloat(anim.getAttribute('dur'));
+                anim.setAttribute('dur', (baseDur / starSpeedMultiplier) + 's');
+            });
+        });
+        
+        document.getElementById('earthRotationControl').addEventListener('input', (e) => {
+            const rotation = e.target.value;
+            document.getElementById('earthRotation').textContent = rotation;
+            earthRotatable.setAttribute('transform', `rotate(${rotation} 960 280)`);
+        });
+        
+        document.getElementById('earthZoomControl').addEventListener('input', (e) => {
+            const zoom = e.target.value;
+            document.getElementById('earthZoom').textContent = zoom;
+            earthRotatable.setAttribute('transform', 
+                earthRotatable.getAttribute('transform').replace(/scale\([^)]*\)/, '') + 
+                ` scale(${zoom})`);
+        });
+        
+        document.getElementById('toggleStars').addEventListener('click', () => {
+            starsActive = !starsActive;
+            starsGroup.style.display = starsActive ? 'block' : 'none';
+            document.getElementById('toggleStars').textContent = starsActive ? '⭐ Pausar Estrelas' : '⭐ Ativar Estrelas';
+        });
+        
+        document.getElementById('addMeteor').addEventListener('click', createMeteor);
+        
+        document.getElementById('toggleDust').addEventListener('click', () => {
+            dustActive = !dustActive;
+            dustGroup.style.opacity = dustActive ? '0.3' : '0';
+        });
+        
+        document.getElementById('randomCrater').addEventListener('click', createCrater);
+        
+        document.getElementById('dayNight').addEventListener('click', () => {
+            isDayMode = !isDayMode;
+            const surfaceBase = document.getElementById('surfaceBase');
+            surfaceBase.setAttribute('fill', isDayMode ? 'url(#moonSurface)' : 'url(#moonSurfaceNight)');
+            document.getElementById('space').setAttribute('fill', isDayMode ? '#000000' : '#0a0a1a');
+        });
+        
+        // Click para explosão
+        svg.addEventListener('click', (e) => {
+            const rect = svg.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (1920 / rect.width);
+            const y = (e.clientY - rect.top) * (1080 / rect.height);
+            
+            if (y < 650) {
+                createExplosion(x, y);
+            }
+        });
+        
+        // Drag na Terra
+        earthGroup.addEventListener('mousedown', () => {
+            isDraggingEarth = true;
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingEarth) {
+                earthX += e.movementX;
+                earthY += e.movementY;
+                earthGroup.setAttribute('transform', `translate(${earthX}, ${earthY})`);
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDraggingEarth = false;
+        });
+        
+        // Tecla Espaço para meteoro
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                createMeteor();
+            }
+        });
+        
+        // Inicializar
+        createStars(100);
+        createDust();
+        
+    </script>
+</body>
+</html>
