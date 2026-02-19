@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Visual Explainer — nicobailon</title>
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --surface: #151829;
+    --surface2: #1e2235;
+    --border: #2a2f4a;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --accent4: #ffd166;
+    --text: #e4e8ff;
+    --muted: #8892b0;
+    --glow: rgba(108,99,255,0.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── ANIMATED BACKGROUND ── */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(108,99,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .bg-orb {
+    position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(108,99,255,.15); top: -100px; left: -100px; animation: float1 8s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 400px; background: rgba(0,212,170,.1); bottom: -80px; right: -80px; animation: float2 10s ease-in-out infinite; }
+  .orb3 { width: 300px; height: 300px; background: rgba(255,107,107,.08); top: 40%; left: 50%; animation: float3 12s ease-in-out infinite; }
+  @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
+  @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,-40px)} }
+  @keyframes float3 { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.2)} }
+
+  /* ── LAYOUT ── */
+  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center; padding: 80px 0 60px;
+    animation: fadeDown .8s ease both;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(108,99,255,.15); border: 1px solid var(--border);
+    border-radius: 100px; padding: 6px 18px; font-size: 12px;
+    color: var(--accent); letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .hero-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); display: inline-block; animation: pulse 2s infinite; }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.15;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 70%, var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 20px;
+  }
+  .hero p { font-size: 1.1rem; color: var(--muted); max-width: 620px; margin: 0 auto 36px; line-height: 1.7; }
+  .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px;
+    border-radius: 12px; font-size: .95rem; font-weight: 600; cursor: pointer;
+    text-decoration: none; border: none; transition: all .2s ease;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 30px var(--glow); }
+  .btn-primary:hover { background: #8076ff; transform: translateY(-2px); box-shadow: 0 0 50px var(--glow); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); transform: translateY(-2px); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;
+    padding: 28px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; margin-bottom: 70px;
+    animation: fadeUp .8s .2s ease both;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+  /* ── SECTION TITLES ── */
+  .section-title {
+    font-size: 1.6rem; font-weight: 700; margin-bottom: 28px; text-align: center;
+  }
+  .section-title span { color: var(--accent); }
+
+  /* ── HOW IT WORKS ── */
+  .flow-steps {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2px;
+    background: var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 70px;
+    animation: fadeUp .8s .3s ease both;
+  }
+  .flow-step {
+    background: var(--surface); padding: 32px 24px; text-align: center;
+    transition: background .2s ease; position: relative;
+  }
+  .flow-step::after {
+    content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-size: 1.4rem; z-index: 2;
+  }
+  .flow-step:last-child::after { content: ''; }
+  .flow-step:hover { background: var(--surface2); }
+  .flow-icon { font-size: 2.4rem; margin-bottom: 14px; display: block; }
+  .flow-num { font-size: .7rem; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 8px; }
+  .flow-step h3 { font-size: .95rem; font-weight: 700; margin-bottom: 8px; }
+  .flow-step p { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── FEATURE CARDS ── */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;
+    margin-bottom: 70px;
+  }
+  .feature-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; transition: all .2s ease; cursor: default;
+    animation: fadeUp .8s .4s ease both;
+  }
+  .feature-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(108,99,255,.15); }
+  .feature-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 18px;
+  }
+  .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .feature-card p { font-size: .88rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── DEMO COMPARADOR ── */
+  .demo-section { margin-bottom: 70px; animation: fadeUp .8s .45s ease both; }
+  .demo-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .demo-tab {
+    padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: .88rem; font-weight: 600;
+    transition: all .15s ease; border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+  }
+  .demo-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .demo-panels .panel {
+    display: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .demo-panels .panel.active { display: block; }
+  .panel-header {
+    display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .panel-dots { display: flex; gap: 6px; }
+  .panel-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+  .panel-title { font-size: .8rem; color: var(--muted); flex: 1; text-align: center; }
+  .panel-body { padding: 24px; font-size: .88rem; line-height: 1.8; }
+  .bad-output { color: var(--muted); font-family: monospace; }
+  .good-output .html-tag { color: var(--accent); }
+  .good-output .html-attr { color: var(--accent2); }
+  .good-output .html-val { color: var(--accent4); }
+  .good-output .html-text { color: var(--text); }
+
+  /* ── TEMPLATES GRID ── */
+  .templates-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;
+    margin-bottom: 70px; animation: fadeUp .8s .5s ease both;
+  }
+  .template-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; cursor: pointer; transition: all .2s ease;
+  }
+  .template-card:hover { border-color: var(--accent2); transform: translateY(-3px); }
+  .template-preview {
+    height: 110px; padding: 16px;
+    display: flex; flex-direction: column; gap: 6px; justify-content: center;
+  }
+  .tpl-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+  .tpl-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .tpl-badge { display: inline-flex; background: rgba(108,99,255,.2); border-radius: 4px; padding: 2px 6px; font-size: 9px; color: var(--accent); width: fit-content; }
+  .tpl-lines { display: flex; flex-direction: column; gap: 4px; }
+  .tpl-line { height: 6px; border-radius: 3px; background: var(--border); }
+  .template-meta { padding: 12px 16px; border-top: 1px solid var(--border); }
+  .template-name { font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+  .template-desc { font-size: .75rem; color: var(--muted); }
+
+  /* ── SLASH COMMANDS ── */
+  .commands-section { margin-bottom: 70px; animation: fadeUp .8s .55s ease both; }
+  .command-list { display: flex; flex-direction: column; gap: 10px; }
+  .command-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 22px; display: flex; align-items: center; gap: 16px;
+    transition: all .2s ease; cursor: pointer;
+  }
+  .command-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .cmd-tag {
+    font-family: 'Courier New', monospace; font-size: .9rem; font-weight: 700;
+    color: var(--accent2); background: rgba(0,212,170,.1); padding: 4px 12px; border-radius: 6px; white-space: nowrap;
+  }
+  .cmd-desc { font-size: .88rem; color: var(--muted); }
+  .cmd-arrow { margin-left: auto; color: var(--border); font-size: 1rem; }
+  .command-item:hover .cmd-arrow { color: var(--accent); }
+
+  /* ── CSS PATTERNS ── */
+  .patterns-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px;
+    margin-bottom: 70px; animation: fadeUp .8s .6s ease both;
+  }
+  .pattern-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 16px; text-align: center; cursor: pointer; transition: all .2s ease;
+  }
+  .pattern-card:hover { border-color: var(--accent4); transform: scale(1.03); }
+  .pattern-emoji { font-size: 2rem; margin-bottom: 10px; display: block; }
+  .pattern-name { font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
+  .pattern-type { font-size: .72rem; color: var(--muted); }
+
+  /* ── INSTALL ── */
+  .install-section { margin-bottom: 70px; animation: fadeUp .8s .65s ease both; }
+  .code-block {
+    background: #0a0c14; border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px; background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .code-lang { font-size: .78rem; color: var(--muted); }
+  .copy-btn {
+    font-size: .75rem; color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 8px;
+    border-radius: 4px; transition: background .15s;
+  }
+  .copy-btn:hover { background: rgba(108,99,255,.15); }
+  .code-body { padding: 18px; font-family: 'Courier New', monospace; font-size: .88rem; overflow-x: auto; }
+  .code-comment { color: #4a5270; }
+  .code-keyword { color: var(--accent); }
+  .code-string { color: var(--accent4); }
+  .code-func { color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 40px 0 0;
+    border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem;
+    animation: fadeUp .8s .7s ease both;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeDown { from{ opacity:0; transform:translateY(-20px) } to{ opacity:1; transform:translateY(0) } }
+  @keyframes fadeUp   { from{ opacity:0; transform:translateY(20px)  } to{ opacity:1; transform:translateY(0) } }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
+
+<div class="wrapper">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge"><span></span> Agent Skill — Open Source</div>
+    <h1>Visual Explainer</h1>
+    <p>Chega de "AI explica X" em 2000 palavras de chat. Force seu agente a produzir explicações como páginas HTML limpas, consistentes e publicáveis — prontas para compartilhar ou inserir em docs.</p>
+    <div class="hero-ctas">
+      <a href="https://github.com/nicobailon/visual-explainer" target="_blank" class="btn btn-primary">
+        ⭐ Ver no GitHub
+      </a>
+      <a href="#demo" class="btn btn-secondary">
+        🎮 Ver Demo
+      </a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Templates CSS</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Artefato por Explicação</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Scroll Maratonas</div></div>
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Open Source</div></div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section>
+    <div class="section-title">Como <span>Funciona</span></div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <span class="flow-icon">🤖</span>
+        <div class="flow-num">Passo 01</div>
+        <h3>Agent recebe input</h3>
+        <p>Você pede ao agente para explicar qualquer conceito ou tópico.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-icon">🎯</span>
+        <div class="flow-num">Passo 02</div>
+        <h3>Skill é ativada</h3>
+        <p>O slash-command redireciona o output para o motor de templates HTML.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-icon">🎨</span>
+        <div class="flow-num">Passo 03</div>
+        <h3>CSS Patterns aplicados</h3>
+        <p>Headings, callouts, diagramas e checklists são aplicados automaticamente.</p>
+      </div>
+      <div class="flow-step">
+        <span class="flow-icon">🚀</span>
+        <div class="flow-num">Passo 04</div>
+        <h3>HTML publicável</h3>
+        <p>Output pronto para compartilhar, incluir em docs ou publicar direto.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="section-title">Por que usar o <span>Visual Explainer</span></div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(108,99,255,.15)">📐</div>
+        <h3>Formatação Consistente</h3>
+        <p>Cada explicação segue o mesmo visual language: headings, callouts, diagramas como layout e checklists. Sua equipe sempre recebe o mesmo padrão.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,212,170,.15)">🔍</div>
+        <h3>Melhor Scanabilidade</h3>
+        <p>Tópicos complexos ficam fáceis de escanear. Nada de scroll infinito para encontrar a informação — tudo está visualmente organizado.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,107,107,.15)">📦</div>
+        <h3>Artefato Único</h3>
+        <p>O output é um único arquivo HTML compartilhável — não uma thread de mensagens. Copie, envie, publique ou salve como documentação.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,209,102,.15)">🔄</div>
+        <h3>Reutilizável em Equipe</h3>
+        <p>Mesmo visual language para todos. Templates e CSS patterns garantem consistência independente de quem usa ou qual agente está rodando.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(108,99,255,.15)">⚡</div>
+        <h3>Slash Commands</h3>
+        <p>Interface simples por comandos. Use /explain, /summarize e outros para ativar templates específicos sem configuração extra.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,212,170,.15)">🛠️</div>
+        <h3>Open Source</h3>
+        <p>Totalmente open-source. Customize os templates, adicione novos CSS patterns, adapte para o seu use case específico.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO COMPARADOR -->
+  <section id="demo" class="demo-section">
+    <div class="section-title">Antes <span>vs</span> Depois</div>
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchTab('before', this)">❌ Sem Visual Explainer</button>
+      <button class="demo-tab" onclick="switchTab('after', this)">✅ Com Visual Explainer</button>
+    </div>
+    <div class="demo-panels">
+      <div class="panel active" id="panel-before">
+        <div class="panel-header">
+          <div class="panel-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="panel-title">chat_output.txt — 2347 palavras</div>
+        </div>
+        <div class="panel-body bad-output">
+O que é Docker? Bom, Docker é uma plataforma de containerização que permite aos desenvolvedores empacotar aplicações e suas dependências em contêineres isolados. Um contêiner é uma unidade padronizada de software que agrupa o código e todas as suas dependências para que a aplicação seja executada de forma rápida e confiável em diferentes ambientes computacionais.
+<br><br>
+Para entender Docker, primeiro precisamos entender o problema que ele resolve. Antes do Docker, os desenvolvedores frequentemente enfrentavam o problema de "funciona na minha máquina". Isso acontecia porque diferentes ambientes podiam ter versões diferentes de dependências, configurações de sistema operacional variadas e outras inconsistências...
+<br><br>
+[continua por mais 2000 palavras...] 😫
+        </div>
+      </div>
+      <div class="panel" id="panel-after">
+        <div class="panel-header">
+          <div class="panel-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+          <div class="panel-title">docker-explained.html — artefato limpo</div>
+        </div>
+        <div class="panel-body good-output">
+          <div style="font-family: monospace; font-size: .83rem; line-height: 1.9;">
+<span class="html-tag">&lt;article</span> <span class="html-attr">class=</span><span class="html-val">"explainer"</span><span class="html-tag">&gt;</span><br>
+&nbsp;&nbsp;<span class="html-tag">&lt;h1&gt;</span><span class="html-text">🐳 O que é Docker?</span><span class="html-tag">&lt;/h1&gt;</span><br>
+&nbsp;&nbsp;<span class="html-tag">&lt;div</span> <span class="html-attr">class=</span><span class="html-val">"callout callout--key"</span><span class="html-tag">&gt;</span><span class="html-text">Plataforma de containerização que elimina o "funciona na minha máquina"</span><span class="html-tag">&lt;/div&gt;</span><br>
+&nbsp;&nbsp;<span class="html-tag">&lt;section</span> <span class="html-attr">class=</span><span class="html-val">"diagram-layout"</span><span class="html-tag">&gt;</span><span class="html-text">...</span><span class="html-tag">&lt;/section&gt;</span><br>
+&nbsp;&nbsp;<span class="html-tag">&lt;checklist</span> <span class="html-attr">title=</span><span class="html-val">"Quando usar"</span><span class="html-tag">&gt;</span><span class="html-text">...</span><span class="html-tag">&lt;/checklist&gt;</span><br>
+<span class="html-tag">&lt;/article&gt;</span><br><br>
+<span style="color: var(--accent2)">→ Resultado visual, publicável em segundos ✨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section>
+    <div class="section-title"><span>Templates</span> de Referência</div>
+    <div class="templates-grid">
+      <div class="template-card">
+        <div class="template-preview" style="background: linear-gradient(135deg, rgba(108,99,255,.1), rgba(0,212,170,.05))">
+          <div class="tpl-badge">CONCEPT</div>
+          <div class="tpl-lines">
+            <div class="tpl-line" style="width:80%"></div>
+            <div class="tpl-line" style="width:60%"></div>
+            <div class="tpl-line" style="width:90%"></div>
+          </div>
+        </div>
+        <div class="template-meta"><div class="template-name">Concept Explainer</div><div class="template-desc">Para definições e conceitos gerais</div></div>
+      </div>
+      <div class="template-card">
+        <div class="template-preview" style="background: linear-gradient(135deg, rgba(0,212,170,.1), rgba(108,99,255,.05))">
+          <div class="tpl-badge" style="background:rgba(0,212,170,.2);color:var(--accent2)">FLOW</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--border)"></div>
+            <div style="color:var(--accent2)">→</div>
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--border)"></div>
+            <div style="color:var(--accent2)">→</div>
+            <div style="width:28px;height:28px;border-radius:6px;background:var(--border)"></div>
+          </div>
+        </div>
+        <div class="template-meta"><div class="template-name">Process Flow</div><div class="template-desc">Passo-a-passo e fluxos de processo</div></div>
+      </div>
+      <div class="template-card">
+        <div class="template-preview" style="background: linear-gradient(135deg, rgba(255,107,107,.1), rgba(255,209,102,.05))">
+          <div class="tpl-badge" style="background:rgba(255,107,107,.2);color:var(--accent3)">COMPARE</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+            <div style="height:40px;border-radius:6px;background:var(--border)"></div>
+            <div style="height:40px;border-radius:6px;background:var(--border)"></div>
+          </div>
+        </div>
+        <div class="template-meta"><div class="template-name">Comparison</div><div class="template-desc">Side-by-side comparisons</div></div>
+      </div>
+      <div class="template-card">
+        <div class="template-preview" style="background: linear-gradient(135deg, rgba(255,209,102,.1), rgba(0,212,170,.05))">
+          <div class="tpl-badge" style="background:rgba(255,209,102,.2);color:var(--accent4)">GUIDE</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+            <div style="display:flex;gap:6px;align-items:center"><div style="width:14px;height:14px;border-radius:3px;background:var(--accent4);opacity:.7"></div><div style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div></div>
+            <div style="display:flex;gap:6px;align-items:center"><div style="width:14px;height:14px;border-radius:3px;background:var(--border)"></div><div style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div></div>
+            <div style="display:flex;gap:6px;align-items:center"><div style="width:14px;height:14px;border-radius:3px;background:var(--border)"></div><div style="flex:1;height:6px;border-radius:3px;background:var(--border)"></div></div>
+          </div>
+        </div>
+        <div class="template-meta"><div class="template-name">How-To Guide</div><div class="template-desc">Checklists e guias práticos</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLASH COMMANDS -->
+  <section class="commands-section">
+    <div class="section-title"><span>Slash</span> Commands</div>
+    <div class="command-list">
+      <div class="command-item"><span class="cmd-tag">/explain</span><span class="cmd-desc">Explica um conceito com heading, callout e diagrama</span><span class="cmd-arrow">→</span></div>
+      <div class="command-item"><span class="cmd-tag">/summarize</span><span class="cmd-desc">Gera um resumo visual estruturado com bullet points destacados</span><span class="cmd-arrow">→</span></div>
+      <div class="command-item"><span class="cmd-tag">/compare</span><span class="cmd-desc">Cria um layout side-by-side entre dois conceitos ou tecnologias</span><span class="cmd-arrow">→</span></div>
+      <div class="command-item"><span class="cmd-tag">/guide</span><span class="cmd-desc">Gera um how-to com passos numerados e checklist interativo</span><span class="cmd-arrow">→</span></div>
+      <div class="command-item"><span class="cmd-tag">/diagram</span><span class="cmd-desc">Força output como diagrama visual usando CSS layout puro</span><span class="cmd-arrow">→</span></div>
+    </div>
+  </section>
+
+  <!-- CSS PATTERNS -->
+  <section>
+    <div class="section-title">Biblioteca de <span>CSS Patterns</span></div>
+    <div class="patterns-grid">
+      <div class="pattern-card"><span class="pattern-emoji">📌</span><div class="pattern-name">Callout</div><div class="pattern-type">Destaque visual</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">📊</span><div class="pattern-name">Diagram Layout</div><div class="pattern-type">Estrutura visual</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">✅</span><div class="pattern-name">Checklist</div><div class="pattern-type">Tarefas e steps</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">🏷️</span><div class="pattern-name">Badges</div><div class="pattern-type">Tags e labels</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">💡</span><div class="pattern-name">Tip Box</div><div class="pattern-type">Dicas e alertas</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">📋</span><div class="pattern-name">Code Block</div><div class="pattern-type">Código formatado</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">🔗</span><div class="pattern-name">Timeline</div><div class="pattern-type">Eventos sequenciais</div></div>
+      <div class="pattern-card"><span class="pattern-emoji">📈</span><div class="pattern-name">Progress Bar</div><div class="pattern-type">Progresso visual</div></div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="install-section">
+    <div class="section-title">Começar em <span>2 Passos</span></div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/nicobailon/visual-explainer')">📋 copiar</button></div>
+      <div class="code-body"><span class="code-comment"># 1. Clone o repositório</span><br><span class="code-keyword">git</span> clone https://github.com/nicobailon/visual-explainer</div>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">agent config</span><button class="copy-btn" onclick="copyCode(this, '/explain O que é Docker?')">📋 copiar</button></div>
+      <div class="code-body"><span class="code-comment"># 2. Use o slash command no seu agente</span><br><span class="code-func">/explain</span> <span class="code-string">"O que é Docker?"</span><br><br><span class="code-comment"># → Output: docker-explained.html pronto para publicar</span></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Feito com 💜 por <a href="https://github.com/nicobailon" target="_blank">nicobailon</a> · Open Source no <a href="https://github.com/nicobailon/visual-explainer" target="_blank">GitHub</a></p>
+    <p style="margin-top: 10px; font-size: .78rem;">Visual Explainer — Agent Skill para outputs HTML limpos e consistentes</p>
+  </footer>
+
+</div>
+
+<script>
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  function copyCode(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = '✅ copiado!';
+      setTimeout(() => btn.textContent = original, 1500);
+    });
+  }
+</script>
+</body>
+</html>
