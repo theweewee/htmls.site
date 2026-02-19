@@ -1,51 +1,1116 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecionador</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input { padding: 10px; width: 250px; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-    </style>
-</head>
-<body>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Visual Explainer — Index Interativo</title>
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root{
+      --bg0:#0b1020; --bg1:#0f1730; --card:#101a33; --card2:#0c142a;
+      --text:#e9eefc; --muted:#aab6da; --faint:#7f8bb6;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+      --accent:#56d3ff; --accent2:#a78bfa; --good:#34d399; --warn:#fbbf24; --bad:#fb7185;
+      --chip: rgba(86,211,255,.12);
+      --codebg: rgba(0,0,0,.32);
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    html[data-theme="light"]{
+      --bg0:#f7f8ff; --bg1:#eef2ff; --card:#ffffff; --card2:#ffffff;
+      --text:#0b1020; --muted:#38425f; --faint:#5a6586;
+      --border:rgba(11,16,32,.12);
+      --shadow: 0 18px 50px rgba(16,24,40,.12);
+      --accent:#0ea5e9; --accent2:#7c3aed; --good:#059669; --warn:#b45309; --bad:#e11d48;
+      --chip: rgba(14,165,233,.10);
+      --codebg: rgba(14,165,233,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% -10%, rgba(86,211,255,.16), transparent 55%),
+        radial-gradient(1000px 650px at 80% 0%, rgba(167,139,250,.16), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    a{color:inherit}
+    .app{
+      display:grid;
+      grid-template-columns: 300px 1fr;
+      min-height:100vh;
+    }
+    @media (max-width: 980px){
+      .app{grid-template-columns: 1fr}
+      .sidebar{position:sticky; top:0; z-index:20}
+      .sidebar .toc{display:none}
+      .sidebar[data-open="true"] .toc{display:block}
+    }
 
-<div class="container">
-    <h3>Redirecionar para URL/IP</h3>
-    <!-- O input onde o usuário digita a URL (ex: google.com ou 192.168.1.1) -->
-    <input type="text" id="urlInput" placeholder="Digite a URL ou IP (ex: google.com)" value="https://">
-    <button onclick="redirecionar()">Ir</button>
+    /* Sidebar */
+    .sidebar{
+      position:sticky; top:0;
+      height:100vh;
+      padding:18px 16px;
+      border-right:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      backdrop-filter: blur(10px);
+    }
+    .brand{
+      display:flex; gap:12px; align-items:center;
+      padding:10px 10px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(circle at 25% 25%, rgba(86,211,255,.9), rgba(167,139,250,.9));
+      box-shadow: 0 12px 30px rgba(86,211,255,.18);
+      position:relative;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:9px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.32);
+      transform: rotate(12deg);
+    }
+    .brand h1{
+      font-size:14px; margin:0;
+      letter-spacing:.4px;
+    }
+    .brand p{margin:2px 0 0; font-size:12px; color: var(--muted)}
+    .controls{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      color: var(--text);
+      padding:10px 10px;
+      font-size:12px;
+      display:flex; align-items:center; justify-content:center;
+      gap:8px;
+      user-select:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(86,211,255,.35)}
+    .btn:active{transform: translateY(0px)}
+    .btn .dot{
+      width:8px; height:8px; border-radius:999px; background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(86,211,255,.16);
+    }
+    .btn.secondary .dot{background: var(--accent2); box-shadow: 0 0 0 4px rgba(167,139,250,.14)}
+
+    .search{
+      margin-top:12px;
+      display:flex; gap:8px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:10px 12px;
+      background: rgba(0,0,0,.12);
+    }
+    html[data-theme="light"] .search{background: rgba(255,255,255,.7)}
+    .search input{
+      width:100%;
+      border:0; outline:0;
+      background: transparent;
+      color: var(--text);
+      font-size:13px;
+    }
+    .search kbd{
+      font-family: var(--mono);
+      font-size:11px;
+      color: var(--muted);
+      border:1px solid var(--border);
+      border-bottom-width:2px;
+      padding:2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .toc{
+      margin-top:12px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:10px;
+      background: rgba(255,255,255,.03);
+      height: calc(100vh - 168px);
+      overflow:auto;
+    }
+    .toc h2{font-size:12px; color: var(--muted); margin:6px 6px 10px}
+    .toc a{
+      display:flex; gap:10px; align-items:center;
+      text-decoration:none;
+      padding:8px 10px;
+      border-radius: 12px;
+      color: var(--muted);
+      border:1px solid transparent;
+      transition: background .12s ease, border-color .12s ease;
+    }
+    .toc a:hover{background: rgba(86,211,255,.08); border-color: rgba(86,211,255,.18); color: var(--text)}
+    .toc a[aria-current="true"]{background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.22); color: var(--text)}
+    .pill{
+      font-family: var(--mono);
+      font-size:11px;
+      color: var(--text);
+      background: var(--chip);
+      border:1px solid rgba(86,211,255,.22);
+      padding:2px 8px;
+      border-radius:999px;
+    }
+
+    /* Main */
+    main{
+      padding: 22px 22px 60px;
+    }
+    .hero{
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .hero-inner{
+      padding:18px 18px 16px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .hero h2{margin:0; font-size:18px; letter-spacing:.2px}
+    .hero p{margin:8px 0 0; color: var(--muted); font-size:13px; line-height:1.45}
+    .hero-actions{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .chip{
+      display:inline-flex; gap:8px; align-items:center;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:8px 12px;
+      background: rgba(0,0,0,.12);
+      font-size:12px;
+      color: var(--muted);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    html[data-theme="light"] .chip{background: rgba(255,255,255,.7)}
+    .chip:hover{transform: translateY(-1px); border-color: rgba(86,211,255,.35); color: var(--text)}
+    .grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
+    }
+    .card{
+      grid-column: span 6;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: 0 16px 44px rgba(0,0,0,.22);
+      overflow:hidden;
+      position:relative;
+    }
+    .card.small{grid-column: span 4}
+    .card.full{grid-column: 1 / -1}
+    @media (max-width: 1100px){
+      .card, .card.small{grid-column: 1 / -1}
+    }
+    .card header{
+      padding:14px 14px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .card header h3{margin:0; font-size:13px; letter-spacing:.3px}
+    .card header .meta{color: var(--muted); font-size:12px}
+    .card .content{padding:14px}
+    .kpis{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px}
+    @media (max-width: 560px){ .kpis{grid-template-columns: 1fr} }
+    .kpi{
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0,0,0,.14);
+    }
+    html[data-theme="light"] .kpi{background: rgba(255,255,255,.78)}
+    .kpi .label{font-size:12px; color: var(--muted)}
+    .kpi .value{margin-top:6px; font-size:18px; font-family: var(--mono)}
+    .kpi .bar{
+      margin-top:10px;
+      height:10px; border-radius:999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid var(--border);
+    }
+    .kpi .bar > span{
+      display:block; height:100%;
+      width: 50%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .row .hint{color: var(--muted); font-size:12px}
+    .tag{
+      font-family: var(--mono);
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .badge i{
+      width:10px; height:10px; border-radius:999px; display:inline-block;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(52,211,153,.14);
+    }
+    .badge.warn i{background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,.14)}
+    .badge.bad i{background: var(--bad); box-shadow: 0 0 0 4px rgba(251,113,133,.14)}
+
+    /* Mermaid */
+    .diagram{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0,0,0,.12);
+      overflow:hidden;
+    }
+    html[data-theme="light"] .diagram{background: rgba(255,255,255,.72)}
+    .diagram-toolbar{
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding:10px;
+      border-bottom:1px solid var(--border);
+      align-items:center;
+      justify-content:space-between;
+    }
+    .diagram-toolbar .left, .diagram-toolbar .right{display:flex; gap:8px; align-items:center}
+    .mini{
+      font-size:12px; color: var(--muted);
+    }
+    .iconbtn{
+      cursor:pointer;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding:8px 10px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size:12px;
+      user-select:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .iconbtn:hover{transform: translateY(-1px); border-color: rgba(86,211,255,.35)}
+    .iconbtn:active{transform: translateY(0px)}
+    .viewport{
+      height: 430px;
+      position:relative;
+      overflow:hidden;
+    }
+    .panzoom{
+      position:absolute;
+      left:0; top:0;
+      transform-origin: 0 0;
+      will-change: transform;
+      padding:18px;
+    }
+    .panzoom .mermaid{
+      min-width: 760px;
+    }
+
+    /* Table */
+    table{
+      width:100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0,0,0,.12);
+    }
+    html[data-theme="light"] table{background: rgba(255,255,255,.78)}
+    thead th{
+      text-align:left;
+      padding:12px 12px;
+      font-size:12px;
+      color: var(--muted);
+      border-bottom:1px solid var(--border);
+      position:sticky;
+      top:0;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      cursor:pointer;
+      user-select:none;
+    }
+    tbody td{
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      font-size:13px;
+    }
+    tbody tr:hover{background: rgba(86,211,255,.06)}
+    .cell-mono{font-family: var(--mono); font-size:12px}
+    .status{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .status:before{
+      content:"";
+      width:9px; height:9px; border-radius:999px;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(52,211,153,.12);
+    }
+    .status.warn:before{background: var(--warn); box-shadow: 0 0 0 4px rgba(251,191,36,.12)}
+    .status.bad:before{background: var(--bad); box-shadow: 0 0 0 4px rgba(251,113,133,.12)}
+    .table-tools{
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .table-tools .group{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .select, .text{
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding:9px 10px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size:12px;
+      outline:0;
+    }
+    .text{min-width: 240px}
+    .sep{height:24px; width:1px; background: var(--border)}
+    .toast{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      min-width: 240px;
+      max-width: 420px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+      color: var(--text);
+      display:none;
+    }
+    .toast .t1{font-size:12px; color: var(--muted)}
+    .toast .t0{margin-top:2px; font-size:13px}
+    .footer{
+      margin-top: 16px;
+      color: var(--muted);
+      font-size:12px;
+      display:flex; gap:10px; flex-wrap:wrap;
+      justify-content:space-between; align-items:center;
+    }
+    .kbd{
+      font-family: var(--mono);
+      border:1px solid var(--border);
+      border-bottom-width:2px;
+      border-radius: 8px;
+      padding:2px 6px;
+      color: var(--muted);
+      background: rgba(255,255,255,.03);
+    }
+
+    /* Presentation mode */
+    body.presentation .sidebar{display:none}
+    body.presentation .app{grid-template-columns: 1fr}
+    body.presentation main{padding: 18px}
+    body.presentation .hero{position:sticky; top:0; z-index:30}
+  </style>
+
+  <!-- Mermaid (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar" data-open="false">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Visual Explainer — Index</h1>
+        <p>HTML único, interativo e apresentável</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="btn" id="btnTheme" title="Alternar tema (T)">
+        <span class="dot" aria-hidden="true"></span> Tema
+      </div>
+      <div class="btn secondary" id="btnPresent" title="Modo apresentação (P)">
+        <span class="dot" aria-hidden="true"></span> Apresentar
+      </div>
+    </div>
+
+    <div class="search" title="Buscar seções (Ctrl/⌘ + K)">
+      <input id="navSearch" placeholder="Buscar… (ex: diagrama, tabela)" />
+      <kbd>Ctrl K</kbd>
+    </div>
+
+    <nav class="toc" id="toc">
+      <h2>Seções</h2>
+      <a href="#visao-geral" data-key="visao geral kpis dashboard"><span class="pill">01</span> Visão geral</a>
+      <a href="#arquitetura" data-key="arquitetura diagrama mermaid fluxo"><span class="pill">02</span> Arquitetura</a>
+      <a href="#tabela" data-key="tabela requisitos plano riscos"><span class="pill">03</span> Tabela interativa</a>
+      <a href="#notas" data-key="notas decisões log checklist"><span class="pill">04</span> Notas & decisões</a>
+    </nav>
+  </aside>
+
+  <main>
+    <section class="hero" id="visao-geral">
+      <div class="hero-inner">
+        <div>
+          <h2>Index interativo “Visual Explainer”</h2>
+          <p>
+            Use isto como base para páginas de diff-review, plan-review ou architecture overviews:
+            sidebar + TOC, tema dark/light, diagrama com zoom/pan e tabelas que não viram “parede de pipes”.
+          </p>
+        </div>
+
+        <div class="hero-actions">
+          <div class="chip" id="btnSidebar">Menu (mobile)</div>
+          <div class="chip" id="btnExport">Exportar JSON</div>
+          <div class="chip" id="btnLoadDemo">Carregar demo</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Conteúdo">
+      <article class="card small">
+        <header>
+          <h3>KPIs</h3>
+          <div class="meta">Editável</div>
+        </header>
+        <div class="content">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Risco</div>
+              <div class="value" id="kpiRisk">Médio</div>
+              <div class="bar" aria-hidden="true"><span id="barRisk" style="width:58%"></span></div>
+            </div>
+            <div class="kpi">
+              <div class="label">Cobertura do plano</div>
+              <div class="value"><span id="kpiCoverage">72</span>%</div>
+              <div class="bar" aria-hidden="true"><span id="barCoverage" style="width:72%"></span></div>
+            </div>
+            <div class="kpi">
+              <div class="label">Débito cognitivo</div>
+              <div class="value"><span id="kpiDebt">31</span></div>
+              <div class="bar" aria-hidden="true"><span id="barDebt" style="width:31%"></span></div>
+            </div>
+          </div>
+          <div class="footer" style="margin-top:12px">
+            <span>Dica: clique nos números para editar rápido.</span>
+            <span><span class="kbd">T</span> tema, <span class="kbd">P</span> apresentação</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card small">
+        <header>
+          <h3>Status</h3>
+          <div class="meta">Ao vivo</div>
+        </header>
+        <div class="content">
+          <div class="row">
+            <span class="badge"><i></i> OK: build</span>
+            <span class="badge warn"><i></i> Atenção: migração</span>
+            <span class="badge bad"><i></i> Falha: testes</span>
+          </div>
+          <p class="hint" style="margin:0">
+            Padrão útil para “Good/Bad/Ugly” em code review e para “risks & gaps” em plan-review.
+          </p>
+        </div>
+      </article>
+
+      <article class="card small">
+        <header>
+          <h3>Atalhos</h3>
+          <div class="meta">Produtividade</div>
+        </header>
+        <div class="content">
+          <div class="row">
+            <span class="tag">Ctrl/⌘ K</span>
+            <span class="hint">Focar busca no menu</span>
+          </div>
+          <div class="row">
+            <span class="tag">Clique</span>
+            <span class="hint">Editar KPIs / copiar célula</span>
+          </div>
+          <div class="row">
+            <span class="tag">Arrastar</span>
+            <span class="hint">Pan no diagrama</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card full" id="arquitetura">
+        <header>
+          <h3>Arquitetura (Mermaid + zoom/pan)</h3>
+          <div class="meta">Flow + componentes</div>
+        </header>
+        <div class="content">
+          <div class="diagram">
+            <div class="diagram-toolbar">
+              <div class="left">
+                <div class="mini">Zoom/Pan</div>
+                <div class="iconbtn" id="zoomIn">+</div>
+                <div class="iconbtn" id="zoomOut">−</div>
+                <div class="iconbtn" id="zoomReset">Reset</div>
+              </div>
+              <div class="right">
+                <div class="mini" id="zoomLabel">100%</div>
+                <div class="iconbtn" id="copyMermaid">Copiar Mermaid</div>
+              </div>
+            </div>
+            <div class="viewport" id="viewport">
+              <div class="panzoom" id="panzoom">
+                <div class="mermaid" id="mermaidBox">
+flowchart LR
+  U[Usuário] -->|Login| FE[Frontend]
+  FE -->|JWT| API[API Gateway]
+  API --> AUTH[Auth Service]
+  API --> APP[App Service]
+  AUTH --> DB[(Postgres)]
+  APP --> DB
+  APP --> Q[(Queue)]
+  Q --> W[Workers]
+  W --> S3[(Object Storage)]
+  APP --> OBS[Observability]
+  AUTH --> OBS
+  style FE fill:#0ea5e9,stroke:#60a5fa,color:#06101a
+  style API fill:#a78bfa,stroke:#c4b5fd,color:#0b1020
+  style AUTH fill:#34d399,stroke:#6ee7b7,color:#04130d
+  style APP fill:#56d3ff,stroke:#93c5fd,color:#04131a
+  style DB fill:#fb7185,stroke:#fda4af,color:#19060c
+  style Q fill:#fbbf24,stroke:#fde68a,color:#1a1204
+  style OBS fill:#94a3b8,stroke:#cbd5e1,color:#0b1020
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <span>Você pode trocar o Mermaid acima pelo seu diagrama (flowchart, seq, ER, state, etc.).</span>
+            <span>Mermaid roda no browser, sem build.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card full" id="tabela">
+        <header>
+          <h3>Tabela interativa (filtrar + ordenar)</h3>
+          <div class="meta">Requisitos vs plano</div>
+        </header>
+        <div class="content">
+          <div class="table-tools">
+            <div class="group">
+              <input class="text" id="filterText" placeholder="Filtrar (ex: auth, cache, fila)..." />
+              <div class="sep" aria-hidden="true"></div>
+              <select class="select" id="filterStatus">
+                <option value="all">Status: todos</option>
+                <option value="ok">OK</option>
+                <option value="warn">Atenção</option>
+                <option value="bad">Falha</option>
+              </select>
+              <select class="select" id="filterOwner">
+                <option value="all">Owner: todos</option>
+              </select>
+            </div>
+            <div class="group">
+              <div class="iconbtn" id="btnCopyTable">Copiar CSV</div>
+              <div class="iconbtn" id="btnResetFilters">Reset</div>
+            </div>
+          </div>
+
+          <table id="reqTable">
+            <thead>
+              <tr>
+                <th data-col="req">Requisito</th>
+                <th data-col="status">Status</th>
+                <th data-col="owner">Owner</th>
+                <th data-col="evidence">Evidência</th>
+                <th data-col="risk">Risco</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div class="footer">
+            <span>Clique no cabeçalho para ordenar; clique em uma célula para copiar.</span>
+            <span id="rowCount">0 linhas</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card full" id="notas">
+        <header>
+          <h3>Notas & decisões</h3>
+          <div class="meta">Decision log</div>
+        </header>
+        <div class="content">
+          <div class="row">
+            <span class="badge"><i></i> Decisão: cachear sessão por 5 min</span>
+            <span class="badge warn"><i></i> Risco: invalidar em logout</span>
+            <span class="badge bad"><i></i> Gap: testes e2e</span>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(12,1fr); gap:14px; margin-top:12px">
+            <div style="grid-column: span 7" class="diagram">
+              <div class="diagram-toolbar">
+                <div class="left"><div class="mini">Checklist</div></div>
+                <div class="right"><div class="mini">Editável</div></div>
+              </div>
+              <div style="padding:14px">
+                <label style="display:flex; gap:10px; align-items:center; padding:8px 0; color:var(--muted)">
+                  <input type="checkbox" checked /> Alinhar endpoints de auth com o gateway
+                </label>
+                <label style="display:flex; gap:10px; align-items:center; padding:8px 0; color:var(--muted)">
+                  <input type="checkbox" /> Adicionar rate-limit e auditoria de login
+                </label>
+                <label style="display:flex; gap:10px; align-items:center; padding:8px 0; color:var(--muted)">
+                  <input type="checkbox" /> Cobrir refresh-token com teste de regressão
+                </label>
+              </div>
+            </div>
+
+            <div style="grid-column: span 5" class="diagram">
+              <div class="diagram-toolbar">
+                <div class="left"><div class="mini">Snippet</div></div>
+                <div class="right"><div class="iconbtn" id="copySnippet">Copiar</div></div>
+              </div>
+              <pre id="snippet" style="margin:0; padding:14px; background:transparent; color:var(--text); overflow:auto; font-family:var(--mono); font-size:12px; line-height:1.5">
+# exemplo: “evidence” (cole aqui links/paths/commits)
+auth.service.ts: validateSession()
+gateway.ts: attachUserContext()
+plan.md: seção 2.3 — sessão + refresh token</pre>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="t1" id="toastSmall">Ok</div>
+  <div class="t0" id="toastBig">Mensagem</div>
 </div>
 
 <script>
-    function redirecionar() {
-        // Obtém o valor do input
-        var url = document.getElementById('urlInput').value;
-        
-        // Validação básica para garantir que haja algo digitado
-        if (url && url !== "https://") {
-            // Se o usuário não colocar http:// ou https://, adiciona automaticamente
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'http://' + url;
-            }
-            // Redireciona o navegador
-            window.location.href = url;
-        } else {
-            alert("Por favor, digite uma URL válida.");
-        }
+  // Theme
+  const root = document.documentElement;
+  const btnTheme = document.getElementById('btnTheme');
+  const btnPresent = document.getElementById('btnPresent');
+  const btnSidebar = document.getElementById('btnSidebar');
+  const sidebar = document.getElementById('sidebar');
+
+  function setTheme(next){
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('vx_theme', next);
+    toast("Tema", next === "dark" ? "Dark" : "Light");
+    // Mermaid needs re-render to fully adapt in some cases.
+    renderMermaid();
+  }
+  const savedTheme = localStorage.getItem('vx_theme');
+  if(savedTheme) root.setAttribute('data-theme', savedTheme);
+
+  btnTheme.addEventListener('click', () => {
+    const cur = root.getAttribute('data-theme') || 'dark';
+    setTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+
+  // Presentation mode
+  btnPresent.addEventListener('click', () => {
+    document.body.classList.toggle('presentation');
+    toast("Modo", document.body.classList.contains('presentation') ? "Apresentação ligado" : "Apresentação desligado");
+  });
+
+  // Sidebar (mobile)
+  btnSidebar.addEventListener('click', () => {
+    sidebar.dataset.open = sidebar.dataset.open === "true" ? "false" : "true";
+  });
+
+  // Toast
+  const toastEl = document.getElementById('toast');
+  const toastSmall = document.getElementById('toastSmall');
+  const toastBig = document.getElementById('toastBig');
+  let toastTimer = null;
+  function toast(small, big){
+    toastSmall.textContent = small;
+    toastBig.textContent = big;
+    toastEl.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.style.display="none", 1900);
+  }
+
+  // Mermaid render with theme variables
+  function mermaidTheme(){
+    const dark = (root.getAttribute('data-theme') || "dark") === "dark";
+    return {
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "base",
+      themeVariables: {
+        background: "transparent",
+        primaryColor: dark ? "#0f1730" : "#ffffff",
+        primaryTextColor: dark ? "#e9eefc" : "#0b1020",
+        primaryBorderColor: dark ? "rgba(255,255,255,.18)" : "rgba(11,16,32,.16)",
+        lineColor: dark ? "rgba(233,238,252,.50)" : "rgba(11,16,32,.45)",
+        secondaryColor: dark ? "#101a33" : "#eef2ff",
+        tertiaryColor: dark ? "#0c142a" : "#f7f8ff",
+        fontFamily: getComputedStyle(document.body).fontFamily
+      },
+      flowchart: { curve: "basis" }
+    };
+  }
+
+  async function renderMermaid(){
+    const box = document.getElementById('mermaidBox');
+    const code = box.dataset.code || box.textContent;
+    box.dataset.code = code;
+    box.textContent = code;
+    mermaid.initialize(mermaidTheme());
+    try{
+      await mermaid.run({ querySelector: "#mermaidBox" });
+    }catch(e){
+      console.error(e);
+      toast("Mermaid", "Falha ao renderizar diagrama");
     }
+  }
+  renderMermaid();
 
-    // Permite "apertar enter" para redirecionar
-    document.getElementById("urlInput").addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            redirecionar();
-        }
+  // Pan/Zoom (simple, no deps)
+  const panzoom = document.getElementById('panzoom');
+  const viewport = document.getElementById('viewport');
+  const zoomLabel = document.getElementById('zoomLabel');
+  let scale = 1, x = 0, y = 0;
+  let dragging = false, last = {x:0,y:0};
+
+  function applyTransform(){
+    panzoom.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    zoomLabel.textContent = Math.round(scale*100) + "%";
+  }
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+  viewport.addEventListener('pointerdown', (e)=>{
+    dragging = true;
+    viewport.setPointerCapture(e.pointerId);
+    last = {x: e.clientX, y: e.clientY};
+  });
+  viewport.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    const dx = e.clientX - last.x;
+    const dy = e.clientY - last.y;
+    x += dx;
+    y += dy;
+    last = {x: e.clientX, y: e.clientY};
+    applyTransform();
+  });
+  viewport.addEventListener('pointerup', ()=> dragging=false);
+  viewport.addEventListener('pointercancel', ()=> dragging=false);
+
+  viewport.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    const dir = e.deltaY > 0 ? -1 : 1;
+    const factor = dir > 0 ? 1.08 : 0.92;
+    const next = clamp(scale * factor, 0.45, 2.4);
+    scale = next;
+    applyTransform();
+  }, {passive:false});
+
+  document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = clamp(scale*1.12, 0.45, 2.4); applyTransform(); });
+  document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = clamp(scale*0.88, 0.45, 2.4); applyTransform(); });
+  document.getElementById('zoomReset').addEventListener('click', ()=>{ scale=1; x=0; y=0; applyTransform(); toast("Zoom", "Reset"); });
+
+  // Copy mermaid
+  document.getElementById('copyMermaid').addEventListener('click', async ()=>{
+    const code = document.getElementById('mermaidBox').dataset.code || "";
+    await navigator.clipboard.writeText(code);
+    toast("Copiado", "Mermaid para clipboard");
+  });
+
+  // Table data
+  const rows = [
+    { req:"JWT assinado + rotação de chave", status:"ok", owner:"backend", evidence:"auth.service.ts → signJwt()", risk:2 },
+    { req:"Refresh token com revogação", status:"warn", owner:"backend", evidence:"plan.md 2.3 (falta store)", risk:3 },
+    { req:"Rate limit em /login", status:"bad", owner:"gateway", evidence:"gateway.ts (não encontrado)", risk:4 },
+    { req:"Auditoria de login + IP", status:"warn", owner:"backend", evidence:"logger.ts (parcial)", risk:3 },
+    { req:"Fila para jobs pesados", status:"ok", owner:"workers", evidence:"queue/producer.ts", risk:2 },
+    { req:"Uploads em storage externo", status:"ok", owner:"workers", evidence:"storage/s3.ts", risk:2 },
+    { req:"Observability (traces + logs)", status:"warn", owner:"platform", evidence:"otel.ts (incompleto)", risk:3 },
+    { req:"Testes e2e de auth", status:"bad", owner:"qa", evidence:"cypress/ (ausente)", risk:4 },
+  ];
+
+  const tbody = document.querySelector("#reqTable tbody");
+  const rowCount = document.getElementById("rowCount");
+  const filterText = document.getElementById("filterText");
+  const filterStatus = document.getElementById("filterStatus");
+  const filterOwner = document.getElementById("filterOwner");
+
+  // Populate owners
+  [...new Set(rows.map(r=>r.owner))].sort().forEach(o=>{
+    const opt = document.createElement("option");
+    opt.value = o; opt.textContent = "Owner: " + o;
+    filterOwner.appendChild(opt);
+  });
+
+  let sortState = {col:"req", dir: 1};
+
+  function statusPill(status){
+    const cls = status === "ok" ? "" : (status === "warn" ? "warn" : "bad");
+    const label = status === "ok" ? "OK" : (status === "warn" ? "Atenção" : "Falha");
+    return `<span class="status ${cls}">${label}</span>`;
+  }
+  function riskLabel(n){
+    if(n>=4) return `<span class="status bad">Alto (${n})</span>`;
+    if(n===3) return `<span class="status warn">Médio (${n})</span>`;
+    return `<span class="status">Baixo (${n})</span>`;
+  }
+
+  function getFiltered(){
+    const t = (filterText.value || "").trim().toLowerCase();
+    const st = filterStatus.value;
+    const ow = filterOwner.value;
+
+    return rows.filter(r=>{
+      const okText = !t || (r.req + " " + r.owner + " " + r.evidence).toLowerCase().includes(t);
+      const okStatus = (st === "all") || (r.status === st);
+      const okOwner = (ow === "all") || (r.owner === ow);
+      return okText && okStatus && okOwner;
     });
-</script>
+  }
 
+  function sortRows(arr){
+    const {col, dir} = sortState;
+    const cp = [...arr].sort((a,b)=>{
+      const va = a[col], vb = b[col];
+      if(typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb), "pt-BR") * dir;
+    });
+    return cp;
+  }
+
+  function renderTable(){
+    const filtered = sortRows(getFiltered());
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td>${escapeHtml(r.req)}</td>
+        <td>${statusPill(r.status)}</td>
+        <td class="cell-mono">${escapeHtml(r.owner)}</td>
+        <td class="cell-mono">${escapeHtml(r.evidence)}</td>
+        <td>${riskLabel(r.risk)}</td>
+      </tr>
+    `).join("");
+    rowCount.textContent = filtered.length + " linhas";
+  }
+
+  function escapeHtml(s){
+    return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  }
+
+  renderTable();
+  filterText.addEventListener("input", renderTable);
+  filterStatus.addEventListener("change", renderTable);
+  filterOwner.addEventListener("change", renderTable);
+
+  // Sort on header click
+  document.querySelectorAll("#reqTable thead th").forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const col = th.dataset.col;
+      if(sortState.col === col) sortState.dir *= -1;
+      else sortState = {col, dir: 1};
+      renderTable();
+      toast("Ordenação", `${col} ${sortState.dir === 1 ? "↑" : "↓"}`);
+    });
+  });
+
+  // Copy cell on click
+  tbody.addEventListener("click", async (e)=>{
+    const td = e.target.closest("td");
+    if(!td) return;
+    const text = td.innerText.trim();
+    await navigator.clipboard.writeText(text);
+    toast("Copiado", text.length > 42 ? (text.slice(0,42) + "…") : text);
+  });
+
+  // Copy CSV
+  document.getElementById("btnCopyTable").addEventListener("click", async ()=>{
+    const filtered = sortRows(getFiltered());
+    const csv = [
+      ["Requisito","Status","Owner","Evidência","Risco"].join(","),
+      ...filtered.map(r => [
+        r.req, r.status, r.owner, r.evidence, String(r.risk)
+      ].map(v => `"${String(v).replaceAll('"','""')}"`).join(","))
+    ].join("\n");
+    await navigator.clipboard.writeText(csv);
+    toast("Copiado", "CSV da tabela");
+  });
+
+  document.getElementById("btnResetFilters").addEventListener("click", ()=>{
+    filterText.value = "";
+    filterStatus.value = "all";
+    filterOwner.value = "all";
+    renderTable();
+    toast("Filtros", "Reset");
+  });
+
+  // Snippet copy
+  document.getElementById("copySnippet").addEventListener("click", async ()=>{
+    const txt = document.getElementById("snippet").innerText;
+    await navigator.clipboard.writeText(txt);
+    toast("Copiado", "Snippet");
+  });
+
+  // Export JSON (state snapshot)
+  document.getElementById("btnExport").addEventListener("click", ()=>{
+    const state = {
+      theme: root.getAttribute("data-theme") || "dark",
+      presentation: document.body.classList.contains("presentation"),
+      kpis: {
+        risk: document.getElementById("kpiRisk").textContent.trim(),
+        coverage: Number(document.getElementById("kpiCoverage").textContent.trim()),
+        debt: Number(document.getElementById("kpiDebt").textContent.trim()),
+      },
+      filters: {
+        text: filterText.value, status: filterStatus.value, owner: filterOwner.value
+      },
+      sort: sortState
+    };
+    const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "visual-explainer-state.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Export", "Baixou visual-explainer-state.json");
+  });
+
+  // Load demo (mutate KPIs + diagram quickly)
+  document.getElementById("btnLoadDemo").addEventListener("click", ()=>{
+    // KPIs
+    setKpi("kpiRisk","Alto","barRisk",84);
+    setKpi("kpiCoverage","63","barCoverage",63);
+    setKpi("kpiDebt","48","barDebt",48);
+    // Diagram
+    const box = document.getElementById("mermaidBox");
+    box.dataset.code = `sequenceDiagram
+  autonumber
+  participant U as Usuário
+  participant FE as Frontend
+  participant API as API Gateway
+  participant AUTH as Auth Service
+  participant DB as Postgres
+
+  U->>FE: submit(login)
+  FE->>API: POST /login
+  API->>AUTH: validate(credentials)
+  AUTH->>DB: fetchUser + verify
+  DB-->>AUTH: user + hash
+  AUTH-->>API: access + refresh
+  API-->>FE: tokens
+  FE-->>U: sessão iniciada`;
+    renderMermaid();
+    toast("Demo", "KPIs + diagrama atualizados");
+  });
+
+  function setKpi(idValue, text, idBar, pct){
+    const el = document.getElementById(idValue);
+    el.textContent = text;
+    const bar = document.getElementById(idBar);
+    bar.style.width = pct + "%";
+  }
+
+  // Quick edit KPIs on click
+  ["kpiRisk","kpiCoverage","kpiDebt"].forEach(id=>{
+    const el = document.getElementById(id);
+    el.style.cursor = "pointer";
+    el.title = "Clique para editar";
+    el.addEventListener("click", ()=>{
+      const cur = el.textContent.trim();
+      const next = prompt("Novo valor:", cur);
+      if(next === null) return;
+      el.textContent = next;
+      toast("KPI", `${id} atualizado`);
+    });
+  });
+
+  // TOC highlighting
+  const tocLinks = [...document.querySelectorAll("#toc a")];
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(ent=>{
+      if(ent.isIntersecting){
+        tocLinks.forEach(a=>a.removeAttribute("aria-current"));
+        const link = document.querySelector(`#toc a[href="#${ent.target.id}"]`);
+        if(link) link.setAttribute("aria-current","true");
+      }
+    });
+  }, {rootMargin:"-50% 0px -45% 0px", threshold: 0.01});
+  sections.forEach(s=>obs.observe(s));
+
+  // Nav search (filters TOC links)
+  const navSearch = document.getElementById("navSearch");
+  function filterTOC(){
+    const q = navSearch.value.trim().toLowerCase();
+    tocLinks.forEach(a=>{
+      const key = (a.dataset.key || a.textContent).toLowerCase();
+      a.style.display = (!q || key.includes(q)) ? "flex" : "none";
+    });
+  }
+  navSearch.addEventListener("input", filterTOC);
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (e)=>{
+    const isMac = navigator.platform.toLowerCase().includes("mac");
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    if(mod && e.key.toLowerCase() === "k"){
+      e.preventDefault();
+      navSearch.focus();
+      toast("Atalho", "Busca do menu focada");
+    }
+    if(e.key.toLowerCase() === "t"){ btnTheme.click(); }
+    if(e.key.toLowerCase() === "p"){ btnPresent.click(); }
+    if(e.key === "Escape"){
+      sidebar.dataset.open = "false";
+      navSearch.blur();
+    }
+  });
+
+  // Initial
+  applyTransform();
+</script>
 </body>
 </html>
