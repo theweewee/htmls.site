@@ -2182,21 +2182,22 @@ function toggleLive() {
   }
 }
 
-// ─ Init: cria recognition UMA VEZ para toda a sessão (sem novos prompts) ─
+// ─ Init: 1 único recognition, nunca para durante a sessão ─
 function liveInit() {
   const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-  liveRecognition = new SpeechAPI();
-  liveRecognition.lang           = 'pt-BR';
-  liveRecognition.interimResults = true;
-  liveRecognition.continuous     = true;
-  liveRecognition.maxAlternatives = 1;
+  if (!SpeechAPI) { toast('⚠ Chrome/Edge necessário.'); return; }
 
-  let liveBase = '';
-  let lastText = '';
+  const r = new SpeechAPI();
+  r.lang            = 'pt-BR';
+  r.interimResults  = true;
+  r.continuous      = true;  // nunca para sozinho
+  r.maxAlternatives = 1;
+  liveRecognition   = r;
 
-  liveRecognition.onresult = (e) => {
-    if (liveIgnoreSTT || !liveMode) return; // descarta durante processing/playing
+  let liveBase = '', lastText = '';
 
+  r.onresult = (e) => {
+    if (liveIgnoreSTT || !liveMode) return;
     let interim = '', finalChunk = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const t = e.results[i][0].transcript;
@@ -2204,51 +2205,50 @@ function liveInit() {
       else interim += t;
     }
     if (finalChunk) liveBase += (liveBase ? ' ' : '') + finalChunk.trim();
-
     const full = liveBase + (interim ? ' ' + interim : '');
     const msgEl = document.getElementById('msg');
     if (msgEl) { msgEl.value = full; autoH(msgEl); }
-
-    // Reset silence timer on any speech
     if (full.trim() && full !== lastText) {
       lastText = full;
       clearTimeout(liveSilenceTimer);
       liveSilenceStart = Date.now();
-      liveSetHUD('listening', `🎙 Ouvindo…`);
-
+      liveSetHUD('listening', '🎙 Ouvindo…');
       liveSilenceTimer = setTimeout(() => {
         if (liveMode && !liveIgnoreSTT && document.getElementById('msg')?.value?.trim()) {
-          liveBase = '';
-          lastText = '';
+          liveBase = ''; lastText = '';
           liveTriggerSend();
         }
       }, LIVE_SILENCE_MS);
     }
   };
 
-  liveRecognition.onerror = (e) => {
-    if (e.error === 'no-speech') return;
-    if (e.error === 'not-allowed') { toast('⚠ Permissão de microfone negada.'); liveStop(); }
+  r.onerror = (e) => {
+    if (e.error === 'no-speech') return; // silêncio normal
+    if (e.error === 'not-allowed') { toast('⚠ Permissão de microfone negada.'); liveStop(); return; }
+    console.warn('[Live] erro STT:', e.error);
   };
 
-  // Reinicia automaticamente se parar (manter warm durante toda a sessão)
-  liveRecognition.onend = () => {
-    if (liveMode) {
-      try { liveRecognition.start(); } catch(_) {}
-    }
+  // onend só dispara se o browser forçar parada (raro com continuous:true)
+  // Reinicia SEM criar novo objeto → browser reutiliza permissão já concedida
+  r.onend = () => {
+    if (!liveMode) return;
+    try { r.start(); } catch(_) {}  // mesmo objeto, sem novo prompt
   };
 
-  try {
-    liveRecognition.start(); // pede permissão UMA SÓ VEZ aqui
-    liveSetHUD('listening', '🎙 Ouvindo…');
-    liveSilenceStart = null;
-    // Limpa input
+  r.onstart = () => {
+    liveBase = ''; lastText = '';
     speechBase = '';
     const msgEl = document.getElementById('msg');
     if (msgEl) msgEl.value = '';
+    liveSetHUD('listening', '🎙 Ouvindo…');
+  };
+
+  // UMA permissão pedida aqui. Se o usuário clicar
+  // "Permitir ao acessar o site" → não pede mais nunca nessa sessão do browser.
+  try {
+    r.start();
   } catch(e) {
-    toast('⚠ Microfone: ' + e.message);
-    liveStop();
+    toast('⚠ Mic: ' + e.message); liveStop();
   }
 }
 
@@ -2305,14 +2305,14 @@ function liveSpeak(msgIdx) {
   });
 }
 
-// ─ Retoma escuta (sem novo prompt de permissão) ─
+// ─ Retoma escuta: só desliga o ignore, recognition já está rodando ─
 function liveResumeListening() {
   if (!liveMode) return;
-  liveIgnoreSTT = false;
+  liveIgnoreSTT  = false;
+  liveSilenceStart = null;
   speechBase = '';
   const msgEl = document.getElementById('msg');
   if (msgEl) msgEl.value = '';
-  liveSilenceStart = null;
   liveSetHUD('listening', '🎙 Ouvindo…');
 }
 
@@ -2326,6 +2326,7 @@ function liveStop() {
     try { liveRecognition.abort(); } catch(_) {}
     liveRecognition = null;
   }
+
   ttsStop();
   liveSetHUD('idle', '');
   document.getElementById('live-btn')?.classList.remove('on');
