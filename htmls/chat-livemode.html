@@ -2331,9 +2331,7 @@
                         <button id="mic-btn" onclick="toggleSpeech()" title="Falar (STT)">🎤</button>
                         <button id="live-btn" onclick="toggleLive()" title="Modo Live — conversa de voz contínua">🔴
                             Live</button>
-                        <textarea id="msg"
-                            placeholder="Digite sua mensagem… (Enter envia · Shift+Enter nova linha · Ctrl+V cola imagem)"
-                            rows="1"></textarea>
+                        <textarea id="msg" placeholder="Digite sua mensagem…" rows="1"></textarea>
                         <button id="send-btn" class="iBtn" onclick="send()" title="Enviar">➤</button>
                         <button id="stop-btn" class="iBtn" onclick="stop()" title="Parar geração">■</button>
                     </div>
@@ -3504,15 +3502,16 @@
             // ─══════════════════════════════════════════════════
             let recognition = null;
             let isListening = false;
-            let speechBase = ''; // texto já confirmado antes da sessão atual
+            let speechBase = ''; // texto digitado ANTES de ligar o mic
+            let sttRestartTimer = null;
 
             function initSpeech() {
                 const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechAPI) return null;
                 const r = new SpeechAPI();
                 r.lang = 'pt-BR';
-                r.interimResults = true;   // parciais em tempo real
-                r.continuous = true;   // não para sozinho após pausa
+                r.interimResults = true;
+                r.continuous = true;
                 r.maxAlternatives = 1;
 
                 r.onstart = () => {
@@ -3521,39 +3520,43 @@
                     document.getElementById('mic-status').classList.add('on');
                 };
 
+                // FIX Android: rebuild full text from ALL results every time
+                // instead of accumulating speechBase (which duplicates on restart)
                 r.onresult = (e) => {
                     const msg = document.getElementById('msg');
+                    let finalText = '';
                     let interim = '';
-                    let finalChunk = '';
-
-                    for (let i = e.resultIndex; i < e.results.length; i++) {
+                    // Rebuild from ALL results (index 0), not just resultIndex
+                    for (let i = 0; i < e.results.length; i++) {
                         const t = e.results[i][0].transcript;
-                        if (e.results[i].isFinal) finalChunk += t;
+                        if (e.results[i].isFinal) finalText += t;
                         else interim += t;
                     }
-
-                    // Finalizado: acumula na base
-                    if (finalChunk) speechBase += (speechBase ? ' ' : '') + finalChunk.trim();
-
-                    // Mostra base confirmada + interim provisório
-                    msg.value = speechBase + (interim ? ' ' + interim : '');
+                    // speechBase = what was in the box before mic started
+                    msg.value = (speechBase ? speechBase + ' ' : '') + finalText.trim() + (interim ? ' ' + interim : '');
                     autoH(msg);
                 };
 
                 r.onerror = (e) => {
-                    if (e.error === 'no-speech') return; // silêncio — não é erro real
+                    if (e.error === 'no-speech') return;
                     if (e.error === 'not-allowed') {
                         toast('⚠ Permissão de microfone negada.');
-                    } else {
+                    } else if (e.error !== 'aborted') {
                         toast('⚠ STT erro: ' + e.error);
                     }
                     stopSpeech();
                 };
 
+                // FIX Android: delay restart to avoid rapid mic on/off sounds
                 r.onend = () => {
-                    // Se ainda deveria estar ouvindo (continuous), reinicia
                     if (isListening) {
-                        try { r.start(); } catch (_) { stopSpeech(); }
+                        clearTimeout(sttRestartTimer);
+                        sttRestartTimer = setTimeout(() => {
+                            if (!isListening) return;
+                            // Save current text as new base before restart
+                            speechBase = document.getElementById('msg')?.value?.trim() || '';
+                            try { r.start(); } catch (_) { stopSpeech(); }
+                        }, 400);
                     }
                 };
 
@@ -3586,10 +3589,11 @@
 
             function stopSpeech() {
                 isListening = false;
+                clearTimeout(sttRestartTimer);
                 document.getElementById('mic-btn').classList.remove('listening');
                 document.getElementById('mic-status').classList.remove('on');
                 if (recognition) {
-                    try { recognition.stop(); } catch (_) { }
+                    try { recognition.abort(); } catch (_) { }
                     recognition = null;
                 }
                 speechBase = '';
@@ -3854,22 +3858,22 @@
                 const r = new SpeechAPI();
                 r.lang = 'pt-BR';
                 r.interimResults = true;
-                r.continuous = true;  // nunca para sozinho
+                r.continuous = true;
                 r.maxAlternatives = 1;
                 liveRecognition = r;
 
-                let liveBase = '', lastText = '';
+                let lastText = '';
 
+                // FIX Android: rebuild full text from ALL results every time
                 r.onresult = (e) => {
                     if (liveIgnoreSTT || !liveMode) return;
-                    let interim = '', finalChunk = '';
-                    for (let i = e.resultIndex; i < e.results.length; i++) {
+                    let finalText = '', interim = '';
+                    for (let i = 0; i < e.results.length; i++) {
                         const t = e.results[i][0].transcript;
-                        if (e.results[i].isFinal) finalChunk += t;
+                        if (e.results[i].isFinal) finalText += t;
                         else interim += t;
                     }
-                    if (finalChunk) liveBase += (liveBase ? ' ' : '') + finalChunk.trim();
-                    const full = liveBase + (interim ? ' ' + interim : '');
+                    const full = finalText.trim() + (interim ? ' ' + interim : '');
                     const msgEl = document.getElementById('msg');
                     if (msgEl) { msgEl.value = full; autoH(msgEl); }
                     if (full.trim() && full !== lastText) {
@@ -3879,7 +3883,7 @@
                         liveSetHUD('listening', '🎙 Ouvindo…');
                         liveSilenceTimer = setTimeout(() => {
                             if (liveMode && !liveIgnoreSTT && document.getElementById('msg')?.value?.trim()) {
-                                liveBase = ''; lastText = '';
+                                lastText = '';
                                 liveTriggerSend();
                             }
                         }, LIVE_SILENCE_MS);
@@ -3887,28 +3891,28 @@
                 };
 
                 r.onerror = (e) => {
-                    if (e.error === 'no-speech') return; // silêncio normal
+                    if (e.error === 'no-speech') return;
                     if (e.error === 'not-allowed') { toast('⚠ Permissão de microfone negada.'); liveStop(); return; }
-                    console.warn('[Live] erro STT:', e.error);
+                    if (e.error !== 'aborted') console.warn('[Live] erro STT:', e.error);
                 };
 
-                // onend só dispara se o browser forçar parada (raro com continuous:true)
-                // Reinicia SEM criar novo objeto → browser reutiliza permissão já concedida
+                // FIX Android: delay restart to avoid mic sound spam
                 r.onend = () => {
                     if (!liveMode) return;
-                    try { r.start(); } catch (_) { }  // mesmo objeto, sem novo prompt
+                    setTimeout(() => {
+                        if (!liveMode) return;
+                        try { r.start(); } catch (_) { }
+                    }, 400);
                 };
 
                 r.onstart = () => {
-                    liveBase = ''; lastText = '';
+                    lastText = '';
                     speechBase = '';
                     const msgEl = document.getElementById('msg');
                     if (msgEl) msgEl.value = '';
                     liveSetHUD('listening', '🎙 Ouvindo…');
                 };
 
-                // UMA permissão pedida aqui. Se o usuário clicar
-                // "Permitir ao acessar o site" → não pede mais nunca nessa sessão do browser.
                 try {
                     r.start();
                 } catch (e) {
