@@ -2,9 +2,8 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Gemini Chat Pro Plus</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'&gt;&lt;text y='1.2em' font-size='90'&gt;🚀&lt;/text&gt;&lt;/svg&gt;">
 
 <!-- External Libraries for Improvements -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js">
@@ -30,7 +29,8 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden;transition:background 0.3s, color 0.3s;}
+html{height:100%;height:-webkit-fill-available;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;transition:background 0.3s, color 0.3s;margin:0;}
 
 /* ─ OVERLAY ─ */
 #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;}
@@ -295,6 +295,12 @@ textarea.ta:focus{border-color:var(--accent);}
 #ibar-container {
   padding: 0 14px 14px 14px; background: transparent;
 }
+#ibar-wrap{
+  padding: 8px 14px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  background: var(--bg);
+  flex-shrink: 0;
+}
 #ibar{
   max-width: 900px; margin: 0 auto;
   padding:10px 14px;background:var(--surface);
@@ -540,19 +546,7 @@ textarea.ta:focus{border-color:var(--accent);}
 }
 
 /* ─ LAYOUT WRAPPER ─ */
-#wrapper {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-body {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  margin: 0;
-}
+#wrapper{display:flex;flex:1;overflow:hidden;min-height:0;}
 
 
 /* ─ LIVE MODE ─ */
@@ -809,6 +803,7 @@ body {
   <!-- INPUT -->
   <div id="img-preview-container"></div>
   <div id="ibar-container">
+    <div id="ibar-wrap">
     <div id="ibar">
       <input type="file" id="file-in" accept="image/png, image/jpeg, image/webp, image/heic, image/heif" style="display:none" multiple onchange="handleFiles(event)">
       <button id="attach-btn" onclick="document.getElementById('file-in').click()" title="Anexar Imagem">📎</button>
@@ -1675,7 +1670,9 @@ async function send(){
         throw new Error(em);
       }
 
-      let full='', tok=0, sig='', fnCall=null;
+      // fnCallParts: array of parts {functionCall, thoughtSignature?} preserved exactly from API
+      // textSig: thoughtSignature from text/thought parts (non-FC) — optional to send back
+      let full='', tok=0, textSig='', fnCallParts=[];
       const reader=r.body.getReader(), dec=new TextDecoder();
       let buf='';
 
@@ -1692,40 +1689,56 @@ async function send(){
             const j=JSON.parse(raw);
             for(const p of (j.candidates?.[0]?.content?.parts||[])){
               if(p.text){ full+=p.text; }
-              if(p.thoughtSignature) sig=p.thoughtSignature;
-              if(p.functionCall && !fnCall) fnCall=p.functionCall;
+              // thoughtSignature on text/thought parts (non-FC) — optional, stored for next turn
+              if(p.thoughtSignature && !p.functionCall) textSig=p.thoughtSignature;
+              // Preserve each functionCall part EXACTLY as received (with its thoughtSignature)
+              // Gemini 3 REQUIRES thoughtSignature ON the functionCall part itself — mandatory 400 otherwise
+              if(p.functionCall) fnCallParts.push({...p});
             }
             if(j.usageMetadata?.totalTokenCount) tok=j.usageMetadata.totalTokenCount;
-            // Only update bubble with text if not a function call response
-            if(full && !fnCall){ bubEl.innerHTML=renderMarkdown(full); scrollEnd(); }
+            if(full && !fnCallParts.length){ bubEl.innerHTML=renderMarkdown(full); scrollEnd(); }
           }catch(e){ console.error('Stream parse:', e); }
         }
       }
 
-      // ─ FUNCTION CALL: execute locally and re-request ─
-      if(fnCall && depth < 4){
-        const fnName=fnCall.name, fnArgs=fnCall.args||{};
-
-        // Visual indicator while executing
-        bubEl.innerHTML=`<div style="color:var(--accent2);font-size:13px;display:flex;align-items:center;gap:8px;padding:4px 0">
+      // ─ FUNCTION CALL(S): execute and re-request ─
+      // Supports: parallel FCs, sequential multi-step, single FC — all Gemini 3 compliant
+      if(fnCallParts.length && depth < 6){
+        // Build visual indicator for all function calls
+        const callLabels = fnCallParts.map(p => {
+          const args = p.functionCall.args || {};
+          const argStr = Object.entries(args).map(([k,v])=>`${k}=${JSON.stringify(v)}`).join(', ');
+          return `<code style="background:var(--s2);padding:2px 6px;border-radius:4px">${p.functionCall.name}(${argStr})</code>`;
+        }).join(' <span style="color:var(--muted)">+</span> ');
+        bubEl.innerHTML=`<div style="color:var(--accent2);font-size:13px;display:flex;align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap">
           <span style="display:inline-block;animation:bop 1s infinite">🔍</span>
-          <span>Chamando <code style="background:var(--s2);padding:2px 6px;border-radius:4px">${fnName}(turns=${fnArgs.turns||'?'})</code> …</span>
+          <span>Chamando ${callLabels} …</span>
         </div>`;
         scrollEnd();
 
-        let fnResult;
-        fnResult = await executePlugin(fnName, fnArgs);
+        // Execute all function calls in parallel
+        const results = await Promise.all(
+          fnCallParts.map(p => executePlugin(p.functionCall.name, p.functionCall.args||{}))
+        );
 
-        // Append function call + response to contents and retry
+        // Model parts: send EXACTLY as received from API (thoughtSignature preserved per part)
+        // CRITICAL for Gemini 3: thoughtSignature MUST stay on the functionCall part, NOT separate
+        const modelParts = fnCallParts;
+
+        // All functionResponses in ONE user message (parallel FC requires no interleaving)
+        const frParts = fnCallParts.map((p, i) => ({
+          functionResponse: { name: p.functionCall.name, response: results[i] }
+        }));
+
         const updatedContents=[
           ...reqBody.contents,
-          {role:'model', parts:[{functionCall:fnCall}]},
-          {role:'user',  parts:[{functionResponse:{name:fnName, response:fnResult}}]}
+          {role:'model', parts: modelParts},
+          {role:'user',  parts: frParts}
         ];
         return callAPI({...reqBody, contents:updatedContents}, bubEl, depth+1);
       }
 
-      return {full, tok, sig};
+      return {full, tok, sig: textSig};
     }
 
     document.getElementById(tid)?.remove();
