@@ -3915,14 +3915,14 @@
                 };
 
                 r.onend = () => {
-                    if (!liveMode) return;
+                    if (!liveMode || liveIgnoreSTT) return; // don't restart during TTS/processing
                     // Save session text
                     if (sessionFinal.trim()) {
                         liveAccum += (liveAccum ? ' ' : '') + sessionFinal.trim();
                     }
                     sessionFinal = '';
                     setTimeout(() => {
-                        if (!liveMode) return;
+                        if (!liveMode || liveIgnoreSTT) return;
                         try { r.start(); } catch (_) { }
                     }, 350);
                 };
@@ -3942,6 +3942,15 @@
                 }
             }
 
+            // ─ Pause STT during processing/TTS ─
+            function livePauseSTT() {
+                liveIgnoreSTT = true;
+                // STOP recognition entirely to prevent onend restart loops
+                if (liveRecognition) {
+                    try { liveRecognition.abort(); } catch (_) { }
+                }
+            }
+
             // ─ Trigger send ─
             async function liveTriggerSend() {
                 if (!liveMode) return;
@@ -3949,7 +3958,7 @@
                 clearInterval(liveBarInterval);
                 liveSilenceStart = null;
 
-                liveIgnoreSTT = true; // mic continua ativo mas resultados ignorados
+                livePauseSTT();
                 liveSetHUD('processing', '⏳ Processando…');
 
                 await send();
@@ -3980,22 +3989,23 @@
                             ttsAudio.onended = () => {
                                 ttsStop(msgIdx);
                                 resolve();
-                                if (liveMode) setTimeout(() => liveResumeListening(), 500);
+                                if (liveMode) setTimeout(() => liveResumeListening(), 600);
                             };
                             ttsAudio.onerror = () => {
+                                ttsStop(msgIdx);
                                 resolve();
-                                if (liveMode) setTimeout(() => liveResumeListening(), 500);
+                                if (liveMode) setTimeout(() => liveResumeListening(), 600);
                             };
                         } else if (waited > 6000) {
                             clearInterval(poll);
                             resolve();
-                            if (liveMode) setTimeout(() => liveResumeListening(), 500);
+                            if (liveMode) setTimeout(() => liveResumeListening(), 600);
                         }
                     }, 100);
                 });
             }
 
-            // ─ Retoma escuta: só desliga o ignore, recognition já está rodando ─
+            // ─ Retoma escuta: reinicia recognition do zero ─
             function liveResumeListening() {
                 if (!liveMode) return;
                 liveIgnoreSTT = false;
@@ -4003,6 +4013,10 @@
                 speechBase = '';
                 const msgEl = document.getElementById('msg');
                 if (msgEl) msgEl.value = '';
+                // Restart recognition fresh
+                if (liveRecognition) {
+                    try { liveRecognition.start(); } catch (_) { }
+                }
                 liveSetHUD('listening', '🎙 Ouvindo…');
             }
 
