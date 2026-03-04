@@ -944,14 +944,16 @@
             background: transparent;
             border: none;
             color: var(--text);
-            padding: 10px 0;
+            padding: 8px 0;
             font-size: 15px;
             font-family: inherit;
             resize: none;
             outline: none;
-            min-height: 42px;
+            min-height: 24px;
             max-height: 200px;
-            line-height: 1.5;
+            line-height: 1.4;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
         #msg::placeholder {
@@ -3191,7 +3193,7 @@
                 t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800);
             }
             function autoH(el) {
-                el.style.height = 'auto';
+                el.style.height = '0';
                 el.style.height = Math.min(el.scrollHeight, 200) + 'px';
             }
 
@@ -3502,7 +3504,7 @@
             // ─══════════════════════════════════════════════════
             let recognition = null;
             let isListening = false;
-            let speechBase = ''; // texto digitado ANTES de ligar o mic
+            let speechBase = ''; // accumulated final text from previous recognition sessions
             let sttRestartTimer = null;
 
             function initSpeech() {
@@ -3511,52 +3513,59 @@
                 const r = new SpeechAPI();
                 r.lang = 'pt-BR';
                 r.interimResults = true;
-                r.continuous = true;
+                r.continuous = false;  // CRITICAL: false prevents Android duplication bug
                 r.maxAlternatives = 1;
+
+                let sessionFinal = ''; // final text from THIS session only
 
                 r.onstart = () => {
                     isListening = true;
+                    sessionFinal = '';
                     document.getElementById('mic-btn').classList.add('listening');
                     document.getElementById('mic-status').classList.add('on');
                 };
 
-                // FIX Android: rebuild full text from ALL results every time
-                // instead of accumulating speechBase (which duplicates on restart)
                 r.onresult = (e) => {
                     const msg = document.getElementById('msg');
-                    let finalText = '';
-                    let interim = '';
-                    // Rebuild from ALL results (index 0), not just resultIndex
+                    let final = '', interim = '';
                     for (let i = 0; i < e.results.length; i++) {
-                        const t = e.results[i][0].transcript;
-                        if (e.results[i].isFinal) finalText += t;
-                        else interim += t;
+                        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                        else interim += e.results[i][0].transcript;
                     }
-                    // speechBase = what was in the box before mic started
-                    msg.value = (speechBase ? speechBase + ' ' : '') + finalText.trim() + (interim ? ' ' + interim : '');
+                    sessionFinal = final;
+                    // Show: accumulated past text + this session's text + interim
+                    const parts = [];
+                    if (speechBase) parts.push(speechBase);
+                    if (final.trim()) parts.push(final.trim());
+                    let display = parts.join(' ');
+                    if (interim) display += (display ? ' ' : '') + interim;
+                    msg.value = display;
                     autoH(msg);
                 };
 
                 r.onerror = (e) => {
-                    if (e.error === 'no-speech') return;
+                    if (e.error === 'no-speech' || e.error === 'aborted') return;
                     if (e.error === 'not-allowed') {
                         toast('⚠ Permissão de microfone negada.');
-                    } else if (e.error !== 'aborted') {
+                    } else {
                         toast('⚠ STT erro: ' + e.error);
                     }
                     stopSpeech();
                 };
 
-                // FIX Android: delay restart to avoid rapid mic on/off sounds
                 r.onend = () => {
                     if (isListening) {
+                        // Save this session's final text into accumulated base
+                        if (sessionFinal.trim()) {
+                            speechBase += (speechBase ? ' ' : '') + sessionFinal.trim();
+                        }
+                        sessionFinal = '';
+                        // Restart after brief delay (avoids Android mic beep spam)
                         clearTimeout(sttRestartTimer);
                         sttRestartTimer = setTimeout(() => {
                             if (!isListening) return;
-                            // Save current text as new base before restart
-                            speechBase = document.getElementById('msg')?.value?.trim() || '';
                             try { r.start(); } catch (_) { stopSpeech(); }
-                        }, 400);
+                        }, 350);
                     }
                 };
 
@@ -3850,7 +3859,7 @@
                 }
             }
 
-            // ─ Init: 1 único recognition, nunca para durante a sessão ─
+            // ─ Init: 1 único recognition ─
             function liveInit() {
                 const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechAPI) { toast('⚠ Chrome/Edge necessário.'); return; }
@@ -3858,32 +3867,41 @@
                 const r = new SpeechAPI();
                 r.lang = 'pt-BR';
                 r.interimResults = true;
-                r.continuous = true;
+                r.continuous = false;  // Prevents Android duplication
                 r.maxAlternatives = 1;
                 liveRecognition = r;
 
-                let lastText = '';
+                let liveAccum = ''; // accumulated text across sessions
+                let sessionFinal = '';
+                let lastDisplay = '';
 
-                // FIX Android: rebuild full text from ALL results every time
                 r.onresult = (e) => {
                     if (liveIgnoreSTT || !liveMode) return;
-                    let finalText = '', interim = '';
+                    let final = '', interim = '';
                     for (let i = 0; i < e.results.length; i++) {
-                        const t = e.results[i][0].transcript;
-                        if (e.results[i].isFinal) finalText += t;
-                        else interim += t;
+                        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                        else interim += e.results[i][0].transcript;
                     }
-                    const full = finalText.trim() + (interim ? ' ' + interim : '');
+                    sessionFinal = final;
+                    const parts = [];
+                    if (liveAccum) parts.push(liveAccum);
+                    if (final.trim()) parts.push(final.trim());
+                    let display = parts.join(' ');
+                    if (interim) display += (display ? ' ' : '') + interim;
+
                     const msgEl = document.getElementById('msg');
-                    if (msgEl) { msgEl.value = full; autoH(msgEl); }
-                    if (full.trim() && full !== lastText) {
-                        lastText = full;
+                    if (msgEl) { msgEl.value = display; autoH(msgEl); }
+
+                    if (display.trim() && display !== lastDisplay) {
+                        lastDisplay = display;
                         clearTimeout(liveSilenceTimer);
                         liveSilenceStart = Date.now();
                         liveSetHUD('listening', '🎙 Ouvindo…');
                         liveSilenceTimer = setTimeout(() => {
                             if (liveMode && !liveIgnoreSTT && document.getElementById('msg')?.value?.trim()) {
-                                lastText = '';
+                                liveAccum = '';
+                                lastDisplay = '';
+                                sessionFinal = '';
                                 liveTriggerSend();
                             }
                         }, LIVE_SILENCE_MS);
@@ -3891,25 +3909,29 @@
                 };
 
                 r.onerror = (e) => {
-                    if (e.error === 'no-speech') return;
+                    if (e.error === 'no-speech' || e.error === 'aborted') return;
                     if (e.error === 'not-allowed') { toast('⚠ Permissão de microfone negada.'); liveStop(); return; }
-                    if (e.error !== 'aborted') console.warn('[Live] erro STT:', e.error);
+                    console.warn('[Live] erro STT:', e.error);
                 };
 
-                // FIX Android: delay restart to avoid mic sound spam
                 r.onend = () => {
                     if (!liveMode) return;
+                    // Save session text
+                    if (sessionFinal.trim()) {
+                        liveAccum += (liveAccum ? ' ' : '') + sessionFinal.trim();
+                    }
+                    sessionFinal = '';
                     setTimeout(() => {
                         if (!liveMode) return;
                         try { r.start(); } catch (_) { }
-                    }, 400);
+                    }, 350);
                 };
 
                 r.onstart = () => {
-                    lastText = '';
+                    sessionFinal = '';
                     speechBase = '';
                     const msgEl = document.getElementById('msg');
-                    if (msgEl) msgEl.value = '';
+                    if (msgEl && !liveAccum) msgEl.value = '';
                     liveSetHUD('listening', '🎙 Ouvindo…');
                 };
 
