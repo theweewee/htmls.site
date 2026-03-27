@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GDM Live Audio Visuals 3D</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #100c14; overflow: hidden; width: 100vw; height: 100vh; font-family: 'Segoe UI', monospace; }
+    canvas { display: block; position: fixed; inset: 0; width: 100% !important; height: 100% !important; }
+
+    /* ── Panel Toggle Button ── */
+    #toggle-btn {
+      position: fixed; top: 16px; right: 16px; z-index: 100;
+      background: rgba(170,85,255,0.25); border: 1px solid rgba(170,85,255,0.5);
+      color: #cc88ff; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; letter-spacing: 1px; backdrop-filter: blur(8px);
+      transition: all .2s;
+    }
+    #toggle-btn:hover { background: rgba(170,85,255,0.45); }
+
+    /* ── Side Panel ── */
+    #panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 290px; z-index: 99;
+      background: rgba(10,7,18,0.92); backdrop-filter: blur(12px);
+      border-left: 1px solid rgba(170,85,255,0.2);
+      overflow-y: auto; padding: 56px 0 20px;
+      transition: transform .3s ease;
+      scrollbar-width: thin; scrollbar-color: #440088 transparent;
+    }
+    #panel.hidden { transform: translateX(100%); }
+
+    /* ── Section ── */
+    .section { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .section-header {
+      padding: 10px 16px; cursor: pointer; user-select: none;
+      display: flex; justify-content: space-between; align-items: center;
+      color: #cc88ff; font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .section-header:hover { background: rgba(170,85,255,0.08); }
+    .section-arrow { font-size: 10px; transition: transform .2s; }
+    .section-body { padding: 4px 16px 12px; }
+    .section.collapsed .section-body { display: none; }
+    .section.collapsed .section-arrow { transform: rotate(-90deg); }
+
+    /* ── Controls ── */
+    .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .row label {
+      flex: 0 0 100px; font-size: 11px; color: #9977bb; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row input[type=range] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 3px; border-radius: 2px; background: #2a1a40; outline: none; cursor: pointer;
+    }
+    .row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+      background: #aa55ff; cursor: pointer; transition: transform .15s;
+    }
+    .row input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.4); }
+    .row .val {
+      flex: 0 0 36px; font-size: 10px; color: #cc99ff; text-align: right;
+    }
+    .row input[type=color] {
+      flex: 0 0 40px; height: 24px; border: none; border-radius: 4px;
+      background: none; cursor: pointer; padding: 0;
+    }
+
+    /* ── Presets / Buttons ── */
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+    .preset-btn {
+      flex: 1; padding: 5px 6px; font-size: 10px; letter-spacing: .5px;
+      background: rgba(170,85,255,0.12); border: 1px solid rgba(170,85,255,0.3);
+      color: #bb77ff; border-radius: 5px; cursor: pointer; transition: all .15s;
+      text-align: center;
+    }
+    .preset-btn:hover, .preset-btn.active { background: rgba(170,85,255,0.35); color: #fff; }
+
+    /* ── Toggle switch ── */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
+    .toggle-row span { font-size: 11px; color: #9977bb; }
+    .switch { position: relative; width: 34px; height: 18px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-sw {
+      position: absolute; inset: 0; background: #2a1a40; border-radius: 18px; cursor: pointer;
+      transition: .2s;
+    }
+    .slider-sw:before {
+      content: ''; position: absolute; width: 12px; height: 12px; border-radius: 50%;
+      background: #666; left: 3px; top: 3px; transition: .2s;
+    }
+    input:checked + .slider-sw { background: #551188; }
+    input:checked + .slider-sw:before { background: #cc88ff; transform: translateX(16px); }
+
+    /* ── FPS counter ── */
+    #fps {
+      position: fixed; bottom: 12px; left: 12px; z-index: 100;
+      font-size: 10px; color: rgba(170,85,255,0.5); letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="fps">-- FPS</div>
+<button id="toggle-btn">⚙ CONTROLS</button>
+<div id="panel">
+
+  <!-- PRESETS -->
+  <div class="section">
+    <div class="section-header">🎨 Presets <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="btn-row">
+        <button class="preset-btn active" data-preset="default">Default</button>
+        <button class="preset-btn" data-preset="neon">Neon</button>
+        <button class="preset-btn" data-preset="lava">Lava</button>
+        <button class="preset-btn" data-preset="ice">Ice</button>
+        <button class="preset-btn" data-preset="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOOM -->
+  <div class="section">
+    <div class="section-header">✨ Bloom <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Strength</label><input type="range" id="bloomStrength" min="0" max="5" step="0.05" value="1.2"><span class="val" id="v-bloomStrength">1.20</span></div>
+      <div class="row"><label>Radius</label><input type="range" id="bloomRadius" min="0" max="2" step="0.05" value="0.5"><span class="val" id="v-bloomRadius">0.50</span></div>
+      <div class="row"><label>Threshold</label><input type="range" id="bloomThreshold" min="0" max="1" step="0.01" value="0"><span class="val" id="v-bloomThreshold">0.00</span></div>
+    </div>
+  </div>
+
+  <!-- TONE MAPPING -->
+  <div class="section">
+    <div class="section-header">🌅 Tone & Exposure <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Exposure</label><input type="range" id="exposure" min="0.1" max="3" step="0.05" value="1"><span class="val" id="v-exposure">1.00</span></div>
+      <div class="row"><label>Tone Map</label>
+        <select id="toneMap" style="flex:1;background:#1a0d2e;color:#cc88ff;border:1px solid #440066;border-radius:4px;padding:3px 6px;font-size:11px;">
+          <option value="0">None</option>
+          <option value="1">Linear</option>
+          <option value="3" selected>ACES Filmic</option>
+          <option value="4">Cineon</option>
+          <option value="5">Reinhard</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLASS SPHERE -->
+  <div class="section">
+    <div class="section-header">🔮 Glass Sphere <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Base Color</label><input type="color" id="glassColor" value="#aa55ff"></div>
+      <div class="row"><label>Auto Hue</label>
+        <label class="switch"><input type="checkbox" id="autoHue" checked><span class="slider-sw"></span></label>
+      </div>
+      <div class="row"><label>Hue Speed</label><input type="range" id="hueSpeed" min="0" max="5" step="0.1" value="1"><span class="val" id="v-hueSpeed">1.0</span></div>
+      <div class="row"><label>Transmission</label><input type="range" id="transmission" min="0" max="1" step="0.01" value="1"><span class="val" id="v-transmission">1.00</span></div>
+      <div class="row"><label>IOR</label><input type="range" id="ior" min="1" max="2.5" step="0.01" value="1.5"><span class="val" id="v-ior">1.50</span></div>
+      <div class="row"><label>Thickness</label><input type="range" id="thickness" min="0" max="5" step="0.1" value="1"><span class="val" id="v-thickness">1.0</span></div>
+      <div class="row"><label>Roughness</label><input type="range" id="glassRoughness" min="0" max="1" step="0.01" value="0.05"><span class="val" id="v-glassRoughness">0.05</span></div>
+      <div class="row"><label>Metalness</label><input type="range" id="glassMetalness" min="0" max="1" step="0.01" value="0.1"><span class="val" id="v-glassMetalness">0.10</span></div>
+      <div class="row"><label>Clearcoat</label><input type="range" id="clearcoat" min="0" max="1" step="0.01" value="1"><span class="val" id="v-clearcoat">1.00</span></div>
+      <div class="row"><label>Env Intensity</label><input type="range" id="glassEnv" min="0" max="5" step="0.1" value="1.5"><span class="val" id="v-glassEnv">1.5</span></div>
+      <div class="row"><label>Sphere Size</label><input type="range" id="sphereScale" min="0.3" max="2" step="0.05" value="1"><span class="val" id="v-sphereScale">1.0</span></div>
+    </div>
+  </div>
+
+  <!-- LIGHTS -->
+  <div class="section">
+    <div class="section-header">💡 Lights <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Ambient</label><input type="range" id="ambientInt" min="0" max="3" step="0.05" value="0.5"><span class="val" id="v-ambientInt">0.50</span></div>
+      <div class="row"><label>Light 1 Int.</label><input type="range" id="light1Int" min="0" max="15" step="0.1" value="4"><span class="val" id="v-light1Int">4.0</span></div>
+      <div class="row"><label>Light 1 Color</label><input type="color" id="light1Color" value="#bb66ff"></div>
+      <div class="row"><label>Light 2 Int.</label><input type="range" id="light2Int" min="0" max="15" step="0.1" value="2"><span class="val" id="v-light2Int">2.0</span></div>
+      <div class="row"><label>Light 2 Color</label><input type="color" id="light2Color" value="#4466ff"></div>
+      <div class="toggle-row"><span>Animate Lights</span>
+        <label class="switch"><input type="checkbox" id="animLights" checked><span class="slider-sw"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- EYES -->
+  <div class="section">
+    <div class="section-header">👁 Eyes <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Color</label><input type="color" id="eyeColor" value="#111111"></div>
+      <div class="row"><label>Metalness</label><input type="range" id="eyeMetal" min="0" max="1" step="0.01" value="0.9"><span class="val" id="v-eyeMetal">0.90</span></div>
+      <div class="row"><label>Roughness</label><input type="range" id="eyeRough" min="0" max="1" step="0.01" value="0"><span class="val" id="v-eyeRough">0.00</span></div>
+      <div class="row"><label>Size</label><input type="range" id="eyeSize" min="0.05" max="0.5" step="0.01" value="0.25"><span class="val" id="v-eyeSize">0.25</span></div>
+      <div class="toggle-row"><span>Visible</span>
+        <label class="switch"><input type="checkbox" id="eyeVisible" checked><span class="slider-sw"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEETH -->
+  <div class="section">
+    <div class="section-header">🦷 Teeth <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Color</label><input type="color" id="teethColor" value="#ffffff"></div>
+      <div class="row"><label>Mouth Amp.</label><input type="range" id="mouthAmp" min="0" max="1" step="0.01" value="0.15"><span class="val" id="v-mouthAmp">0.15</span></div>
+      <div class="toggle-row"><span>Visible</span>
+        <label class="switch"><input type="checkbox" id="teethVisible" checked><span class="slider-sw"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANIMATION -->
+  <div class="section">
+    <div class="section-header">🎬 Animation <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Rot. Speed</label><input type="range" id="rotSpeed" min="0" max="5" step="0.1" value="1"><span class="val" id="v-rotSpeed">1.0</span></div>
+      <div class="row"><label>Float Amp.</label><input type="range" id="floatAmp" min="0" max="2" step="0.05" value="0.2"><span class="val" id="v-floatAmp">0.2</span></div>
+      <div class="row"><label>Float Speed</label><input type="range" id="floatSpeed" min="0" max="5" step="0.1" value="1"><span class="val" id="v-floatSpeed">1.0</span></div>
+      <div class="row"><label>Pulse Amp.</label><input type="range" id="pulseAmp" min="0" max="0.5" step="0.01" value="0.1"><span class="val" id="v-pulseAmp">0.10</span></div>
+      <div class="row"><label>Cam Distance</label><input type="range" id="camDist" min="2" max="12" step="0.1" value="5"><span class="val" id="v-camDist">5.0</span></div>
+      <div class="row"><label>FOV</label><input type="range" id="fov" min="30" max="120" step="1" value="75"><span class="val" id="v-fov">75</span></div>
+    </div>
+  </div>
+
+  <!-- BACKDROP -->
+  <div class="section">
+    <div class="section-header">🌌 Backdrop <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="toggle-row"><span>Stars</span>
+        <label class="switch"><input type="checkbox" id="starsOn" checked><span class="slider-sw"></span></label>
+      </div>
+      <div class="toggle-row"><span>Nebula</span>
+        <label class="switch"><input type="checkbox" id="nebulaOn" checked><span class="slider-sw"></span></label>
+      </div>
+      <div class="row"><label>Nebula Color 1</label><input type="color" id="nebColor1" value="#0e0919"></div>
+      <div class="row"><label>Nebula Color 2</label><input type="color" id="nebColor2" value="#290a47"></div>
+      <div class="row"><label>Star Density</label><input type="range" id="starDensity" min="0.95" max="0.999" step="0.001" value="0.986"><span class="val" id="v-starDensity">0.986</span></div>
+      <div class="row"><label>Anim Speed</label><input type="range" id="backdropSpeed" min="0" max="5" step="0.1" value="1"><span class="val" id="v-backdropSpeed">1.0</span></div>
+    </div>
+  </div>
+
+  <!-- AUDIO SIM -->
+  <div class="section">
+    <div class="section-header">🎵 Audio Sim <span class="section-arrow">▾</span></div>
+    <div class="section-body">
+      <div class="row"><label>Input Amp.</label><input type="range" id="inputAmp" min="0" max="3" step="0.05" value="1"><span class="val" id="v-inputAmp">1.0</span></div>
+      <div class="row"><label>Output Amp.</label><input type="range" id="outputAmp" min="0" max="3" step="0.05" value="1"><span class="val" id="v-outputAmp">1.0</span></div>
+      <div class="row"><label>Freq Speed</label><input type="range" id="freqSpeed" min="0.1" max="5" step="0.1" value="1"><span class="val" id="v-freqSpeed">1.0</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass }      from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ════════════════════════════════════════
+   CONFIG — lido pelos sliders em runtime
+   ════════════════════════════════════════ */
+const cfg = {
+  bloomStrength: 1.2, bloomRadius: 0.5, bloomThreshold: 0,
+  exposure: 1,
+  autoHue: true, hueSpeed: 1,
+  glassColor: '#aa55ff', transmission: 1, ior: 1.5, thickness: 1,
+  glassRoughness: 0.05, glassMetalness: 0.1, clearcoat: 1, glassEnv: 1.5, sphereScale: 1,
+  ambientInt: 0.5, light1Int: 4, light1Color: '#bb66ff', light2Int: 2, light2Color: '#4466ff',
+  animLights: true,
+  eyeColor: '#111111', eyeMetal: 0.9, eyeRough: 0, eyeSize: 0.25, eyeVisible: true,
+  teethColor: '#ffffff', mouthAmp: 0.15, teethVisible: true,
+  rotSpeed: 1, floatAmp: 0.2, floatSpeed: 1, pulseAmp: 0.1, camDist: 5, fov: 75,
+  starsOn: true, nebulaOn: true,
+  nebColor1: '#0e0919', nebColor2: '#290a47', starDensity: 0.986, backdropSpeed: 1,
+  inputAmp: 1, outputAmp: 1, freqSpeed: 1,
+};
+
+/* ── Simulated Analyser ── */
+class SimulatedAnalyser {
+  constructor(seed = 0) { this.data = new Uint8Array(256).fill(0); this.seed = seed; }
+  update(amp = 1, speed = 1) {
+    const t = performance.now() * 0.001 * speed;
+    for (let i = 0; i < this.data.length; i++) {
+      const fr = (i + 1) / this.data.length;
+      const v =
+        Math.sin(t * (2.1 + fr * 3.0) + this.seed)       * 0.35 +
+        Math.sin(t * (1.3 + fr * 1.7) + this.seed * 1.4) * 0.30 +
+        Math.abs(Math.sin(t * 0.6 + this.seed * 0.7))     * 0.35;
+      this.data[i] = Math.max(0, Math.min(255, v * 220 * amp + 20));
+    }
+  }
+}
+
+/* ── Shaders ── */
+const backdropVS = `
+  in vec3 position;
+  uniform mat4 projectionMatrix;
+  uniform mat4 modelViewMatrix;
+  out vec3 vPos;
+  void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+`;
+const backdropFS = `
+  precision highp float;
+  uniform vec2 resolution;
+  uniform float rand;
+  uniform vec3 col1;
+  uniform vec3 col2;
+  uniform float starDensity;
+  uniform float starsOn;
+  uniform float nebulaOn;
+  in vec3 vPos;
+  out vec4 fragColor;
+  float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float noise(vec2 p){
+    vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
+    return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+  }
+  void main(){
+    vec3 d=normalize(vPos);
+    vec2 uv=vec2(atan(d.x,d.z)/6.28318, asin(d.y)/3.14159*0.5+0.5);
+    float n1=noise(uv*8.0  + rand*0.000025);
+    float n2=noise(uv*16.0 - rand*0.000012);
+    float n3=noise(uv*40.0);
+    vec3 color = mix(col1, col2, nebulaOn*(n1*0.6+n2*0.4));
+    color += vec3(0.04,0.01,0.07)*n3*nebulaOn;
+    float s = step(starDensity, hash(floor(uv*vec2(900.0,450.0))));
+    color += starsOn * s * vec3(0.8,0.85,1.0) * (0.4+0.6*hash(floor(uv*vec2(900,450)+1.0)));
+    fragColor = vec4(color,1.0);
+  }
+`;
+
+/* ── Renderer ── */
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+/* ── Scene & Camera ── */
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x100c14);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(2, -2, 5);
+
+/* ── Backdrop ── */
+const backdropUniforms = {
+  resolution:  { value: new THREE.Vector2(1,1) },
+  rand:        { value: 0 },
+  col1:        { value: new THREE.Color('#0e0919') },
+  col2:        { value: new THREE.Color('#290a47') },
+  starDensity: { value: 0.986 },
+  starsOn:     { value: 1.0 },
+  nebulaOn:    { value: 1.0 },
+};
+const backdrop = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(10, 5),
+  new THREE.RawShaderMaterial({
+    uniforms: backdropUniforms,
+    vertexShader: backdropVS, fragmentShader: backdropFS,
+    glslVersion: THREE.GLSL3, side: THREE.BackSide,
+  })
+);
+scene.add(backdrop);
+
+/* ── Luzes ── */
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+const pl1 = new THREE.PointLight(0xbb66ff, 4, 12);
+pl1.position.set(3, 4, 4);
+scene.add(pl1);
+const pl2 = new THREE.PointLight(0x4466ff, 2, 10);
+pl2.position.set(-3, -2, 2);
+scene.add(pl2);
+
+/* ── Environment Map ── */
+const pmrem  = new THREE.PMREMGenerator(renderer);
+const envMap = pmrem.fromScene(new RoomEnvironment()).texture;
+pmrem.dispose();
+
+/* ── Materiais ── */
+const glassMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xaa55ff, metalness: 0.1, roughness: 0.05,
+  transmission: 1.0, ior: 1.5, thickness: 1.0,
+  envMapIntensity: 1.5, clearcoat: 1.0, clearcoatRoughness: 0.1, envMap,
+});
+const eyeMaterial = new THREE.MeshStandardMaterial({
+  color: 0x111111, roughness: 0.0, metalness: 0.9, envMapIntensity: 1.5, envMap,
+});
+const teethMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: 0.2, metalness: 0.1, envMap,
+});
+
+/* ── Personagem ── */
+const characterGroup = new THREE.Group();
+const glassSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), glassMaterial);
+characterGroup.add(glassSphere);
+
+const eyeGeom   = new THREE.SphereGeometry(0.25, 32, 32);
+const eyeAngle  = Math.PI * 0.25, eyeY = 0.4, eyeR = 0.95;
+
+const leftEye = new THREE.Mesh(eyeGeom, eyeMaterial);
+leftEye.scale.set(1,1,0.4);
+leftEye.position.set(-Math.sin(eyeAngle)*eyeR, eyeY, Math.cos(eyeAngle)*eyeR);
+leftEye.lookAt(0,0,0);
+characterGroup.add(leftEye);
+
+const rightEye = new THREE.Mesh(eyeGeom, eyeMaterial);
+rightEye.scale.set(1,1,0.4);
+rightEye.position.set(Math.sin(eyeAngle)*eyeR, eyeY, Math.cos(eyeAngle)*eyeR);
+rightEye.lookAt(0,0,0);
+characterGroup.add(rightEye);
+
+const ext = { depth:0.05, bevelEnabled:true, bevelSegments:2, steps:2, bevelSize:0.01, bevelThickness:0.01 };
+
+const topShape = new THREE.Shape();
+topShape.moveTo(-0.16,0.15); topShape.lineTo(0.16,0.15); topShape.lineTo(0,-0.2); topShape.lineTo(-0.16,0.15);
+const topToothGeom = new THREE.ExtrudeGeometry(topShape, ext); topToothGeom.center();
+
+const botShape = new THREE.Shape();
+botShape.moveTo(-0.16,-0.15); botShape.lineTo(0.16,-0.15); botShape.lineTo(0,0.2); botShape.lineTo(-0.16,-0.15);
+const botToothGeom = new THREE.ExtrudeGeometry(botShape, ext); botToothGeom.center();
+
+const topTeethGroup = new THREE.Group();
+const botTeethGroup = new THREE.Group();
+
+for (let i = 0; i < 6; i++) {
+  const a = (i/5-.5)*Math.PI*.8, r=1, x=Math.sin(a)*r, z=Math.cos(a)*r, y=0.2-Math.cos(a)*.2;
+  const t = new THREE.Mesh(topToothGeom, teethMaterial);
+  t.position.set(x,y,z); t.lookAt(t.position.clone().add(new THREE.Vector3(x,y,z).normalize()));
+  topTeethGroup.add(t);
+}
+for (let i = 0; i < 5; i++) {
+  const a = (i/4-.5)*Math.PI*.7, r=1, x=Math.sin(a)*r, z=Math.cos(a)*r, y=-0.1-Math.cos(a)*.2;
+  const t = new THREE.Mesh(botToothGeom, teethMaterial);
+  t.position.set(x,y,z); t.lookAt(t.position.clone().add(new THREE.Vector3(x,y,z).normalize()));
+  botTeethGroup.add(t);
+}
+characterGroup.add(topTeethGroup); characterGroup.add(botTeethGroup);
+scene.add(characterGroup);
+
+/* ── Post-processing ── */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.5, 0
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+/* ── Resize ── */
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  const dpr = renderer.getPixelRatio();
+  backdropUniforms.resolution.value.set(w*dpr, h*dpr);
+  renderer.setSize(w,h); composer.setSize(w,h);
+}
+window.addEventListener('resize', onResize); onResize();
+
+/* ── Animação ── */
+const inputAnalyser  = new SimulatedAnalyser(0);
+const outputAnalyser = new SimulatedAnalyser(1.57);
+let prevTime = 0;
+const rotation = new THREE.Vector3(0,0,0);
+let fpsFrames = 0, fpsTime = 0;
+const fpsEl = document.getElementById('fps');
+
+function animate() {
+  requestAnimationFrame(animate);
+  inputAnalyser.update(cfg.inputAmp, cfg.freqSpeed);
+  outputAnalyser.update(cfg.outputAmp, cfg.freqSpeed);
+
+  const t  = performance.now();
+  const dt = (t - prevTime) / (1000/60);
+  prevTime = t;
+
+  // FPS
+  fpsFrames++;
+  if (t - fpsTime > 1000) {
+    fpsEl.textContent = fpsFrames + ' FPS';
+    fpsFrames = 0; fpsTime = t;
+  }
+
+  backdropUniforms.rand.value = Math.random() * 10000 * cfg.backdropSpeed;
+
+  // Scale pulse
+  characterGroup.scale.setScalar(
+    cfg.sphereScale * (1 + cfg.pulseAmp * outputAnalyser.data[1] / 255)
+  );
+  characterGroup.position.x = Math.sin(t * 0.001 * cfg.floatSpeed) * cfg.floatAmp;
+  characterGroup.position.y = Math.cos(t * 0.0013 * cfg.floatSpeed) * (cfg.floatAmp * 0.5);
+
+  // Camera rotation
+  const f = 0.001 * cfg.rotSpeed;
+  rotation.x += (dt * f * 0.5  * outputAnalyser.data[1]) / 255;
+  rotation.z += (dt * f * 0.5  * inputAnalyser.data[1])  / 255;
+  rotation.y += (dt * f * 0.25 * inputAnalyser.data[2])  / 255;
+  rotation.y += (dt * f * 0.25 * outputAnalyser.data[2]) / 255;
+
+  const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z));
+  camera.position.copy(new THREE.Vector3(0, 0, cfg.camDist).applyQuaternion(quat));
+  camera.lookAt(characterGroup.position);
+
+  // Mouth
+  const mouthOpen = (outputAnalyser.data[1] || 0) / 255;
+  topTeethGroup.position.y =  mouthOpen * cfg.mouthAmp;
+  botTeethGroup.position.y = -mouthOpen * cfg.mouthAmp;
+
+  // Auto hue
+  if (cfg.autoHue) {
+    glassMaterial.color.setHSL((t * 0.00005 * cfg.hueSpeed) % 1, 0.8, 0.5);
+  }
+
+  // Animate lights
+  if (cfg.animLights) {
+    pl1.position.x = Math.sin(t * 0.0008) * 4;
+    pl1.position.z = Math.cos(t * 0.0008) * 4;
+    pl2.position.x = Math.cos(t * 0.0011) * 4;
+    pl2.position.z = Math.sin(t * 0.0011) * 4;
+  }
+
+  composer.render();
+}
+animate();
+
+/* ════════════════════════════════════
+   UI BINDINGS
+   ════════════════════════════════════ */
+
+// Generic slider → cfg + display value
+function bindSlider(id, key, transform) {
+  const el  = document.getElementById(id);
+  const val = document.getElementById('v-' + id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    cfg[key] = parseFloat(el.value);
+    if (val) val.textContent = parseFloat(el.value).toFixed(
+      el.step && el.step.includes('.') ? el.step.split('.')[1].length : 0
+    );
+    if (transform) transform(cfg[key]);
+  });
+}
+
+function bindColor(id, key, transform) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    cfg[key] = el.value;
+    if (transform) transform(el.value);
+  });
+}
+
+function bindToggle(id, key, transform) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', () => {
+    cfg[key] = el.checked;
+    if (transform) transform(el.checked);
+  });
+}
+
+// Bloom
+bindSlider('bloomStrength',  'bloomStrength',  v => bloomPass.strength = v);
+bindSlider('bloomRadius',    'bloomRadius',    v => bloomPass.radius   = v);
+bindSlider('bloomThreshold', 'bloomThreshold', v => bloomPass.threshold = v);
+
+// Tone
+bindSlider('exposure', 'exposure', v => renderer.toneMappingExposure = v);
+document.getElementById('toneMap').addEventListener('change', e => {
+  renderer.toneMapping = parseInt(e.target.value);
+});
+
+// Glass
+bindColor('glassColor', 'glassColor', v => {
+  if (!cfg.autoHue) glassMaterial.color.set(v);
+});
+bindToggle('autoHue', 'autoHue');
+bindSlider('hueSpeed',       'hueSpeed');
+bindSlider('transmission',   'transmission',   v => glassMaterial.transmission = v);
+bindSlider('ior',            'ior',            v => glassMaterial.ior = v);
+bindSlider('thickness',      'thickness',      v => glassMaterial.thickness = v);
+bindSlider('glassRoughness', 'glassRoughness', v => glassMaterial.roughness = v);
+bindSlider('glassMetalness', 'glassMetalness', v => glassMaterial.metalness = v);
+bindSlider('clearcoat',      'clearcoat',      v => glassMaterial.clearcoat = v);
+bindSlider('glassEnv',       'glassEnv',       v => glassMaterial.envMapIntensity = v);
+bindSlider('sphereScale',    'sphereScale');
+
+// Lights
+bindSlider('ambientInt',  'ambientInt',  v => ambientLight.intensity = v);
+bindSlider('light1Int',   'light1Int',   v => pl1.intensity = v);
+bindColor('light1Color',  'light1Color', v => pl1.color.set(v));
+bindSlider('light2Int',   'light2Int',   v => pl2.intensity = v);
+bindColor('light2Color',  'light2Color', v => pl2.color.set(v));
+bindToggle('animLights',  'animLights');
+
+// Eyes
+bindColor('eyeColor',   'eyeColor',  v => eyeMaterial.color.set(v));
+bindSlider('eyeMetal',  'eyeMetal',  v => eyeMaterial.metalness  = v);
+bindSlider('eyeRough',  'eyeRough',  v => eyeMaterial.roughness  = v);
+bindSlider('eyeSize',   'eyeSize',   v => { leftEye.scale.set(v/0.25,v/0.25,v/0.25*0.4); rightEye.scale.set(v/0.25,v/0.25,v/0.25*0.4); });
+bindToggle('eyeVisible','eyeVisible',v => { leftEye.visible = v; rightEye.visible = v; });
+
+// Teeth
+bindColor('teethColor',   'teethColor',    v => teethMaterial.color.set(v));
+bindSlider('mouthAmp',    'mouthAmp');
+bindToggle('teethVisible','teethVisible',  v => { topTeethGroup.visible = v; botTeethGroup.visible = v; });
+
+// Animation
+bindSlider('rotSpeed',      'rotSpeed');
+bindSlider('floatAmp',      'floatAmp');
+bindSlider('floatSpeed',    'floatSpeed');
+bindSlider('pulseAmp',      'pulseAmp');
+bindSlider('camDist',       'camDist');
+bindSlider('fov',           'fov',  v => { camera.fov = v; camera.updateProjectionMatrix(); });
+
+// Backdrop
+bindToggle('starsOn',       'starsOn',       v => backdropUniforms.starsOn.value  = v ? 1 : 0);
+bindToggle('nebulaOn',      'nebulaOn',      v => backdropUniforms.nebulaOn.value = v ? 1 : 0);
+bindColor('nebColor1',      'nebColor1',     v => backdropUniforms.col1.value.set(v));
+bindColor('nebColor2',      'nebColor2',     v => backdropUniforms.col2.value.set(v));
+bindSlider('starDensity',   'starDensity',   v => backdropUniforms.starDensity.value = v);
+bindSlider('backdropSpeed', 'backdropSpeed');
+
+// Audio Sim
+bindSlider('inputAmp',  'inputAmp');
+bindSlider('outputAmp', 'outputAmp');
+bindSlider('freqSpeed', 'freqSpeed');
+
+/* ── Section collapse ── */
+document.querySelectorAll('.section-header').forEach(h => {
+  h.addEventListener('click', () => h.parentElement.classList.toggle('collapsed'));
+});
+
+/* ── Panel toggle ── */
+document.getElementById('toggle-btn').addEventListener('click', () => {
+  document.getElementById('panel').classList.toggle('hidden');
+});
+
+/* ── Presets ── */
+const PRESETS = {
+  default: { bloomStrength:1.2, glassColor:'#aa55ff', light1Color:'#bb66ff', light2Color:'#4466ff', nebColor1:'#0e0919', nebColor2:'#290a47', exposure:1, hueSpeed:1, rotSpeed:1 },
+  neon:    { bloomStrength:2.5, glassColor:'#00ffcc', light1Color:'#ff00ff', light2Color:'#00ffff', nebColor1:'#000510', nebColor2:'#001030', exposure:0.8, hueSpeed:2, rotSpeed:1.5 },
+  lava:    { bloomStrength:1.8, glassColor:'#ff4400', light1Color:'#ff6600', light2Color:'#ffcc00', nebColor1:'#150302', nebColor2:'#3a0800', exposure:1.2, hueSpeed:0.5, rotSpeed:0.8 },
+  ice:     { bloomStrength:0.8, glassColor:'#aaeeff', light1Color:'#88ccff', light2Color:'#ffffff', nebColor1:'#020a10', nebColor2:'#0a1e28', exposure:1.1, hueSpeed:0.3, rotSpeed:0.5 },
+  dark:    { bloomStrength:3.5, glassColor:'#220044', light1Color:'#6600aa', light2Color:'#330066', nebColor1:'#050005', nebColor2:'#100010', exposure:0.6, hueSpeed:0.8, rotSpeed:1.2 },
+};
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = PRESETS[btn.dataset.preset];
+    if (!p) return;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Apply values
+    bloomPass.strength              = p.bloomStrength;
+    renderer.toneMappingExposure    = p.exposure;
+    glassMaterial.color.set(p.glassColor);
+    pl1.color.set(p.light1Color);
+    pl2.color.set(p.light2Color);
+    backdropUniforms.col1.value.set(p.nebColor1);
+    backdropUniforms.col2.value.set(p.nebColor2);
+    Object.assign(cfg, p);
+
+    // Sync sliders visually
+    ['bloomStrength','exposure','hueSpeed','rotSpeed'].forEach(key => {
+      const el  = document.getElementById(key);
+      const vel = document.getElementById('v-' + key);
+      if (el)  el.value = cfg[key];
+      if (vel) vel.textContent = parseFloat(cfg[key]).toFixed(2);
+    });
+    ['glassColor','light1Color','light2Color','nebColor1','nebColor2'].forEach(key => {
+      const el = document.getElementById(key.replace(/([A-Z])/g, c => c.toLowerCase()));
+      // map key→id
+    });
+    document.getElementById('glassColor').value  = p.glassColor;
+    document.getElementById('light1Color').value = p.light1Color;
+    document.getElementById('light2Color').value = p.light2Color;
+    document.getElementById('nebColor1').value   = p.nebColor1;
+    document.getElementById('nebColor2').value   = p.nebColor2;
+    document.getElementById('bloomStrength').value = p.bloomStrength;
+    document.getElementById('v-bloomStrength').textContent = p.bloomStrength.toFixed(2);
+    document.getElementById('exposure').value = p.exposure;
+    document.getElementById('v-exposure').textContent = p.exposure.toFixed(2);
+  });
+});
+</script>
+</body>
+</html>
