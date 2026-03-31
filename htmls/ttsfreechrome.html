@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STT Chrome - Full Front</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171923;
+      --border: #2a2f3a;
+      --text: #eaeaea;
+      --muted: #a5adba;
+      --blue: #2b6ef3;
+      --green: #1fa971;
+      --red: #e15252;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #0f1115 0%, #0c0e12 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 16px 40px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 8px;
+      font-weight: 700;
+    }
+
+    input[type="file"],
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0f1115;
+      color: var(--text);
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      margin-top: 10px;
+      font-weight: 700;
+      background: var(--blue);
+    }
+
+    button.secondary {
+      background: #232838;
+    }
+
+    button.danger {
+      background: var(--red);
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0f1115;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      min-height: 22px;
+      white-space: pre-wrap;
+    }
+
+    video {
+      width: 100%;
+      margin-top: 12px;
+      border-radius: 12px;
+      background: #000;
+      display: none;
+      max-height: 420px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: #0f1115;
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 12px;
+      min-height: 220px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #202636;
+      border: 1px solid var(--border);
+      color: #d7def0;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>STT do Chrome — Full Front</h1>
+    <div class="subtitle">
+      Arquivo único em HTML puro. Funciona em Chrome/Chromium com <b>SpeechRecognition</b>.
+      <br />
+      <span class="pill">Sem backend</span>
+      <span class="pill">Sem Google Cloud</span>
+      <span class="pill">Local / experimental</span>
+    </div>
+
+    <div class="box">
+      <label>1) Escolha um MP3, MP4, WAV, WEBM etc.</label>
+      <input id="fileInput" type="file" accept="audio/*,video/*" />
+
+      <div class="row">
+        <button id="btnFile">Transcrever arquivo</button>
+        <button id="btnMic" class="secondary">Usar microfone</button>
+      </div>
+
+      <div class="row">
+        <button id="btnStop" class="danger" disabled>Parar</button>
+        <button id="btnClear" class="secondary">Limpar texto</button>
+      </div>
+
+      <video id="player" controls></video>
+      <div id="status" class="status">Selecione um arquivo ou use o microfone.</div>
+
+      <div class="small">
+        Observação sem maquiagem: o fluxo de arquivo depende de <code>captureStream()</code> e <code>start(audioTrack)</code>,
+        que podem variar conforme a versão do Chrome.
+      </div>
+    </div>
+
+    <div class="box">
+      <label>Transcrição</label>
+      <pre id="out"></pre>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const btnFile = document.getElementById('btnFile');
+    const btnMic = document.getElementById('btnMic');
+    const btnStop = document.getElementById('btnStop');
+    const btnClear = document.getElementById('btnClear');
+    const statusEl = document.getElementById('status');
+    const out = document.getElementById('out');
+    const player = document.getElementById('player');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let recognition = null;
+    let currentStream = null;
+    let currentObjectUrl = null;
+    let finalText = '';
+    let listening = false;
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function updateOutput(interim = '') {
+      out.textContent = finalText + (interim ? (finalText ? '\n' : '') + interim : '');
+    }
+
+    function resetSession() {
+      if (recognition) {
+        try { recognition.stop(); } catch (_) {}
+      }
+
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
+      }
+
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
+      player.style.display = 'none';
+
+      recognition = null;
+      listening = false;
+      btnStop.disabled = true;
+      btnFile.disabled = false;
+      btnMic.disabled = false;
+    }
+
+    function createRecognition() {
+      if (!SpeechRecognition) {
+        throw new Error('SpeechRecognition não está disponível neste navegador.');
+      }
+
+      const rec = new SpeechRecognition();
+      rec.lang = 'pt-BR';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      rec.onstart = () => {
+        listening = true;
+        btnStop.disabled = false;
+      };
+
+      rec.onresult = (event) => {
+        let interim = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+
+          if (event.results[i].isFinal) {
+            finalText += (finalText ? '\n' : '') + text;
+          } else {
+            interim += text;
+          }
+        }
+
+        updateOutput(interim);
+      };
+
+      rec.onerror = (e) => {
+        setStatus('Erro no STT: ' + e.error);
+      };
+
+      rec.onend = () => {
+        listening = false;
+        btnStop.disabled = true;
+        btnFile.disabled = false;
+        btnMic.disabled = false;
+        setStatus('Reconhecimento finalizado.');
+      };
+
+      return rec;
+    }
+
+    async function transcribeMic() {
+      resetSession();
+
+      try {
+        setStatus('Iniciando microfone...');
+        finalText = '';
+        updateOutput();
+
+        recognition = createRecognition();
+        recognition.start();
+
+        btnMic.disabled = true;
+        btnFile.disabled = true;
+        btnStop.disabled = false;
+        setStatus('Ouvindo microfone...');
+      } catch (err) {
+        setStatus('Falhou: ' + err.message);
+      }
+    }
+
+    async function transcribeFile() {
+      resetSession();
+
+      const file = fileInput.files[0];
+      if (!file) {
+        setStatus('Escolhe um arquivo primeiro, bonitão. Sem arquivo não tem milagre.');
+        return;
+      }
+
+      if (!SpeechRecognition) {
+        setStatus('Este navegador não suporta SpeechRecognition.');
+        return;
+      }
+
+      try {
+        finalText = '';
+        updateOutput();
+        setStatus('Carregando arquivo...');
+
+        currentObjectUrl = URL.createObjectURL(file);
+        player.src = currentObjectUrl;
+        player.style.display = 'block';
+
+        await new Promise((resolve, reject) => {
+          player.onloadedmetadata = () => resolve();
+          player.onerror = () => reject(new Error('Não consegui carregar o arquivo.'));
+        });
+
+        // Tenta capturar o áudio tocando no player
+        const capture = player.captureStream || player.mozCaptureStream;
+        if (!capture) {
+          throw new Error('Este Chrome não expõe captureStream() no elemento de mídia.');
+        }
+
+        currentStream = capture.call(player);
+        const audioTrack = currentStream.getAudioTracks()[0];
+
+        if (!audioTrack) {
+          throw new Error('Não achei track de áudio no arquivo.');
+        }
+
+        recognition = createRecognition();
+
+        // Tenta usar a track do áudio do player.
+        // Nem todo Chrome aceita isso, então tem fallback.
+        try {
+          recognition.start(audioTrack);
+          setStatus('STT iniciado pela track de áudio. Tocando o arquivo...');
+        } catch (e) {
+          setStatus('start(audioTrack) não aceitou. Tentando modo padrão...');
+          recognition.start();
+        }
+
+        btnFile.disabled = true;
+        btnMic.disabled = true;
+        btnStop.disabled = false;
+
+        await player.play();
+      } catch (err) {
+        setStatus('Falhou: ' + err.message);
+        btnFile.disabled = false;
+        btnMic.disabled = false;
+        btnStop.disabled = true;
+      }
+    }
+
+    btnFile.addEventListener('click', transcribeFile);
+    btnMic.addEventListener('click', transcribeMic);
+
+    btnStop.addEventListener('click', () => {
+      if (recognition) {
+        try { recognition.stop(); } catch (_) {}
+      }
+      if (player) player.pause();
+      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+
+      btnStop.disabled = true;
+      btnFile.disabled = false;
+      btnMic.disabled = false;
+      setStatus('Parado.');
+    });
+
+    btnClear.addEventListener('click', () => {
+      finalText = '';
+      updateOutput();
+      setStatus('Texto limpo.');
+    });
+
+    // limpeza ao sair
+    window.addEventListener('beforeunload', () => {
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+    });
+
+    if (!SpeechRecognition) {
+      setStatus('Seu navegador não suporta SpeechRecognition. No Chrome/Chromium recente costuma funcionar.');
+    }
+  </script>
+</body>
+</html>
